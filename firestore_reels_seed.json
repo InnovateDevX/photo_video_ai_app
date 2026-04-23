@@ -1,69 +1,9 @@
 {
   "reels": [
     {
-      "videoUrl": "https://your-cdn.com/videos/reel1.mp4",
-      "videoPrompt": "A cinematic sunset over golden sand dunes, warm amber light cascading across the horizon",
-      "imagePrompt": "",
-      "imageEdit": false,
-      "type": "video",
-      "isEditable": true,
-      "likesCount": 0,
-      "savedCount": 0
-    },
-    {
-      "videoUrl": "https://your-cdn.com/videos/reel2.mp4",
-      "videoPrompt": "Futuristic neon city at night, cyberpunk aesthetic with rain-soaked streets reflecting purple lights",
-      "imagePrompt": "Transform the photo into a cyberpunk character with neon glow effects and futuristic outfit",
-      "imageEdit": true,
-      "type": "video",
-      "isEditable": true,
-      "likesCount": 0,
-      "savedCount": 0
-    },
-    {
-      "videoUrl": "https://your-cdn.com/videos/reel3.mp4",
-      "videoPrompt": "Underwater world with glowing jellyfish and bioluminescent coral reefs, deep ocean blues",
-      "imagePrompt": "",
-      "imageEdit": false,
-      "type": "video",
-      "isEditable": false,
-      "likesCount": 0,
-      "savedCount": 0
-    },
-    {
-      "videoUrl": "https://your-cdn.com/videos/reel4.mp4",
-      "videoPrompt": "Magical forest with floating lanterns and fireflies, soft warm bokeh lighting",
-      "imagePrompt": "",
-      "imageEdit": false,
-      "type": "video",
-      "isEditable": true,
-      "likesCount": 0,
-      "savedCount": 0
-    },
-    {
-      "videoUrl": "https://your-cdn.com/videos/reel5.mp4",
-      "videoPrompt": "Abstract geometric patterns morphing and evolving, vibrant gradient colors on dark background",
-      "imagePrompt": "Convert the photo into abstract geometric art with bold shapes and vivid colors",
-      "imageEdit": true,
-      "type": "video",
-      "isEditable": true,
-      "likesCount": 0,
-      "savedCount": 0
-    },
-    {
-      "videoUrl": "https://your-cdn.com/videos/reel6.mp4",
-      "videoPrompt": "Aerial view of a mountain range at dawn, mist rolling through valleys with golden sunrise",
-      "imagePrompt": "",
-      "imageEdit": false,
-      "type": "video",
-      "isEditable": true,
-      "likesCount": 0,
-      "savedCount": 0
-    },
-    {
-      "videoUrl": "https://your-cdn.com/videos/reel7.mp4",
-      "videoPrompt": "Studio portrait lighting, dramatic chiaroscuro shadows, professional fashion photography style",
-      "imagePrompt": "Apply dramatic studio portrait lighting with chiaroscuro shadows and cinematic color grading",
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FCyber%20Skeleton%20Neon%20Transformation.mp4?alt=media&token=bf8449b2-a1f2-4195-8ca9-babd37c1ed91",
+      "videoPrompt": "9:16 vertical reel. Start in neutral studio lighting, clean background. The person stands relaxed. A glitch effect ripples across the screen. Digital distortion flickers briefly. Neon grid lines begin forming behind them. Electric wind effect starts — hair moves as if charged.\n\nGlowing cyan skeletal lines scan across their body from head to toe like a futuristic body scan. Their outfit transforms into a sleek black cyber-skeleton suit with bright neon cyan bone patterns, chrome shoulder accents, reflective visor glasses, metallic chains.\n\nBackground morphs into a dark neon alley with rain reflections on the ground, holographic bats flying overhead.\n\nCamera motion: quick digital zoom in → orbit with glitch transitions → dramatic slow-motion walk forward.\n\nBeat drop cuts: visor reflection close-up, glowing bone chest detail, chrome glove flex, neon-lit jawline.\n\nLighting: high contrast, cyan + magenta rim lights, reflective wet surfaces, subtle rain droplets.\n\nEnd with skeleton lines pulsing brightly once, glitch flicker — seamless loop back to neutral pose.",
+      "imagePrompt": "Create a 9:16 vertical cinematic cyberpunk portrait featuring the same person from the input image transformed into a futuristic cyber-skeleton character. Preserve the person’s exact facial identity, skin tone, and facial structure while showing them standing confidently in a dark neon-lit alley at night with wet reflective pavement and subtle rain droplets falling. The person wears a sleek black cyber-skeleton bodysuit with bright neon cyan bone patterns glowing across the body, chrome shoulder accents, reflective visor glasses, metallic chains, and futuristic chrome gloves. The environment should feel high-tech and atmospheric with holographic bats flying overhead, faint digital grid patterns, and neon reflections on the wet ground. Add subtle digital glitch artifacts and scanning cyan skeletal lines glowing across the suit, giving the impression of a completed futuristic body scan. Use high-contrast cyberpunk lighting with cyan and magenta rim lights, reflective highlights on chrome surfaces, cinematic fog, and dramatic neon illumination. The composition should feel like a dynamic cinematic moment with the character stepping slightly forward toward the camera, ultra-detailed, photorealistic, cyberpunk aesthetic, strong depth, glowing technology elements, and futuristic atmosphere.",
       "imageEdit": true,
       "type": "image",
       "isEditable": true,
@@ -71,12 +11,82 @@
       "savedCount": 0
     },
     {
-      "videoUrl": "https://your-cdn.com/videos/reel8.mp4",
-      "videoPrompt": "A lone astronaut floating in deep space, Earth visible in the background, hyper-realistic render",
-      "imagePrompt": "",
-      "imageEdit": false,
-      "type": "video",
-      "isEditable": false,
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FF1%20Driver%20.mp4?alt=media&token=530472ae-bfc3-4cb4-a1db-8df821f59b0a",
+      "videoPrompt": "animate this celebration ",
+      "imagePrompt": "A victorious race car driver in a red racing suit and helmet, arms raised in celebration. The driver stands in a race car with a blurred background and warm golden lighting. The image captures the excitement and triumph after a race. The atmosphere is dynamic and intense, with a focus on the driver’s joyful pose. The colors are vivid with a strong backlight creating a dramatic silhouette effect.",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FDark%20Witch%20Power%20Awakening%20Reel.mp4?alt=media&token=d73e1708-483c-48a3-a6c7-9aec6fae4fac",
+      "videoPrompt": "Create a 9:16 vertical cinematic Halloween reel. Start with the original person standing still under soft neutral lighting, minimal expression. A faint heartbeat sound builds. The lights flicker once. A subtle shadow moves across their face.\n\nWind begins softly, hair lifting in slow motion. Red mist creeps across the floor. Their eyes slowly glow deep crimson. Dark veins subtly spread along the neck as fangs extend naturally. A dramatic blink transition — they are now transformed into a high-fashion vampire wearing a deep burgundy velvet corset, black leather pants, glossy thigh-high boots, and a dramatic flowing cape.\n\nAdd gothic cathedral-inspired background lighting with floating dust particles, candlelight flicker, bats crossing overhead in slow motion.\n\nDynamic camera movement: slow push-in → slight orbit → sudden fast cut on beat drop to close-ups of fangs, glowing eyes, cape movement, sharp nails gripping fabric.\n\nLighting: high-contrast with red rim light and cool blue backlight, glossy skin highlights, cinematic fog.\n\nEnd with the cape wrapping around the camera lens, cutting to black — then glowing red eyes appear for a split second for loop transition.",
+      "imagePrompt": "Create a 9:16 vertical cinematic dark fantasy portrait featuring the same person from the input image fully transformed into a gothic witch. Preserve the person’s exact facial identity, skin tone, and facial structure while showing them standing confidently in a moody forest clearing at night with low rolling fog at ankle height and faint lightning in the distant sky. The person wears a sleek black witch bodysuit with glowing violet rune embroidery, long dramatic sleeves, silver rings on multiple fingers, layered chains, and a wide-brim gothic witch hat. Their long hair flows naturally as if moved by wind, while subtle black smoke and floating magical particles swirl around their body. One hand is raised toward the camera with crackling purple magical energy forming between their fingers, casting violet light onto their face and clothing. The environment contains floating embers, cinematic mist, and atmospheric depth. Use neon violet rim lighting combined with cold moonlight as the key light, strong shadows, glossy highlights on jewelry, glowing runes across the outfit, volumetric fog, dramatic fantasy lighting, ultra-detailed, photorealistic, cinematic dark magic aesthetic.",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FFallen%20Angel%20to%20Dark%20Angel.mp4?alt=media&token=bffddc7a-9765-4355-8805-761a83ff7da9",
+      "videoPrompt": "Create a 9:16 vertical cinematic dark-fantasy video featuring the same person from the input image transformed into a fallen dark angel, preserving their exact facial identity, skin tone, and facial structure, with a calm yet intense expression; they wear a sleek black high-fashion bodysuit with metallic silver accents, layered gothic jewelry, elegant gloves, and dramatic smoky eye makeup, while behind them large dark angel wings made of detailed black feathers and drifting smoke are partially spread, showing fine texture and subtle motion with occasional feathers floating through the air; the environment is a stormy sky filled with heavy dark clouds, faint lightning flashes, and cinematic fog rolling along the ground, as wind gently moves their hair and wings; use a slow camera push-in toward the face with slight wing movement and drifting particles, illuminated by moody blue key lighting and a soft white rim light outlining the wings and shoulders, with high-contrast cinematic lighting, strong depth-of-field separation, atmospheric fog, volumetric light, and a photorealistic high-fashion dark fantasy aesthetic.",
+      "imagePrompt": "Create a 9:16 vertical cinematic dark-fantasy portrait featuring the same person from the input image transformed into a fallen dark angel. Preserve the person's exact facial identity, skin tone, and facial structure while showing a calm but intense expression. They wear a sleek black high-fashion bodysuit with metallic silver accents, layered gothic jewelry, elegant gloves, and dramatic smoky eye makeup. Behind them are large dark angel wings formed from black feathers and subtle drifting smoke, partially spread with detailed feather texture. The environment is a stormy sky background with heavy clouds, faint lightning flashes, and cinematic fog at ground level, with a few black feathers floating through the air. Their hair moves slightly in the wind, adding motion to the scene. Use moody blue key lighting with a soft white rim light outlining the wings and shoulders, strong depth-of-field separation, atmospheric fog, and high-contrast cinematic lighting to create a dramatic, photorealistic, high-fashion dark angel aesthetic.",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FFire%20Demon%20Rising%20Reel.mp4?alt=media&token=6a0b1da3-88c7-47cf-b12e-668f5f8c9c88",
+      "videoPrompt": "Vertical 9:16 cinematic transformation.\n\nStart in dark neutral environment with warm low light.\n\nGround cracks subtly with glowing embers beneath. Wind intensifies. Smoke rises around legs. Fiery orange lines spread across the outfit like molten veins.\n\nTransformation reveals a sleek black-and-red flame-accented bodysuit with glowing lava-like cracks, metallic accessories, bold makeup.\n\nBackground becomes a fiery inferno atmosphere with floating sparks and heat distortion.\n\nCamera: low angle push-in → slow circle → dramatic stomp toward camera on beat drop.\n\nQuick cuts: glowing chest crack detail, fiery eyes, sparks flying past lens, slow-motion hair flip.\n\nLighting: intense orange key light + red rim glow, high contrast dramatic shadows.\n\nEnd with flames bursting upward and fading into darkness for seamless loop.",
+      "imagePrompt": "A cinematic vertical portrait (9:16) of a person mid-transformation in a dark neutral environment with low warm lighting. The ground beneath them is cracked, glowing with fiery embers and molten lava seeping through. Smoke rises around their legs as wind subtly lifts hair and fabric.\n\nFiery orange energy lines spread across the body like molten veins, illuminating the figure from within. The transformation reveals a sleek, form-fitting black and red bodysuit with glowing lava-like cracks, metallic accents, and bold, edgy makeup. Eyes glow intensely with a fiery aura.\n\nBackground: a hellish inferno environment with floating sparks, heat distortion waves, and faint silhouettes lost in flame-lit haze.\n\nLighting: strong orange key light from below, deep red rim lighting outlining the body, high contrast shadows, dramatic cinematic glow.\n\nStyle: hyper-realistic, ultra-detailed textures, cinematic VFX, fire and smoke simulation, 4K detail, sharp focus, volumetric lighting, dark fantasy aesthetic.\n\nComposition: low-angle perspective, powerful stance, dynamic energy, centered subject, dramatic framing.\n\nAtmosphere details: sparks flying past lens, glowing cracks on chest and arms, subtle motion blur, heat shimmer distortion.\n\nMood: intense, powerful, supernatural transformation, fiery dominance.\n\n--ar 9:16 --style cinematic --quality 2",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FHaunted%20Doll%20High-Fashion%20Transformation.mp4?alt=media&token=6809213e-a798-44a2-9c78-3b00859682aa",
+      "videoPrompt": "Start with soft neutral studio lighting. Person stands still, blank expression.\n\nSubtle head tilt. Wind barely noticeable. A faint cracking porcelain texture begins forming on skin. Eyes subtly widen.\n\nWith a smooth glitch-like flicker, transformation completes — now wearing a gothic doll-inspired outfit: black lace dress, corset waist, shiny gloves, pearl choker, dramatic lashes.\n\nBackground morphs into an abandoned vintage room with floating dust, hanging cobwebs, flickering chandelier.\n\nCamera: slow zoom-in → sudden sharp snap movement on beat → quick cuts of eyes blinking, porcelain crack detail, lace texture, glove movement.\n\nLighting: pale cool key light, purple rim accent, eerie shadows.\n\nEnd with a slow mechanical head turn and faint glowing eye flicker, perfect loop reset.",
+      "imagePrompt": "A cinematic portrait of a person standing still under soft neutral studio lighting, blank expression, subtle head tilt. Skin begins transforming with delicate cracked porcelain texture, highly detailed fractures spreading naturally across face. Eyes slightly widened, eerie calm emotion.\n\nFinal transformed look: gothic doll-inspired aesthetic — black lace Victorian dress, tight corset waist, glossy black gloves, pearl choker necklace, dramatic long lashes, pale porcelain skin.\n\nBackground: abandoned vintage room with dark moody atmosphere, floating dust particles, hanging cobwebs, old furniture silhouettes, dim flickering chandelier casting moving shadows.\n\nLighting: pale cool key light on face, soft purple rim light outlining silhouette, deep cinematic shadows, eerie contrast.\n\nStyle: hyper-realistic, ultra-detailed skin texture, cinematic horror fashion, 4K, sharp focus, shallow depth of field, film grain, dark fantasy aesthetic.\n\nMood: unsettling, elegant, haunting beauty, gothic horror.\n\nComposition: centered subject, slow zoom feeling, dramatic framing, symmetrical balance.\n\n--ar 9:16 --style cinematic --quality 2",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 2,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FRetro%20CRT%20Tape.mp4?alt=media&token=a962352c-82de-4c69-bc63-8ae3d329287d",
+      "videoPrompt": "A close-up shot of a retro CRT television screen displaying static noise. The image has a distinct red hue and a grainy, low-quality VHS tape aesthetic. A finger is pressing a button on the TV, and the words \"PLAY\" and \"SP\" appear as on-screen VHS interface text. The background is dark and blurry with indistinct shapes. The overall atmosphere is nostalgic and eerie, emphasizing vintage analog technology and distorted visuals.",
+      "imagePrompt": "A close-up shot of a retro CRT television screen displaying static noise. The image has a distinct red hue and a grainy, low-quality VHS tape aesthetic. A finger is pressing a button on the TV, and the words \"PLAY\" and \"SP\" appear as on-screen VHS interface text. The background is dark and blurry with indistinct shapes. The overall atmosphere is nostalgic and eerie, emphasizing vintage analog technology and distorted visuals.",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FSkeleton%20Image%20.mp4?alt=media&token=0e9cbc8a-fe48-4a12-a4f6-64d0653ac7d7",
+      "videoPrompt": "Create a 9:16 vertical cinematic Halloween transformation reel. Start with the original person in a neutral pose under soft lighting. A dramatic wind effect begins, hair slowly flowing. Dark smoke swirls around the body as glowing white skeletal lines start illuminating over their outfit. In a smooth transformation transition, the person is now wearing a skeleton-themed black bodysuit with bright white bone designs, shiny black elbow-length gloves, a metallic cross necklace, and matching earrings. Long, wavy blonde hair moves naturally in slow motion.\n\nThe background shifts into a spooky Halloween environment with bats flying overhead, hanging decorations, subtle fog at ground level, and dim gothic lighting. Add dynamic camera motion: slow push-in shot, slight orbit rotation, then a confident walk toward camera. Add quick cuts synced to a dramatic beat drop — close-up on necklace, gloves, glowing bone details, then a powerful final pose.\n\nLighting is vivid, high-contrast, slightly neon-accented with purple and blue rim light. Atmosphere is eerie yet stylish, high-fashion Halloween editorial vibe. Ultra-sharp detail, smooth motion, cinematic depth of field, dramatic shadows, trending reel aesthetic.\n\nEnd with bats flying past the camera and a subtle glowing skeleton outline pulse.\n\nDuration: 8–12 seconds. High energy. Loop-friendly ending.",
+      "imagePrompt": "Create a 9:16 vertical cinematic Halloween transformation reel. Start with the original person in a neutral pose under soft lighting. A dramatic wind effect begins, hair slowly flowing. Dark smoke swirls around the body as glowing white skeletal lines start illuminating over their outfit. In a smooth transformation transition, the person is now wearing a skeleton-themed black bodysuit with bright white bone designs, shiny black elbow-length gloves, a metallic cross necklace, and matching earrings. Long, wavy blonde hair moves naturally in slow motion.\n\nThe background shifts into a spooky Halloween environment with bats flying overhead, hanging decorations, subtle fog at ground level, and dim gothic lighting. Add dynamic camera motion: slow push-in shot, slight orbit rotation, then a confident walk toward camera. Add quick cuts synced to a dramatic beat drop — close-up on necklace, gloves, glowing bone details, then a powerful final pose.\n\nLighting is vivid, high-contrast, slightly neon-accented with purple and blue rim light. Atmosphere is eerie yet stylish, high-fashion Halloween editorial vibe. Ultra-sharp detail, smooth motion, cinematic depth of field, dramatic shadows, trending reel aesthetic.\n\nEnd with bats flying past the camera and a subtle glowing skeleton outline pulse.\n\nDuration: 8–12 seconds. High energy. Loop-friendly ending.",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FVampire%20Couture%20Transformation%20Reel.mp4?alt=media&token=8b4f5fc4-1520-4f56-815f-927571d743cf",
+      "videoPrompt": "Create a 9:16 vertical cinematic Halloween reel. Start with the original person standing still under soft neutral lighting, minimal expression. A faint heartbeat sound builds. The lights flicker once. A subtle shadow moves across their face.\n\nWind begins softly, hair lifting in slow motion. Red mist creeps across the floor. Their eyes slowly glow deep crimson. Dark veins subtly spread along the neck as fangs extend naturally. A dramatic blink transition — they are now transformed into a high-fashion vampire wearing a deep burgundy velvet corset, black leather pants, glossy thigh-high boots, and a dramatic flowing cape.\n\nAdd gothic cathedral-inspired background lighting with floating dust particles, candlelight flicker, bats crossing overhead in slow motion.\n\nDynamic camera movement: slow push-in → slight orbit → sudden fast cut on beat drop to close-ups of fangs, glowing eyes, cape movement, sharp nails gripping fabric.\n\nLighting: high-contrast with red rim light and cool blue backlight, glossy skin highlights, cinematic fog.\n\nEnd with the cape wrapping around the camera lens, cutting to black — then glowing red eyes appear for a split second for loop transition.",
+      "imagePrompt": "Create a 9:16 vertical cinematic Halloween portrait of the same person from the input image fully transformed into a high-fashion vampire. Preserve the person’s exact facial identity, skin tone, and bone structure while showing glowing deep crimson eyes, subtle dark veins along the neck, and natural elegant vampire fangs. The person stands confidently wearing a deep burgundy velvet corset, black leather pants, glossy thigh-high boots, and a dramatic flowing cape moving slightly in the wind. The environment resembles a dark gothic cathedral interior with tall arches, dim candlelight flicker, floating dust particles, and cinematic red mist across the floor, while bats fly in the background. Use high-contrast cinematic lighting with a red rim light and cool blue backlight, glossy skin highlights, volumetric fog, and a dramatic cinematic atmosphere. The camera framing should feel like a close dramatic push-in shot with shallow depth of field, ultra-detailed, photorealistic, dark fantasy fashion editorial style, moody Halloween aesthetic.",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
       "likesCount": 0,
       "savedCount": 0
     }

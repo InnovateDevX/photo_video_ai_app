@@ -42,11 +42,6 @@ class ReelService {
         .doc(uid)
         .collection('liked_reels')
         .doc(reelId);
-    final userSaveRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('saved_reels')
-        .doc(reelId);
     final reelRef = _firestore.collection('reels').doc(reelId);
 
     final batch = _firestore.batch();
@@ -56,19 +51,17 @@ class ReelService {
       'timestamp': FieldValue.serverTimestamp(),
     };
 
-    // Write to both Liked and Saved (Collections) subcollections
+    // Write ONLY to Liked subcollection
     batch.set(userLikeRef, snapshotData);
-    batch.set(userSaveRef, snapshotData);
 
-    // Increment counters
+    // Increment ONLY likesCount
     batch.update(reelRef, {
       'likesCount': FieldValue.increment(1),
-      'savedCount': FieldValue.increment(1),
     });
 
     await batch.commit();
     debugPrint(
-      '✅ [ReelService] likeReel: Atomic commit successful (Synced with Collections)',
+      '✅ [ReelService] likeReel: Atomic commit successful',
     );
     debugPrint(
       '📍 [ReelService] User Like Path: users/$uid/liked_reels/$reelId',
@@ -86,28 +79,17 @@ class ReelService {
         .doc(uid)
         .collection('liked_reels')
         .doc(reelId);
-    final userSaveRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('saved_reels')
-        .doc(reelId);
     final reelRef = _firestore.collection('reels').doc(reelId);
 
     final batch = _firestore.batch();
     batch.delete(userLikeRef);
-    batch.delete(userSaveRef);
-
     batch.update(reelRef, {
       'likesCount': FieldValue.increment(-1),
-      'savedCount': FieldValue.increment(-1),
     });
 
     await batch.commit();
     debugPrint(
-      '✅ [ReelService] unlikeReel: Atomic commit successful (Removed from Collections)',
-    );
-    debugPrint(
-      '📍 [ReelService] User Unlike Path: users/$uid/liked_reels/$reelId',
+      '✅ [ReelService] unlikeReel: Optimistic batch commit successful',
     );
   }
 
@@ -185,14 +167,13 @@ class ReelService {
 
     final batch = _firestore.batch();
     batch.delete(userSaveRef);
-    batch.update(reelRef, {'savedCount': FieldValue.increment(-1)});
+    batch.update(reelRef, {
+      'savedCount': FieldValue.increment(-1),
+    });
 
     await batch.commit();
     debugPrint(
-      '✅ [ReelService] unsaveReel: Atomic commit successful (Removed from Collections)',
-    );
-    debugPrint(
-      '📍 [ReelService] User Unsave Path: users/$uid/saved_reels/$reelId',
+      '✅ [ReelService] unsaveReel: Optimistic batch commit successful',
     );
   }
 

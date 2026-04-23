@@ -47,12 +47,12 @@ class RemoteConfigService {
         'customer_support_url': '',
         'faq_url': '',
         'terms_of_use_url': '',
-        'rc_android_key': '',
+        'rc_android_key': '', // Add in Firebase Remote Config
         'rc_ios_key': '',
         'rc_credits_map': '{}',
         'azure_content_safety_endpoint':
             'https://acs-innovatedevx.cognitiveservices.azure.com',
-        'azure_content_safety_key': '',
+        'azure_content_safety_key': '', // Add in Firebase Remote Config
       });
 
       // 2. Configure Settings

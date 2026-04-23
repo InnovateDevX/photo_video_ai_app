@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:trail_ai_app/Core/colors.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'dart:io';
 
 class ReelVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -55,36 +57,63 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
     try {
-      final uri = Uri.parse(widget.videoUrl);
-      _controller =
-          VideoPlayerController.networkUrl(
-              uri,
-              videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-            )
-            ..initialize()
-                .then((_) {
-                  // Ensure the first frame is shown after the video is initialized
-                  if (mounted) {
-                    setState(() {
-                      _isInitialized = true;
-                    });
-                    
-                    // Disable native looping if we are doing manual seamless looping
-                    // to avoid fighting between the two mechanisms.
-                    _controller!.setLooping(!widget.seamlessLoop);
-                    _controller!.setVolume(0.0);
-                    _controller!.addListener(_videoListener);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) _controller!.play();
-                    });
-                  }
-                })
-                .catchError((e) {
-                  debugPrint("Video play error: $e");
-                });
+      // 1. Try to get the file from cache first
+      final fileInfo = await DefaultCacheManager().getFileFromCache(widget.videoUrl);
+      
+      File? videoFile;
+      if (fileInfo != null) {
+        debugPrint("📦 [VideoPlayer] Playing from CACHE: ${widget.videoUrl}");
+        videoFile = fileInfo.file;
+      } else {
+        debugPrint("🌐 [VideoPlayer] Downloading to CACHE: ${widget.videoUrl}");
+        // We don't await the full download here to avoid blocking UI, 
+        // but we can use the stream to get the file as soon as it's available.
+        // For simplicity, we'll just download it once.
+        try {
+          videoFile = await DefaultCacheManager().getSingleFile(widget.videoUrl);
+        } catch (e) {
+          debugPrint("❌ [VideoPlayer] Cache download failed, falling back to network: $e");
+        }
+      }
+
+      if (!mounted) return;
+
+      // 2. Create controller (either from File or Network)
+      if (videoFile != null) {
+        _controller = VideoPlayerController.file(
+          videoFile,
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        );
+      } else {
+        _controller = VideoPlayerController.networkUrl(
+          Uri.parse(widget.videoUrl),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        );
+      }
+
+      // 3. Initialize and play
+      await _controller!.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        
+        _controller!.setLooping(!widget.seamlessLoop);
+        _controller!.setVolume(0.0);
+        _controller!.addListener(_videoListener);
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _controller!.play();
+        });
+      }
     } catch (e) {
-      debugPrint("Invalid Video URL parsing error: $e");
+      debugPrint("❌ [VideoPlayer] Initialization error: $e");
     }
   }
 

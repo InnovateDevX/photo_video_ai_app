@@ -4,6 +4,7 @@ import 'package:trail_ai_app/Services/reel_service.dart';
 import 'package:trail_ai_app/Widgets/reel_video_player.dart';
 import 'package:trail_ai_app/pages/generation_page.dart';
 import 'package:trail_ai_app/Services/auth_service.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:localization/localization.dart';
@@ -338,8 +339,11 @@ class _ActionButton extends StatelessWidget {
 }
 
 String _formatCount(int count) {
-  if (count >= 1000) {
-    return '${(count / 1000).toStringAsFixed(1)}k';
+  if (count <= 0) return '0';
+  if (count >= 1000000) {
+    return '${(count / 1000000).toStringAsFixed(1)}M';
+  } else if (count >= 1000) {
+    return '${(count / 1000).toStringAsFixed(1)}K';
   }
   return count.toString();
 }
