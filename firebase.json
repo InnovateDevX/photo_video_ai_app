@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "imagegen-trail",
+          "appId": "1:878335239927:android:263634b1a789a19e8a95f2",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "imagegen-trail",
+          "configurations": {
+            "android": "1:878335239927:android:263634b1a789a19e8a95f2",
+            "ios": "1:878335239927:ios:dc1cda6f874a5a038a95f2",
+            "macos": "1:878335239927:ios:dc1cda6f874a5a038a95f2",
+            "web": "1:878335239927:web:b15a36863df1c4368a95f2",
+            "windows": "1:878335239927:web:584efea4a332aca18a95f2"
+          }
+        }
+      }
+    }
+  }
+}

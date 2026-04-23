@@ -1,0 +1,84 @@
+{
+  "reels": [
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel1.mp4",
+      "videoPrompt": "A cinematic sunset over golden sand dunes, warm amber light cascading across the horizon",
+      "imagePrompt": "",
+      "imageEdit": false,
+      "type": "video",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel2.mp4",
+      "videoPrompt": "Futuristic neon city at night, cyberpunk aesthetic with rain-soaked streets reflecting purple lights",
+      "imagePrompt": "Transform the photo into a cyberpunk character with neon glow effects and futuristic outfit",
+      "imageEdit": true,
+      "type": "video",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel3.mp4",
+      "videoPrompt": "Underwater world with glowing jellyfish and bioluminescent coral reefs, deep ocean blues",
+      "imagePrompt": "",
+      "imageEdit": false,
+      "type": "video",
+      "isEditable": false,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel4.mp4",
+      "videoPrompt": "Magical forest with floating lanterns and fireflies, soft warm bokeh lighting",
+      "imagePrompt": "",
+      "imageEdit": false,
+      "type": "video",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel5.mp4",
+      "videoPrompt": "Abstract geometric patterns morphing and evolving, vibrant gradient colors on dark background",
+      "imagePrompt": "Convert the photo into abstract geometric art with bold shapes and vivid colors",
+      "imageEdit": true,
+      "type": "video",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel6.mp4",
+      "videoPrompt": "Aerial view of a mountain range at dawn, mist rolling through valleys with golden sunrise",
+      "imagePrompt": "",
+      "imageEdit": false,
+      "type": "video",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel7.mp4",
+      "videoPrompt": "Studio portrait lighting, dramatic chiaroscuro shadows, professional fashion photography style",
+      "imagePrompt": "Apply dramatic studio portrait lighting with chiaroscuro shadows and cinematic color grading",
+      "imageEdit": true,
+      "type": "image",
+      "isEditable": true,
+      "likesCount": 0,
+      "savedCount": 0
+    },
+    {
+      "videoUrl": "https://your-cdn.com/videos/reel8.mp4",
+      "videoPrompt": "A lone astronaut floating in deep space, Earth visible in the background, hyper-realistic render",
+      "imagePrompt": "",
+      "imageEdit": false,
+      "type": "video",
+      "isEditable": false,
+      "likesCount": 0,
+      "savedCount": 0
+    }
+  ]
+}

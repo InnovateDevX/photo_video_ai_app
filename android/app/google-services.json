@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "878335239927",
+    "project_id": "imagegen-trail",
+    "storage_bucket": "imagegen-trail.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878335239927:android:263634b1a789a19e8a95f2",
+        "android_client_info": {
+          "package_name": "com.example.trail_ai_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878335239927-ug4phekhfidvharn0u6rc17ifj48isgh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.trail_ai_app",
+            "certificate_hash": "f0d0c5d01630486355612a2d499293dc7181ff7d"
+          }
+        },
+        {
+          "client_id": "878335239927-b2v3j0lrqn0rfr94u57dbpho1cccbmeg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiEKEi6jbAXiDndhyq9GqrZJ0SvgbC7IQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878335239927-b2v3j0lrqn0rfr94u57dbpho1cccbmeg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878335239927-3hdgefqu8qq3unh431soai5cb9j68b26.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.trailAiApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
