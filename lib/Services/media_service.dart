@@ -10,7 +10,11 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 class MediaService {
   /// Downloads an image from a URL and saves it to the "Trail AI" gallery album.
   /// Returns the local File if successful.
-  static Future<File?> downloadImage(BuildContext context, String imageUrl, {bool isLocal = false}) async {
+  static Future<File?> downloadImage(
+    BuildContext context,
+    String imageUrl, {
+    bool isLocal = false,
+  }) async {
     try {
       String? filePath;
 
@@ -32,7 +36,10 @@ class MediaService {
       }
 
       if (filePath != null) {
-        final success = await GallerySaver.saveImage(filePath, albumName: 'Trail AI');
+        final success = await GallerySaver.saveImage(
+          filePath,
+          albumName: 'Trail AI',
+        );
         if (context.mounted && success == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -58,7 +65,11 @@ class MediaService {
 
   /// Downloads a video from a URL or local path and saves it to the gallery.
   /// Returns the local File if successful.
-  static Future<File?> downloadVideo(BuildContext context, String videoUrl, {bool isLocal = false}) async {
+  static Future<File?> downloadVideo(
+    BuildContext context,
+    String videoUrl, {
+    bool isLocal = false,
+  }) async {
     try {
       String? filePath;
 
@@ -79,7 +90,10 @@ class MediaService {
       }
 
       if (filePath != null) {
-        final success = await GallerySaver.saveVideo(filePath, albumName: 'Trail AI');
+        final success = await GallerySaver.saveVideo(
+          filePath,
+          albumName: 'Trail AI',
+        );
         if (context.mounted && success == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -104,7 +118,12 @@ class MediaService {
   }
 
   /// Downloads an image from a URL and opens the native share sheet.
-  static Future<void> shareImage(BuildContext context, String imageUrl, {String? shareText, bool isLocal = false}) async {
+  static Future<void> shareImage(
+    BuildContext context,
+    String imageUrl, {
+    String? shareText,
+    bool isLocal = false,
+  }) async {
     try {
       String? filePath;
 
@@ -131,15 +150,20 @@ class MediaService {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'share_failed'.i18n()}$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${'share_failed'.i18n()}$e')));
       }
     }
   }
 
   /// Shares a video from a URL or local path.
-  static Future<void> shareVideo(BuildContext context, String videoUrl, {String? shareText, bool isLocal = false}) async {
+  static Future<void> shareVideo(
+    BuildContext context,
+    String videoUrl, {
+    String? shareText,
+    bool isLocal = false,
+  }) async {
     try {
       String? filePath;
 
@@ -160,19 +184,22 @@ class MediaService {
       }
 
       if (filePath != null) {
-        await Share.shareXFiles([
-          XFile(filePath),
-        ], text: shareText ?? 'Check out this video I generated with Trail AI!'.i18n());
+        await Share.shareXFiles(
+          [XFile(filePath)],
+          text:
+              shareText ??
+              'Check out this video I generated with Trail AI!'.i18n(),
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'share_failed'.i18n()}$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${'share_failed'.i18n()}$e')));
       }
     }
   }
-  
+
   /// Downloads an image from a URL and returns a [File] in the temporary directory.
   static Future<File?> downloadToTempFile(String imageUrl) async {
     if (!imageUrl.startsWith('http')) {
@@ -202,14 +229,18 @@ class MediaService {
     }
     try {
       // Check cache first
-      final FileInfo? fileInfo = await DefaultCacheManager().getFileFromCache(imageUrl);
+      final FileInfo? fileInfo = await DefaultCacheManager().getFileFromCache(
+        imageUrl,
+      );
       if (fileInfo != null) {
         debugPrint('✅ [MediaService] Serving image from cache: $imageUrl');
         return fileInfo.file;
       }
 
       // Fallback to download
-      debugPrint('ℹ️ [MediaService] Image not in cache, downloading: $imageUrl');
+      debugPrint(
+        'ℹ️ [MediaService] Image not in cache, downloading: $imageUrl',
+      );
       return await downloadToTempFile(imageUrl);
     } catch (e) {
       debugPrint('❌ [MediaService] getCachedOrDownloadFile failed: $e');
