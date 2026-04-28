@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:localization/localization.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'background_generation_service.dart';
 
 class MediaService {
   /// Downloads an image from a URL and saves it to the "Trail AI" gallery album.
@@ -57,6 +58,11 @@ class MediaService {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${'download_failed'.i18n()}${e.toString()}')),
+        );
+      } else {
+        // Fallback to global notification if context is lost
+        BackgroundGenerationService().reportFailure(
+          '${'download_failed'.i18n()}${e.toString()}',
         );
       }
       return null;
@@ -112,6 +118,10 @@ class MediaService {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${'download_failed'.i18n()}${e.toString()}')),
         );
+      } else {
+        BackgroundGenerationService().reportFailure(
+          '${'download_failed'.i18n()}${e.toString()}',
+        );
       }
       return null;
     }
@@ -153,6 +163,10 @@ class MediaService {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('${'share_failed'.i18n()}$e')));
+      } else {
+        BackgroundGenerationService().reportFailure(
+          '${'share_failed'.i18n()}$e',
+        );
       }
     }
   }
@@ -196,6 +210,10 @@ class MediaService {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('${'share_failed'.i18n()}$e')));
+      } else {
+        BackgroundGenerationService().reportFailure(
+          '${'share_failed'.i18n()}$e',
+        );
       }
     }
   }

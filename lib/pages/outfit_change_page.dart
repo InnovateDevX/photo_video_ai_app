@@ -345,12 +345,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
         child: Column(
           children: [
             // Credits top bar
-            StreamBuilder<int>(
-              stream: _creditService.creditStream,
-              initialData: _creditService.credits,
-              builder: (context, snapshot) =>
-                  topBar(context, credits: snapshot.data ?? 0),
-            ),
+            const TopBar(),
 
             // Navigation bar (changes subtitle per state)
             _buildTopBar(

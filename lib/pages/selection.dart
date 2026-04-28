@@ -36,13 +36,7 @@ class _SelectionState extends State<Selection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: h * 0.05),
-          StreamBuilder<int>(
-            stream: CreditService().creditStream,
-            initialData: CreditService().credits,
-            builder: (context, snapshot) {
-              return topBar(context, credits: snapshot.data ?? 0);
-            },
-          ),
+          const TopBar(),
           SizedBox(height: h * 0.02),
 
           // Categories segmented control

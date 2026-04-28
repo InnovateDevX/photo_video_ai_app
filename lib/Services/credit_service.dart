@@ -24,8 +24,14 @@ class CreditService {
   final StreamController<int> _creditStreamController =
       StreamController<int>.broadcast();
 
+  final StreamController<int> _deductionController =
+      StreamController<int>.broadcast();
+
   /// Live stream of the credit balance — use StreamBuilder in UI
   Stream<int> get creditStream => _creditStreamController.stream;
+
+  /// Stream of deduction amounts — used for UI animations/feedback
+  Stream<int> get onCreditDeducted => _deductionController.stream;
 
   /// Current credit balance (synchronous, from local cache)
   int get credits => _credits;
@@ -87,6 +93,7 @@ class CreditService {
     if (cost <= 0) return;
     final newBalance = (_credits - cost).clamp(0, _credits);
     _credits = newBalance;
+    _deductionController.add(cost); // Notify deduction for UI feedback
     _creditStreamController.add(_credits);
     debugPrint('💳 [CreditService] Deducted $cost — new balance: $_credits');
     await _persistToFirestore();

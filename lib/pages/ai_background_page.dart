@@ -262,12 +262,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
       body: SafeArea(
         child: Column(
           children: [
-            StreamBuilder<int>(
-              stream: _creditService.creditStream,
-              initialData: _creditService.credits,
-              builder: (context, snapshot) =>
-                  topBar(context, credits: snapshot.data ?? 0),
-            ),
+            const TopBar(),
             _buildTopBar(
               isDark: isDark,
               title: 'background_ai_title'.i18n(),

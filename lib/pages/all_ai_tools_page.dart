@@ -38,12 +38,7 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
         child: Column(
           children: [
             // Credits top bar
-            StreamBuilder<int>(
-              stream: _creditService.creditStream,
-              initialData: _creditService.credits,
-              builder: (context, snapshot) =>
-                  topBar(context, credits: snapshot.data ?? 0),
-            ),
+            const TopBar(),
 
             // Navigation Bar Area
             Padding(

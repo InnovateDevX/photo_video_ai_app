@@ -256,12 +256,7 @@ class _AiRestorePageState extends State<AiRestorePage>
       body: SafeArea(
         child: Column(
           children: [
-            StreamBuilder<int>(
-              stream: _creditService.creditStream,
-              initialData: _creditService.credits,
-              builder: (context, snapshot) =>
-                  topBar(context, credits: snapshot.data ?? 0),
-            ),
+            const TopBar(),
             _buildTopBar(
               isDark: isDark,
               title: 'restore_title'.i18n(),

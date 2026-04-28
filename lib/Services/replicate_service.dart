@@ -403,7 +403,8 @@ class ReplicateService {
         variables['reference_images'] = [url];
         debugPrint('✅ [ReplicateService] Image uploaded and mapped: $url');
       } catch (e) {
-        debugPrint('⚠️ [ReplicateService] Image upload failed: $e');
+        debugPrint('❌ [ReplicateService] Image upload failed: $e');
+        throw Exception('Failed to upload reference image: $e');
       }
     }
 
@@ -418,7 +419,8 @@ class ReplicateService {
         variables['reference_images'] = urls;
         debugPrint('✅ [ReplicateService] ${urls.length} images uploaded.');
       } catch (e) {
-        debugPrint('⚠️ [ReplicateService] Images upload failed: $e');
+        debugPrint('❌ [ReplicateService] Images upload failed: $e');
+        throw Exception('Failed to upload secondary images: $e');
       }
     }
 

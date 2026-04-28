@@ -280,12 +280,7 @@ class _UpscalePageState extends State<UpscalePage>
       body: SafeArea(
         child: Column(
           children: [
-            StreamBuilder<int>(
-              stream: _creditService.creditStream,
-              initialData: _creditService.credits,
-              builder: (context, snapshot) =>
-                  topBar(context, credits: snapshot.data ?? 0),
-            ),
+            const TopBar(),
             SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             _buildTopBar(
               isDark: isDark,

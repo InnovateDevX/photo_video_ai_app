@@ -57,6 +57,15 @@ class GenerationBottomBar extends StatefulWidget {
   final ValueChanged<String> onResolutionChanged;
   final ValueChanged<bool> onEnhancePromptChanged;
 
+  // ── Two-stage (Reel) mode ─────────────────────────────────────────────────
+  /// When true, shows a unified model picker for both Stage 1 (image edit)
+  /// and Stage 2 (video generation) in the same settings panel.
+  final bool imageEditMode;
+  final AIModelConfig? selectedImageModel;
+  final AIModelConfig? selectedVideoModel;
+  final ValueChanged<AIModelConfig>? onImageModelSelected;
+  final ValueChanged<AIModelConfig>? onVideoModelSelected;
+
   const GenerationBottomBar({
     super.key,
     required this.isGenerating,
@@ -82,6 +91,11 @@ class GenerationBottomBar extends StatefulWidget {
     this.onImagePressed,
     this.onImageUploaded,
     this.selectedImage,
+    this.imageEditMode = false,
+    this.selectedImageModel,
+    this.selectedVideoModel,
+    this.onImageModelSelected,
+    this.onVideoModelSelected,
     this.isAddSelected = false,
     this.isSettingsSelected = false,
     this.isEditSelected = false,
@@ -346,6 +360,184 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
 
             // Models sub-panel
             Widget buildModelsPanel() {
+              if (widget.imageEditMode) {
+                // Unified panel: Stage 1 (Image Edit) + Stage 2 (Video)
+                return Column(
+                  children: [
+                    buildHeader(
+                      'Models',
+                      () => setSheet(() => activePage = 'main'),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: [
+                          // Stage 1 label
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: w * 0.02,
+                              top: w * 0.01,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: w * 0.03,
+                                    vertical: w * 0.012,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFFFF9800,
+                                    ).withOpacity(0.18),
+                                    borderRadius: BorderRadius.circular(w * 0.03),
+                                  ),
+                                  child: Text(
+                                    'Stage 1 — Image Edit',
+                                    style: TextStyle(
+                                      color: const Color(0xFFFF9800),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: w * 0.033,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.only(bottom: w * 0.04),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: w * 0.03,
+                                  mainAxisSpacing: w * 0.03,
+                                  childAspectRatio: 0.82,
+                                ),
+                            itemCount: widget.imageModels.length,
+                            itemBuilder: (_, i) {
+                              final m = widget.imageModels[i];
+                              final isSel =
+                                  widget.selectedImageModel?.id == m.id;
+                              return _buildThemedGridCard(
+                                label: m.name,
+                                subLabel: '${m.creditUsed} Credits',
+                                isSelected: isSel,
+                                icon: m.iconUrl != null &&
+                                        m.iconUrl!.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          w * 0.02,
+                                        ),
+                                        child: CachedNetworkImage(
+                                          imageUrl: m.iconUrl!,
+                                          width: w * 0.08,
+                                          height: w * 0.08,
+                                          fit: BoxFit.contain,
+                                          errorWidget: (_, __, ___) => Icon(
+                                            Icons.smart_toy_outlined,
+                                            size: w * 0.07,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.smart_toy_outlined,
+                                        size: w * 0.07,
+                                        color: Colors.white54,
+                                      ),
+                                onTap: () {
+                                  widget.onImageModelSelected?.call(m);
+                                  setSheet(() => activePage = 'main');
+                                },
+                              );
+                            },
+                          ),
+                          // Stage 2 label
+                          Padding(
+                            padding: EdgeInsets.only(bottom: w * 0.02),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: w * 0.03,
+                                    vertical: w * 0.012,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blueAccent.withOpacity(0.18),
+                                    borderRadius: BorderRadius.circular(w * 0.03),
+                                  ),
+                                  child: Text(
+                                    'Stage 2 — Video Generation',
+                                    style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: w * 0.033,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: w * 0.03,
+                                  mainAxisSpacing: w * 0.03,
+                                  childAspectRatio: 0.82,
+                                ),
+                            itemCount: widget.videoModels.length,
+                            itemBuilder: (_, i) {
+                              final m = widget.videoModels[i];
+                              final isSel =
+                                  widget.selectedVideoModel?.id == m.id;
+                              return _buildThemedGridCard(
+                                label: m.name,
+                                subLabel: '${m.creditUsed} Credits',
+                                isSelected: isSel,
+                                icon: m.iconUrl != null &&
+                                        m.iconUrl!.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          w * 0.02,
+                                        ),
+                                        child: CachedNetworkImage(
+                                          imageUrl: m.iconUrl!,
+                                          width: w * 0.08,
+                                          height: w * 0.08,
+                                          fit: BoxFit.contain,
+                                          errorWidget: (_, __, ___) => Icon(
+                                            Icons.smart_toy_outlined,
+                                            size: w * 0.07,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.smart_toy_outlined,
+                                        size: w * 0.07,
+                                        color: Colors.white54,
+                                      ),
+                                onTap: () {
+                                  widget.onVideoModelSelected?.call(m);
+                                  setSheet(() => activePage = 'main');
+                                },
+                              );
+                            },
+                          ),
+                          SizedBox(height: w * 0.04),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              // Standard single-category model list
               final allModels = widget.selectedCategory == 'video'
                   ? widget.videoModels
                   : widget.imageModels;
@@ -374,7 +566,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                   crossAxisCount: 3,
                                   crossAxisSpacing: w * 0.03,
                                   mainAxisSpacing: w * 0.03,
-                                  childAspectRatio: 0.82, // Taller boxes for wrapping names
+                                  childAspectRatio: 0.82,
                                 ),
                             itemCount: models.length,
                             itemBuilder: (_, i) {
@@ -384,7 +576,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
                                 isSelected: isSel,
-                                icon: m.iconUrl != null && m.iconUrl!.isNotEmpty
+                                icon: m.iconUrl != null &&
+                                        m.iconUrl!.isNotEmpty
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(
                                           w * 0.02,
@@ -524,6 +717,19 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
 
             // ── Main settings list ──────────────────────────────────────────
             Widget buildMainPanel() {
+              // Gating logic: in imageEditMode, we base capabilities on the relevant stage model
+              final currentOptions = widget.imageEditMode
+                  ? widget.selectedVideoModel?.options
+                  : widget.modelOptions;
+
+              final List<String> aspectRatioOptions =
+                  currentOptions?.aspectRatios ?? [];
+              final showAspectRatio = currentOptions?.hasAspectRatios == true;
+
+              final aspectRatioChoices = aspectRatioOptions.isNotEmpty
+                  ? aspectRatioOptions
+                  : ['9:16', '1:1', '16:9', '4:3', '3:4'];
+
               return Column(
                 children: [
                   Center(
@@ -543,11 +749,23 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                       children: [
                         buildSettingsNavigationTile(
                           icon: Icons.view_in_ar_outlined,
-                          label: 'model'.i18n(),
-                          value: widget.selectedModel?.name ?? 'Default',
+                          label: widget.imageEditMode
+                              ? 'Stage 1 — Image Model'
+                              : 'model'.i18n(),
+                          value: widget.imageEditMode
+                              ? (widget.selectedImageModel?.name ?? 'Default')
+                              : (widget.selectedModel?.name ?? 'Default'),
                           onTap: () => setSheet(() => activePage = 'model'),
                         ),
-                        if (widget.modelOptions?.hasAspectRatios == true)
+                        if (widget.imageEditMode)
+                          buildSettingsNavigationTile(
+                            icon: Icons.videocam_outlined,
+                            label: 'Stage 2 — Video Model',
+                            value:
+                                widget.selectedVideoModel?.name ?? 'Default',
+                            onTap: () => setSheet(() => activePage = 'model'),
+                          ),
+                        if (showAspectRatio)
                           buildSettingsNavigationTile(
                             icon: Icons.aspect_ratio_outlined,
                             label: 'aspect_ratio'.i18n(),
@@ -555,7 +773,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             onTap: () =>
                                 setSheet(() => activePage = 'aspect_ratio'),
                           ),
-                        if (widget.modelOptions?.hasDurations == true)
+                        if (currentOptions?.hasDurations == true)
                           buildSettingsNavigationTile(
                             icon: Icons.timer_outlined,
                             label: 'duration'.i18n(),
@@ -563,7 +781,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             onTap: () =>
                                 setSheet(() => activePage = 'duration'),
                           ),
-                        if (widget.modelOptions?.hasResolutions == true)
+                        if (currentOptions?.hasResolutions == true)
                           buildSettingsNavigationTile(
                             icon: Icons.high_quality_outlined,
                             label: 'resolution'.i18n(),
@@ -587,6 +805,17 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
 
             // Route logic
             Widget body;
+            // Compute options based on current mode
+            final activeOptions = widget.imageEditMode
+                ? widget.selectedVideoModel?.options
+                : widget.modelOptions;
+
+            final List<String> aspectRatioOptionsList =
+                activeOptions?.aspectRatios ?? [];
+            final aspectRatioChoicesList = aspectRatioOptionsList.isNotEmpty
+                ? aspectRatioOptionsList
+                : ['9:16', '1:1', '16:9', '4:3', '3:4'];
+
             switch (activePage) {
               case 'model':
                 body = buildModelsPanel();
@@ -594,7 +823,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
               case 'aspect_ratio':
                 body = buildOptionPanel(
                   title: 'aspect_ratio'.i18n(),
-                  options: widget.modelOptions?.aspectRatios ?? [],
+                  options: aspectRatioChoicesList,
                   selectedValue: widget.selectedAspectRatio,
                   onSelected: widget.onAspectRatioChanged,
                 );
@@ -602,7 +831,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
               case 'duration':
                 body = buildOptionPanel(
                   title: 'duration'.i18n(),
-                  options: widget.modelOptions?.durations ?? [],
+                  options: activeOptions?.durations ?? const ['5s', '10s'],
                   selectedValue: widget.selectedDuration,
                   onSelected: widget.onDurationChanged,
                   subLabelSuffix: 'Duration',
@@ -611,7 +840,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
               case 'resolution':
                 body = buildOptionPanel(
                   title: 'resolution'.i18n(),
-                  options: widget.modelOptions?.resolutions ?? [],
+                  options: activeOptions?.resolutions ??
+                      const ['480p', '720p', '1080p'],
                   selectedValue: widget.selectedResolution,
                   onSelected: widget.onResolutionChanged,
                 );

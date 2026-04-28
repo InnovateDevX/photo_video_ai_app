@@ -282,14 +282,8 @@ class _AiStickerPageState extends State<AiStickerPage>
       body: SafeArea(
         child: Column(
           children: [
-            if (_pageState == _PageState.selection) ...[
-              StreamBuilder<int>(
-                stream: _creditService.creditStream,
-                initialData: _creditService.credits,
-                builder: (context, snapshot) =>
-                    topBar(context, credits: snapshot.data ?? 0),
-              ),
-            ],
+            if (_pageState == _PageState.selection)
+              const TopBar(),
             _buildTopBar(
               isDark: isDark,
               title: switch (_pageState) {

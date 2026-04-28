@@ -60,125 +60,113 @@ class MainNavigationState extends State<MainNavigation> {
     final navRow = Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildNavItem('assets/iconoir_home.png', 0),
-        _buildNavItem('assets/Group 48095579.png', 1),
-        _buildCentralItem(),
-        _buildNavItem('assets/iconamoon_profile-light.png', 3),
-        _buildNavItem('assets/weui_setting-outlined.png', 4),
+        _buildNavItem('assets/iconoir_home.png', 0, isDark),
+        _buildNavItem('assets/Group 48095579.png', 1, isDark),
+        _buildCentralItem(isDark),
+        _buildNavItem('assets/iconamoon_profile-light.png', 3, isDark),
+        _buildNavItem('assets/weui_setting-outlined.png', 4, isDark),
       ],
     );
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
-      // extendBody only in dark so the blur picks up the page content behind
-      extendBody: isDark,
+      extendBody: true, // Always extend body to allow the blur/glass effect
       body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: isDark
-          // ── Dark mode: frosted-glass glossy bar ──────────────────────────
-          ? ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  height: h * 0.09,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.08),
-                        Colors.white.withValues(alpha: 0.03),
-                      ],
-                    ),
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        width: 0.8,
-                      ),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: navRow,
-                  ),
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            height: (h * 0.09).clamp(60.0, 100.0),
+            decoration: BoxDecoration(
+              color: isDark 
+                  ? Colors.black.withValues(alpha: 0.7) 
+                  : Colors.white.withValues(alpha: 0.85),
+              border: Border(
+                top: BorderSide(
+                  color: isDark 
+                      ? Colors.white.withValues(alpha: 0.1) 
+                      : Colors.black.withValues(alpha: 0.05),
+                  width: 1,
                 ),
               ),
-            )
-          // ── Light mode: original solid dark bar ──────────────────────────
-          : Container(
-              height: h * 0.09,
-              decoration: BoxDecoration(
-                color: const Color(0xFF151515),
-                boxShadow: [
+              boxShadow: [
+                if (!isDark)
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: Offset(w * 0.02, h * 0.02),
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 15,
+                    offset: const Offset(0, -5),
                   ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: navRow,
-              ),
+              ],
             ),
-    );
-  }
-
-  Widget _buildNavItem(String assetPath, int index) {
-    bool isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      child: Image.asset(
-        assetPath,
-        color: isSelected ? Colors.white : Colors.grey.shade600,
-        width: MediaQuery.of(context).size.width * 0.065,
-        height: MediaQuery.of(context).size.width * 0.065, // Use width-based square sizing
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: navRow,
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildCentralItem() {
+  Widget _buildNavItem(String assetPath, int index, bool isDark) {
+    bool isSelected = _currentIndex == index;
+    final iconSize = (MediaQuery.of(context).size.width * 0.06).clamp(24.0, 32.0);
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = 2; // Index of ImageGen
-        });
-      },
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(8),
+        child: Image.asset(
+          assetPath,
+          color: isSelected 
+              ? (isDark ? Colors.white : Colors.black) 
+              : Colors.grey.withValues(alpha: 0.5),
+          width: iconSize,
+          height: iconSize,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCentralItem(bool isDark) {
+    final w = MediaQuery.of(context).size.width;
+    final outerSize = (w * 0.14).clamp(50.0, 70.0);
+    final innerSize = (w * 0.11).clamp(40.0, 56.0);
+    final iconSize = (w * 0.07).clamp(24.0, 36.0);
+
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = 2),
       child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.16,
-        height: MediaQuery.of(context).size.width * 0.16,
+        width: w * 0.16,
+        height: w * 0.16,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Border container
             Container(
-              width: MediaQuery.of(context).size.width * 0.16,
-              height: MediaQuery.of(context).size.width * 0.16,
+              width: outerSize,
+              height: outerSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color.fromARGB(
-                  255,
-                  190,
-                  190,
-                  190,
-                ).withValues(alpha: 0.8),
+                color: isDark 
+                    ? Colors.white.withValues(alpha: 0.1) 
+                    : Colors.black.withValues(alpha: 0.05),
               ),
               child: Center(
-                // Gradient circle background inside the border
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.12,
-                    height: MediaQuery.of(context).size.width * 0.12,
-                    decoration: const ProGradientDecoration(
-                      shape: BoxShape.circle,
-                    ),
+                child: Container(
+                  width: innerSize,
+                  height: innerSize,
+                  decoration: const ProGradientDecoration(
+                    shape: BoxShape.circle,
                   ),
+                ),
               ),
             ),
-            // Icon rendered separately on top
             Icon(
               Icons.add,
               color: Colors.white,
-              size: MediaQuery.of(context).size.width * 0.08,
+              size: iconSize,
             ),
           ],
         ),

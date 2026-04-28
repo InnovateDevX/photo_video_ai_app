@@ -399,12 +399,7 @@ class _HomepageState extends State<Homepage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(top: h * 0.01, bottom: h * 0.02),
-                child: StreamBuilder<int>(
-                  stream: CreditService().creditStream,
-                  initialData: CreditService().credits,
-                  builder: (context, snapshot) =>
-                      topBar(context, credits: snapshot.data ?? 0),
-                ),
+                child: const TopBar(),
               ),
             ),
 

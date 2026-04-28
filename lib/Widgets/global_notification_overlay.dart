@@ -17,9 +17,18 @@ class GlobalNotificationOverlay extends StatefulWidget {
   State<GlobalNotificationOverlay> createState() => _GlobalNotificationOverlayState();
 }
 
+class _NotificationItem {
+  final GeneratedAsset? asset;
+  final String? error;
+  _NotificationItem({this.asset, this.error});
+}
+
 class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay> with SingleTickerProviderStateMixin {
   late StreamSubscription<GeneratedAsset> _successSubscription;
   late StreamSubscription<String> _failureSubscription;
+  
+  final List<_NotificationItem> _queue = [];
+  bool _isProcessing = false;
   
   GeneratedAsset? _currentAsset;
   String? _errorMessage;
@@ -45,44 +54,60 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay> w
 
     // Listen for completion
     _successSubscription = BackgroundGenerationService().onGenerationComplete.listen((asset) {
-      _showNotification(asset: asset);
+      _enqueueNotification(asset: asset);
     });
 
     // Listen for failure
     _failureSubscription = BackgroundGenerationService().onGenerationFailure.listen((msg) {
-      _showNotification(error: msg);
+      _enqueueNotification(error: msg);
     });
   }
 
-  void _showNotification({GeneratedAsset? asset, String? error}) {
+  void _enqueueNotification({GeneratedAsset? asset, String? error}) {
     if (!mounted) return;
-    
+    _queue.add(_NotificationItem(asset: asset, error: error));
+    if (!_isProcessing) {
+      _processNextInQueue();
+    }
+  }
+
+  Future<void> _processNextInQueue() async {
+    if (_queue.isEmpty || !mounted) {
+      _isProcessing = false;
+      return;
+    }
+
+    _isProcessing = true;
+    final next = _queue.removeAt(0);
+
     setState(() {
-      _currentAsset = asset;
-      _errorMessage = error;
+      _currentAsset = next.asset;
+      _errorMessage = next.error;
       _isVisible = true;
     });
     
-    _controller.forward();
+    await _controller.forward();
 
     // Auto-hide after 6 seconds
-    Timer(const Duration(seconds: 6), () {
-      if (mounted && _isVisible) {
-        _hideNotification();
-      }
-    });
+    await Future.delayed(const Duration(seconds: 6));
+    
+    if (mounted && _isVisible) {
+      await _hideNotification();
+    }
   }
 
-  void _hideNotification() {
-    _controller.reverse().then((_) {
-      if (mounted) {
-        setState(() {
-          _isVisible = false;
-          _currentAsset = null;
-          _errorMessage = null;
-        });
-      }
-    });
+  Future<void> _hideNotification() async {
+    await _controller.reverse();
+    if (mounted) {
+      setState(() {
+        _isVisible = false;
+        _currentAsset = null;
+        _errorMessage = null;
+      });
+      // Start next one after a small delay
+      await Future.delayed(const Duration(milliseconds: 300));
+      _processNextInQueue();
+    }
   }
 
   @override

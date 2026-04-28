@@ -196,12 +196,7 @@ class _AiFilterPageState extends State<AiFilterPage>
         child: Column(
           children: [
             if (_pageState == _PageState.selection)
-              StreamBuilder<int>(
-                stream: _creditService.creditStream,
-                initialData: _creditService.credits,
-                builder: (context, snapshot) =>
-                    topBar(context, credits: snapshot.data ?? 0),
-              ),
+              const TopBar(),
             _buildCustomNav(isDark),
             Expanded(
               child: switch (_pageState) {

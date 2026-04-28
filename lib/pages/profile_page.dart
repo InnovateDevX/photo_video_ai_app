@@ -19,6 +19,9 @@ import 'package:trail_ai_app/pages/edit_profile_page.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/pages/reels_page.dart';
 import 'package:trail_ai_app/Services/thumbnail_service.dart';
+import 'package:trail_ai_app/Widgets/profile_header.dart';
+import 'package:trail_ai_app/Widgets/stats_row.dart';
+import 'package:trail_ai_app/Widgets/pro_pill.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -135,204 +138,27 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               children: [
                 // Header with Gradient and Avatar
-                SizedBox(
-                  height: h * 0.35,
-                  child: Stack(
-                    children: [
-                      // Upper Gradient Background
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: h * 0.25,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFF8A6445),
-                                Color(0xFFD6BBA0),
-                                Color(0xFF8A6445),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Top Bar (Back Button + Pro Pill)
-                      SafeArea(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: w * 0.04,
-                            vertical: h * 0.01,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Material(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                shape: const CircleBorder(),
-                                clipBehavior: Clip.hardEdge,
-                                child: InkWell(
-                                  onTap: () {
-                                    if (Navigator.canPop(context)) {
-                                      Navigator.pop(context);
-                                    } else {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        AppRoutes.home,
-                                      );
-                                    }
-                                  },
-                                  child: Padding(
-                                    padding: EdgeInsets.all(w * 0.025),
-                                    child: Icon(
-                                      Icons.arrow_back_ios_new,
-                                      size: w * 0.045,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              _buildProPill(w, h, isDark),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Avatar
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.all(w * 0.01),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.backgroundColor(isDark),
-                            ),
-                            child: CircleAvatar(
-                              radius: w * 0.16,
-                              backgroundColor:
-                                  AppColors.profileAvatarBackground(isDark),
-                              backgroundImage: (photoUrl != null)
-                                  ? NetworkImage(photoUrl)
-                                  : const AssetImage(
-                                          'assets/iconamoon_profile-light.png',
-                                        )
-                                        as ImageProvider,
-                              child: (photoUrl == null)
-                                  ? Icon(
-                                      Icons.person,
-                                      size: w * 0.15,
-                                      color: Colors.white,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: h * 0.015),
-
-                // User Info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      displayName,
-                      style: TextStyle(
-                        fontSize: w * 0.06,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textColor(isDark),
-                      ),
-                    ),
-                    SizedBox(width: w * 0.02),
-                    Container(
-                      padding: EdgeInsets.all(w * 0.01),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE46633),
-                        borderRadius: BorderRadius.circular(w * 0.015),
-                      ),
-                      child: Icon(
-                        Icons.link,
-                        size: w * 0.035,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: h * 0.005),
-                Text(
-                  handle,
-                  style: TextStyle(
-                    fontSize: w * 0.035,
-                    color: AppColors.profileHandle(isDark),
-                  ),
-                ),
-                SizedBox(height: h * 0.01),
-                Text(
-                  bio,
-                  style: TextStyle(
-                    fontSize: w * 0.035,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textColor(isDark),
-                  ),
-                  textAlign: TextAlign.center,
+                ProfileHeader(
+                  w: w,
+                  h: h,
+                  isDark: isDark,
+                  displayName: displayName,
+                  handle: handle,
+                  bio: bio,
+                  photoUrl: photoUrl,
+                  isGuest: isGuest,
+                  proPill: ProPill(w: w, h: h, isDark: isDark),
                 ),
 
                 SizedBox(height: h * 0.03),
 
                 // Stats Row
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: w * 0.05),
-                  child: Row(
-                    children: [
-                      _buildStatCard(
-                        w,
-                        h,
-                        isDark,
-                        Icons.remove_red_eye_outlined,
-                        '0 ${'views_stat_label'.i18n()}',
-                      ),
-                      SizedBox(width: w * 0.03),
-                      // FIX: Use cached list length — never flickers to 0
-                      // Saved Reels Count
-                      StreamBuilder<List<Reel>>(
-                        stream: _savedReelsStream,
-                        builder: (context, snapshot) {
-                          final count = snapshot.data?.length ?? 0;
-                          return _buildStatCard(
-                            w,
-                            h,
-                            isDark,
-                            Icons.download_outlined,
-                            '$count ${'downloads_stat_label'.i18n()}',
-                          );
-                        },
-                      ),
-                      SizedBox(width: w * 0.03),
-                      // Liked Reels Count
-                      StreamBuilder<List<Reel>>(
-                        stream: _likedReelsStream,
-                        builder: (context, snapshot) {
-                          final count = snapshot.data?.length ?? 0;
-                          return _buildStatCard(
-                            w,
-                            h,
-                            isDark,
-                            Icons.star_border,
-                            '$count ${'liked_stat_label'.i18n()}',
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                StatsRow(
+                  w: w,
+                  h: h,
+                  isDark: isDark,
+                  savedReelsStream: _savedReelsStream,
+                  likedReelsStream: _likedReelsStream,
                 ),
 
                 SizedBox(height: h * 0.03),
@@ -919,37 +745,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatCard(
-    double w,
-    double h,
-    bool isDark,
-    IconData icon,
-    String label,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: h * 0.015),
-        decoration: BoxDecoration(
-          color: AppColors.profileStatCardBackground(isDark),
-          borderRadius: BorderRadius.circular(w * 0.03),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: w * 0.05, color: AppColors.textColor(isDark)),
-            SizedBox(height: h * 0.005),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: w * 0.03,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textColor(isDark),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildLoginPrompt(double w, double h, bool isDark) {
     return Container(
@@ -1064,65 +860,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProPill(double w, double h, bool isDark) {
-    return StreamBuilder<int>(
-      stream: CreditService().creditStream,
-      initialData: CreditService().credits,
-      builder: (context, snapshot) {
-        final credits = snapshot.data ?? 0;
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(w * 0.08),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: w * 0.03,
-                  vertical: h * 0.008,
-                ),
-                decoration: ProGradientDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(w * 0.08)),
-                ),
-                child: Text(
-                  'Pro',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: w * 0.032,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(
-                  left: w * 0.015,
-                  right: w * 0.03,
-                  top: h * 0.005,
-                  bottom: h * 0.005,
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.bolt, color: Colors.white, size: w * 0.045),
-                    SizedBox(width: w * 0.005),
-                    Text(
-                      '$credits',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: w * 0.035,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

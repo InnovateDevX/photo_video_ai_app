@@ -224,11 +224,7 @@ class _AiCollageViewState extends State<_AiCollageView>
             child: Column(
               children: [
                 // ── Global credits top-bar ──
-                StreamBuilder<int>(
-                  stream: context.read<CollageBloc>().creditStream,
-                  initialData: context.read<CollageBloc>().credits,
-                  builder: (ctx, snap) => topBar(ctx, credits: snap.data ?? 0),
-                ),
+                const TopBar(),
                 SizedBox(height: MediaQuery.of(context).size.height * 0.015),
 
                 // ── Page-level top bar ──

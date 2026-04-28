@@ -9,13 +9,16 @@ import '../Services/credit_service.dart';
 import '../Services/generation_gate.dart';
 import '../Widgets/generation_bottom_bar.dart';
 import '../Widgets/topbar.dart';
-import 'package:video_player/video_player.dart';
+import '../Widgets/menu_overlay.dart';
+import '../Widgets/prompt_input.dart';
+import '../Widgets/video_result_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 import '../Services/background_generation_service.dart';
 import '../Services/content_safety_service.dart';
+import '../Helpers/image_picker_helper.dart';
 
 class GenerationPage extends StatefulWidget {
   final String initialCategory;
@@ -79,9 +82,9 @@ class _GenerationPageState extends State<GenerationPage> {
   String _selectedResolution = '720p';
   bool _enhancePrompt = false;
 
-  // Video Player State
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
+  // Two-stage pipeline model selection (used only in imageEditMode)
+  AIModelConfig? _selectedImageModel; // Stage 1 — image edit
+  AIModelConfig? _selectedVideoModel; // Stage 2 — video generation
 
   @override
   void initState() {
@@ -90,30 +93,26 @@ class _GenerationPageState extends State<GenerationPage> {
     if (widget.initialPrompt != null) {
       _promptController.text = widget.initialPrompt!;
     }
+
+    // Portrait aspect ratio for Reel templates (both image edit & video)
+    if (widget.imageEditMode) {
+      _selectedAspectRatio = '9:16';
+    }
+
     _initializeService();
 
-    if (widget.imageEditMode) {
+    if (widget.imageEditMode || widget.initialIsEditable) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "🎨 Two-stage mode: Upload a photo → AI edits it → generates a video!",
-            ),
-            duration: Duration(seconds: 5),
-          ),
-        );
+        _triggerAutoImagePicker();
       });
-    } else if (widget.initialIsEditable) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Template loaded! Upload your photo to use this style.",
-            ),
-            duration: Duration(seconds: 4),
-          ),
-        );
-      });
+    }
+  }
+
+  Future<void> _triggerAutoImagePicker() async {
+    if (!mounted) return;
+    final file = await ImagePickerHelper.pickAndCropImage(context);
+    if (file != null && mounted) {
+      setState(() => _selectedImage = file);
     }
   }
 
@@ -121,7 +120,18 @@ class _GenerationPageState extends State<GenerationPage> {
     await _replicateService.initialize();
     await _creditService.initialize();
     if (mounted) {
-      setState(() => _updateSelectedModel());
+      setState(() {
+        _updateSelectedModel();
+        // For two-stage pipeline, initialize both models
+        if (widget.imageEditMode) {
+          if (_replicateService.imageModels.isNotEmpty) {
+            _selectedImageModel = _replicateService.imageModels.first;
+          }
+          if (_replicateService.videoModels.isNotEmpty) {
+            _selectedVideoModel = _replicateService.videoModels.first;
+          }
+        }
+      });
     }
   }
 
@@ -141,8 +151,10 @@ class _GenerationPageState extends State<GenerationPage> {
   }
 
   void _syncOptionsToModel() {
-    if (_selectedModel == null) return;
-    final options = _selectedModel!.options;
+    // In imageEditMode, settings like duration/aspect-ratio are governed by the video model (Stage 2)
+    final model = widget.imageEditMode ? _selectedVideoModel : _selectedModel;
+    if (model == null) return;
+    final options = model.options;
 
     if (options.hasDurations) {
       if (!options.durations.contains(_selectedDuration)) {
@@ -166,7 +178,6 @@ class _GenerationPageState extends State<GenerationPage> {
     _promptController.dispose();
     _widthController.dispose();
     _heightController.dispose();
-    _videoController?.dispose();
     super.dispose();
   }
 
@@ -207,9 +218,6 @@ class _GenerationPageState extends State<GenerationPage> {
         _generatedImageUrl = null;
       } else {
         _generatedVideoUrl = null;
-        _isVideoInitialized = false;
-        _videoController?.dispose();
-        _videoController = null;
       }
     });
 
@@ -425,9 +433,6 @@ class _GenerationPageState extends State<GenerationPage> {
         aspectRatio = _selectedAspectRatio;
       }
 
-      debugPrint(
-        '🔥 [GenerationPage] Calling ReplicateService.generateContent...',
-      );
       final url = await _replicateService.generateContent(
         modelConfig: _selectedModel!,
         prompt: prompt,
@@ -454,11 +459,6 @@ class _GenerationPageState extends State<GenerationPage> {
 
       // Deduct credits on success
       await _creditService.deductCredits(_selectedModel?.creditUsed ?? 0);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
-      }
 
       if (mounted) {
         setState(() {
@@ -469,52 +469,21 @@ class _GenerationPageState extends State<GenerationPage> {
           }
         });
 
-        if (_selectedCategory == 'video') {
-          _initializeVideoPlayer(url);
-        }
+        // Also save locally immediately for "My Assets"
+        BackgroundGenerationService().saveAndNotifyAsset(
+          url: url,
+          category: _selectedCategory,
+          prompt: prompt,
+        );
       }
     } catch (e) {
       if (mounted) {
-        if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
-        } else if (e.toString().toLowerCase().contains('timeout')) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('timeout_title'.i18n()),
-              content: Text('timeout_message'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+        );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isGenerating = false;
-        });
-      }
+      if (mounted) setState(() => _isGenerating = false);
     }
   }
 
@@ -538,8 +507,10 @@ class _GenerationPageState extends State<GenerationPage> {
       return;
     }
 
-    final videoModels = _replicateService.videoModels;
-    if (videoModels.isEmpty) {
+    final imageModel = _selectedImageModel ?? _selectedModel!;
+    final videoModel =
+        _selectedVideoModel ?? _replicateService.videoModels.firstOrNull;
+    if (videoModel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No video model available.')),
       );
@@ -548,7 +519,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
     // Credit gate — charge cost of both models
     final totalCost =
-        (_selectedModel?.creditUsed ?? 0) + (videoModels.first.creditUsed);
+        (imageModel.creditUsed) + (videoModel.creditUsed);
 
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
@@ -558,9 +529,6 @@ class _GenerationPageState extends State<GenerationPage> {
       _isGenerating = true;
       _generatedImageUrl = null;
       _generatedVideoUrl = null;
-      _isVideoInitialized = false;
-      _videoController?.dispose();
-      _videoController = null;
     });
 
     // ── 2. Ad gate ──────────────────────────────────────────────────────────
@@ -576,81 +544,200 @@ class _GenerationPageState extends State<GenerationPage> {
       return;
     }
 
+    // ── 3. Background Activity Prompt ──────────────────────────────────────────
+    bool runInBackground = false;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final sw = MediaQuery.of(context).size.width;
+
+    runInBackground =
+        await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            final sw = MediaQuery.of(context).size.width;
+            final sh = MediaQuery.of(context).size.height;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              child: Container(
+                padding: EdgeInsets.all(sw * 0.06),
+                decoration: BoxDecoration(
+                  color: AppColors.tileBackgroundColor(isDark),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.creditsCardBorder(isDark),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Icon Header
+                    Container(
+                      padding: EdgeInsets.all(sw * 0.04),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9800).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_motion_rounded,
+                        color: const Color(0xFFFF9800),
+                        size: sw * 0.08,
+                      ),
+                    ),
+                    SizedBox(height: sh * 0.025),
+
+                    // Title
+                    Text(
+                      'generating'.i18n(),
+                      style: TextStyle(
+                        color: AppColors.textColor(isDark),
+                        fontSize: sw * 0.055,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: sh * 0.015),
+
+                    // Description
+                    Text(
+                      'Template generation involves multiple AI stages and may take 2-4 minutes. You can wait here or continue using the app.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.secondaryTextColor(isDark),
+                        fontSize: sw * 0.035,
+                        height: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: sh * 0.04),
+
+                    // Actions
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Run in Background (Primary)
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context, true),
+                          child: Container(
+                            height: sh * 0.065,
+                            decoration: ProGradientDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Run in Background',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: sw * 0.04,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Wait Here (Secondary)
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              vertical: sh * 0.015,
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(
+                            'Wait Here',
+                            style: TextStyle(
+                              color: AppColors.secondaryTextColor(isDark),
+                              fontWeight: FontWeight.w600,
+                              fontSize: sw * 0.038,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ) ??
+        false;
+
+    if (runInBackground) {
+      // Deduct credits immediately
+      await _creditService.deductCredits(totalCost);
+
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Two-stage generation started in background. Credits deducted.',
+            ),
+          ),
+        );
+        Navigator.pop(context); // Exit page
+      }
+
+      BackgroundGenerationService().startTwoStageBackgroundGeneration(
+        imageModel: imageModel,
+        videoModel: videoModel,
+        imagePrompt: widget.imagePrompt,
+        videoPrompt: widget.videoPrompt,
+        referenceImage: _selectedImage,
+        aspectRatio: _selectedAspectRatio,
+      );
+      return;
+    }
+
+    // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
-      // ── Stage 1: image editing ──────────────────────────────────────────
-      debugPrint(
-        '🎨 [TwoStage] Stage 1 — image editing with model: ${_selectedModel!.name}',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎨 Stage 1/2: Editing your photo…'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-
+      // Stage 1: Image Edit
       final editedImageUrl = await _replicateService.generateContent(
-        modelConfig: _selectedModel!,
+        modelConfig: imageModel,
         prompt: widget.imagePrompt,
-        referenceImage:
-            _selectedModel!.iseditable && !_hasImagesArray(_selectedModel!)
-            ? _selectedImage
-            : null,
-        images:
-            _selectedModel!.iseditable &&
-                _hasImagesArray(_selectedModel!) &&
-                _selectedImage != null
-            ? [_selectedImage!]
-            : null,
+        referenceImage: _selectedImage,
+        aspectRatio:
+            imageModel.supportsAspectRatio ? _selectedAspectRatio : null,
       );
 
-      debugPrint('✅ [TwoStage] Stage 1 result: $editedImageUrl');
-
-      // Download the edited image to a temp file for Stage 2
       final tempFile = await _downloadToTempFile(editedImageUrl);
-      debugPrint('✅ [TwoStage] Temp file saved: ${tempFile.path}');
 
-      // ── Stage 2: video generation ───────────────────────────────────────
-      debugPrint(
-        '🎬 [TwoStage] Stage 2 — video generation with model: ${videoModels.first.name}',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎬 Stage 2/2: Generating video…'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-
+      // Stage 2: Video Generation
       final videoUrl = await _replicateService.generateContent(
-        modelConfig: videoModels.first,
+        modelConfig: videoModel,
         prompt: widget.videoPrompt,
-        referenceImage:
-            videoModels.first.iseditable && !_hasImagesArray(videoModels.first)
-            ? tempFile
-            : null,
-        images:
-            videoModels.first.iseditable && _hasImagesArray(videoModels.first)
-            ? [tempFile]
-            : null,
+        referenceImage: tempFile,
+        aspectRatio:
+            videoModel.supportsAspectRatio ? _selectedAspectRatio : null,
+        extraVariables: {
+          'duration': int.tryParse(_selectedDuration.replaceAll('s', '')),
+          'resolution': _selectedResolution,
+        },
       );
 
-      debugPrint('✅ [TwoStage] Final video URL: $videoUrl');
-
-      // Deduct total credits
+      // Deduct credits on success
       await _creditService.deductCredits(totalCost);
 
       if (mounted) {
         setState(() {
-          _selectedCategory = 'video';
           _generatedVideoUrl = videoUrl;
+          _selectedCategory = 'video';
         });
-        _initializeVideoPlayer(videoUrl);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
+
+        // Also save locally immediately for "My Assets"
+        BackgroundGenerationService().saveAndNotifyAsset(
+          url: videoUrl,
+          category: 'video',
+          prompt: widget.videoPrompt,
+        );
       }
 
       // Clean up temp file
@@ -659,39 +746,9 @@ class _GenerationPageState extends State<GenerationPage> {
       } catch (_) {}
     } catch (e) {
       if (mounted) {
-        if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
-        } else if (e.toString().toLowerCase().contains('timeout')) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('timeout_title'.i18n()),
-              content: Text('timeout_message'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Two-stage error: ${e.toString()}')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -712,41 +769,6 @@ class _GenerationPageState extends State<GenerationPage> {
     );
     await file.writeAsBytes(response.bodyBytes);
     return file;
-  }
-
-  Future<void> _initializeVideoPlayer(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      final controller = VideoPlayerController.networkUrl(
-        uri,
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      );
-      _videoController = controller;
-
-      await controller.initialize();
-
-      if (mounted) {
-        setState(() {
-          _isVideoInitialized = true;
-        });
-        await controller.setLooping(true);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) controller.play();
-        });
-
-        controller.addListener(() {
-          if (!mounted) return;
-          final value = controller.value;
-          if (value.position >= value.duration &&
-              value.duration > Duration.zero) {
-            controller.seekTo(Duration.zero);
-            controller.play();
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Error initializing generated video player: $e');
-    }
   }
 
   @override
@@ -772,7 +794,6 @@ class _GenerationPageState extends State<GenerationPage> {
                     _buildHeader(
                       screenWidth,
                       screenHeight,
-                      currentCredits,
                       isDark,
                     ),
 
@@ -794,7 +815,14 @@ class _GenerationPageState extends State<GenerationPage> {
                       const Spacer(),
 
                     // Prompt Input
-                    _buildPromptInput(screenWidth, screenHeight, isDark),
+                    PromptInput(
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                      isDark: isDark,
+                      controller: _promptController,
+                      selectedImage: _selectedImage,
+                      onRemoveImage: () => setState(() => _selectedImage = null),
+                    ),
                     Padding(
                       padding: EdgeInsets.only(
                         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -807,13 +835,23 @@ class _GenerationPageState extends State<GenerationPage> {
                         isImageSelected: _selectedCategory == 'image',
                         isVideoSelected: _selectedCategory == 'video',
                         currentCredits: currentCredits,
-                        creditCost: _selectedModel?.creditUsed ?? 0,
+                        creditCost: widget.imageEditMode
+                            ? (_selectedImageModel?.creditUsed ?? 0) +
+                                  (_selectedVideoModel?.creditUsed ?? 0)
+                            : (_selectedModel?.creditUsed ?? 0),
                         // Models
                         imageModels: _replicateService.imageModels,
                         videoModels: _replicateService.videoModels,
                         selectedModel: _selectedModel,
                         modelOptions: _selectedModel?.options,
                         selectedImage: _selectedImage,
+                        imageEditMode: widget.imageEditMode,
+                        selectedImageModel: _selectedImageModel,
+                        selectedVideoModel: _selectedVideoModel,
+                        onImageModelSelected: (m) =>
+                            setState(() => _selectedImageModel = m),
+                        onVideoModelSelected: (m) =>
+                            setState(() => _selectedVideoModel = m),
                         onModelSelected: (m) => setState(() {
                           _selectedModel = m;
                           _syncOptionsToModel();
@@ -840,17 +878,12 @@ class _GenerationPageState extends State<GenerationPage> {
                           setState(() {
                             _selectedCategory = 'image';
                             _updateSelectedModel();
-                            _videoController?.pause();
                           });
                         },
                         onVideoPressed: () {
                           setState(() {
                             _selectedCategory = 'video';
                             _updateSelectedModel();
-                            if (_isVideoInitialized &&
-                                _videoController != null) {
-                              _videoController!.play();
-                            }
                           });
                         },
                       ),
@@ -860,7 +893,30 @@ class _GenerationPageState extends State<GenerationPage> {
 
                 // Menu Overlay
                 if (_showMenu)
-                  _buildMenuOverlay(screenWidth, screenHeight, isDark),
+                  MenuOverlay(
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
+                    isDark: isDark,
+                    onRecreate: () {
+                      setState(() => _showMenu = false);
+                      _generateContent();
+                    },
+                    onUseSettings: () {
+                      setState(() => _showMenu = false);
+                      // TODO: Implement using settings from generated content
+                    },
+                    onDownload: () {
+                      setState(() => _showMenu = false);
+                      // TODO: Implement batch download
+                    },
+                    onDelete: () {
+                      setState(() {
+                        _showMenu = false;
+                        _generatedImageUrl = null;
+                        _generatedVideoUrl = null;
+                      });
+                    },
+                  ),
               ],
             ),
           ),
@@ -872,7 +928,6 @@ class _GenerationPageState extends State<GenerationPage> {
   Widget _buildHeader(
     double screenWidth,
     double screenHeight,
-    int currentCredits,
     bool isDark,
   ) {
     return Padding(
@@ -882,7 +937,7 @@ class _GenerationPageState extends State<GenerationPage> {
       ),
       child: Column(
         children: [
-          topBar(context, credits: currentCredits),
+          const TopBar(),
           SizedBox(height: screenHeight * 0.012),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -972,19 +1027,10 @@ class _GenerationPageState extends State<GenerationPage> {
         ),
       );
     } else {
-      if (_isVideoInitialized && _videoController != null) {
-        return Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(screenWidth * 0.06),
-            child: AspectRatio(
-              aspectRatio: _videoController!.value.aspectRatio,
-              child: VideoPlayer(_videoController!),
-            ),
-          ),
-        );
-      } else {
-        return const Center(child: CircularProgressIndicator());
-      }
+      return VideoResultView(
+        videoUrl: _generatedVideoUrl!,
+        borderRadius: screenWidth * 0.06,
+      );
     }
   }
 
@@ -1014,210 +1060,6 @@ class _GenerationPageState extends State<GenerationPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPromptInput(
-    double screenWidth,
-    double screenHeight,
-    bool isDark,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: screenHeight * 0.01,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(screenWidth * 0.02),
-                decoration: const ProGradientDecoration(shape: BoxShape.circle),
-                child: Icon(
-                  Icons.auto_awesome,
-                  color: Colors.white,
-                  size: screenWidth * 0.04,
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.02),
-              Text(
-                'describe_content'.i18n(),
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: screenWidth * 0.038,
-                  color: AppColors.textColor(isDark),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-          child: Container(
-            padding: EdgeInsets.all(screenWidth * 0.03),
-            decoration: BoxDecoration(
-              color: AppColors.tileBackgroundColor(isDark),
-              borderRadius: BorderRadius.circular(screenWidth * 0.05),
-              border: Border.all(color: AppColors.creditsCardBorder(isDark)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Reference image thumbnail inside the prompt box
-                if (_selectedImage != null) ...[
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          screenWidth * 0.025,
-                        ),
-                        child: Image.file(
-                          _selectedImage!,
-                          height: screenWidth * 0.2,
-                          width: screenWidth * 0.2,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: screenWidth * 0.005,
-                        right: screenWidth * 0.005,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _selectedImage = null),
-                          child: Container(
-                            padding: EdgeInsets.all(screenWidth * 0.008),
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: screenWidth * 0.035,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: screenHeight * 0.01),
-                ],
-                TextField(
-                  controller: _promptController,
-                  maxLines: 4, // Increased slightly for better multiline feel
-                  minLines: 1,
-                  style: TextStyle(
-                    color: AppColors.textColor(isDark),
-                    fontSize: screenWidth * 0.04, // Slightly larger text
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'prompt_placeholder'.i18n(),
-                    hintStyle: TextStyle(
-                      color: AppColors.secondaryTextColor(
-                        isDark,
-                      ).withOpacity(0.5),
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: screenHeight * 0.01,
-                      horizontal: screenWidth * 0.01,
-                    ), // Better text positioning
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMenuOverlay(
-    double screenWidth,
-    double screenHeight,
-    bool isDark,
-  ) {
-    return Positioned(
-      top: screenHeight * 0.075,
-      right: screenWidth * 0.04,
-      child: Container(
-        width: screenWidth * 0.5,
-        padding: EdgeInsets.all(screenWidth * 0.04),
-        decoration: BoxDecoration(
-          color: AppColors.creditsCardBackground(isDark),
-          borderRadius: BorderRadius.circular(screenWidth * 0.04),
-          border: Border.all(color: AppColors.creditsCardBorder(isDark)),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: screenWidth * 0.025,
-                offset: Offset(0, screenHeight * 0.005),
-              ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMenuItem(
-              Icons.refresh,
-              'recreate'.i18n(),
-              screenWidth,
-              isDark: isDark,
-            ),
-            SizedBox(height: screenHeight * 0.015),
-            _buildMenuItem(
-              Icons.settings,
-              'use_setting'.i18n(),
-              screenWidth,
-              isDark: isDark,
-            ),
-            SizedBox(height: screenHeight * 0.015),
-            _buildMenuItem(
-              Icons.download,
-              'download_batch'.i18n(),
-              screenWidth,
-              isDark: isDark,
-            ),
-            SizedBox(height: screenHeight * 0.015),
-            _buildMenuItem(
-              Icons.delete,
-              'delete'.i18n(),
-              screenWidth,
-              isRed: true,
-              isDark: isDark,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(
-    IconData icon,
-    String text,
-    double screenWidth, {
-    bool isRed = false,
-    bool isDark = false,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: isRed ? Colors.red : AppColors.textColor(isDark),
-          size: screenWidth * 0.045,
-        ),
-        SizedBox(width: screenWidth * 0.03),
-        Text(
-          text,
-          style: TextStyle(
-            color: isRed ? Colors.red : AppColors.textColor(isDark),
-            fontWeight: FontWeight.w500,
-            fontSize: screenWidth * 0.038,
-          ),
-        ),
-      ],
     );
   }
 }
