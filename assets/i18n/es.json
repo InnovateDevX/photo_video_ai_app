@@ -127,6 +127,8 @@
     "use_template": "Usar plantilla",
     "share_action": "Compartir",
     "share_message": "¡Mira esta creación!",
+    "restricted_content_detected": "Contenido restringido detectado. Por favor, modifique su prompt e inténtelo de nuevo.",
+    "nsfw_image_detected": "Contenido restringido detectado en la imagen. Por favor, elija una imagen diferente.",
     "guest": "Invitado",
     "default_bio": "¡Hola! Mi nombre es %s y bienvenido a mi perfil!",
     "views_stat_label": "Vistas",

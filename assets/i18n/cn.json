@@ -193,6 +193,8 @@
     "use_template": "使用模板",
     "share_action": "分享",
     "share_message": "看看这个作品！",
+    "restricted_content_detected": "检测到受限内容。请修改您的提示词并重试。",
+    "nsfw_image_detected": "检测到图片中包含受限内容。请选择另一张图片。",
     "guest": "访客",
     "default_bio": "你好！我叫 %s，欢迎来到我的个人中心！",
     "views_stat_label": "观看次",

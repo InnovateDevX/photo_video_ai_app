@@ -193,6 +193,8 @@
     "use_template": "Şablon kullan",
     "share_action": "Paylaş",
     "share_message": "Bu oluşturmayı incele!",
+    "restricted_content_detected": "Kısıtlanmış içerik algılandı. Lütfen isteminizi değiştirin ve tekrar deneyin.",
+    "nsfw_image_detected": "Görselde kısıtlanmış içerik algılandı. Lütfen farklı bir görsel seçin.",
     "guest": "Misafir",
     "default_bio": "Merhaba! Benim adım %s, profilime hoş geldiniz!",
     "views_stat_label": "Görüntüleme",

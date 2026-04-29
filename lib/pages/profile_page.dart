@@ -7,7 +7,6 @@ import 'package:localization/localization.dart';
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:trail_ai_app/Core/routes.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/profile_service.dart';
 import 'package:trail_ai_app/Services/reel_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
@@ -35,7 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final ProfileService _profileService = ProfileService();
   final ReelService _reelService = ReelService();
   static final _processingIds = <String>{};
-  
+
   late Stream<List<Reel>> _likedReelsStream;
   late Stream<List<Reel>> _savedReelsStream;
 
@@ -80,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     // Initial setup
     _ensureStreamsInitialized(FirebaseAuth.instance.currentUser?.uid);
-    
+
     // Listen for auth changes (Login/Logout)
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (mounted) {
@@ -252,16 +251,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: EdgeInsets.symmetric(horizontal: w * 0.05),
                   child: _selectedTabIndex == 0
                       ? _buildPersistentAssetsGrid(w, h, isDark)
-                      : (isGuest 
-                          ? _buildLoginPrompt(w, h, isDark)
-                          : _buildReelsGrid(
-                              w,
-                              h,
-                              isDark,
-                              _selectedTabIndex == 1
-                                  ? _savedReelsStream
-                                  : _likedReelsStream,
-                            )),
+                      : (isGuest
+                            ? _buildLoginPrompt(w, h, isDark)
+                            : _buildReelsGrid(
+                                w,
+                                h,
+                                isDark,
+                                _selectedTabIndex == 1
+                                    ? _savedReelsStream
+                                    : _likedReelsStream,
+                              )),
                 ),
 
                 SizedBox(height: h * 0.15),
@@ -745,8 +744,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-
-
   Widget _buildLoginPrompt(double w, double h, bool isDark) {
     return Container(
       height: h * 0.4,
@@ -769,14 +766,18 @@ class _ProfilePageState extends State<ProfilePage> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _selectedTabIndex == 1 ? Icons.collections_bookmark : Icons.favorite,
+              _selectedTabIndex == 1
+                  ? Icons.collections_bookmark
+                  : Icons.favorite,
               color: AppColors.videoCategoryColor,
               size: w * 0.1,
             ),
           ),
           SizedBox(height: h * 0.03),
           Text(
-            _selectedTabIndex == 1 ? 'login_to_view_collections'.i18n() : 'login_to_view_liked'.i18n(),
+            _selectedTabIndex == 1
+                ? 'login_to_view_collections'.i18n()
+                : 'login_to_view_liked'.i18n(),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: w * 0.045,
@@ -859,8 +860,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
     );
   }
-
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:trail_ai_app/Services/subscription_service.dart';
 
@@ -49,7 +48,11 @@ class _PaywallPageState extends State<PaywallPage> {
                       border: Border.all(color: Colors.white24),
                     ),
                     padding: const EdgeInsets.all(8),
-                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),

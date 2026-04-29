@@ -194,6 +194,7 @@
     "share_action": "Share",
     "share_message": "Check out this creation!",
     "restricted_content_detected": "Restricted content detected. Please modify your prompt and try again.",
+    "nsfw_image_detected": "Restricted content detected in the image. Please choose a different image.",
     "guest": "Guest",
     "default_bio": "Hi! My name is %s and welcome to my profile!",
     "views_stat_label": "Views",

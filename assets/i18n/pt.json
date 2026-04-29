@@ -193,6 +193,8 @@
     "use_template": "Usar modelo",
     "share_action": "Compartilhar",
     "share_message": "Confira esta criação!",
+    "restricted_content_detected": "Conteúdo restrito detectado. Modifique seu comando e tente novamente.",
+    "nsfw_image_detected": "Conteúdo restrito detectado na imagem. Escolha uma imagem diferente.",
     "guest": "Convidado",
     "default_bio": "Olá! Meu nome é %s e bem-vindo ao meu perfil!",
     "views_stat_label": "Visualizações",

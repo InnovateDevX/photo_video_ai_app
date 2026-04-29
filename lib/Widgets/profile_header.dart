@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:trail_ai_app/Core/colors.dart';
-import 'package:localization/localization.dart';
 import 'package:trail_ai_app/Core/routes.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -106,8 +105,9 @@ class ProfileHeader extends StatelessWidget {
                     ),
                     child: CircleAvatar(
                       radius: w * 0.16,
-                      backgroundColor:
-                          AppColors.profileAvatarBackground(isDark),
+                      backgroundColor: AppColors.profileAvatarBackground(
+                        isDark,
+                      ),
                       backgroundImage: (photoUrl != null)
                           ? NetworkImage(photoUrl!)
                           : const AssetImage(
@@ -147,11 +147,7 @@ class ProfileHeader extends StatelessWidget {
                 color: const Color(0xFFE46633),
                 borderRadius: BorderRadius.circular(w * 0.015),
               ),
-              child: Icon(
-                Icons.link,
-                size: w * 0.035,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.link, size: w * 0.035, color: Colors.white),
             ),
           ],
         ),

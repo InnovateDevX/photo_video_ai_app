@@ -127,6 +127,8 @@
     "use_template": "Utiliser le modèle",
     "share_action": "Partager",
     "share_message": "Découvrez cette création !",
+    "restricted_content_detected": "Contenu restreint détecté. Veuillez modifier votre invite et réessayer.",
+    "nsfw_image_detected": "Contenu restreint détecté dans l'image. Veuillez choisir une image différente.",
     "guest": "Invité",
     "default_bio": "Bonjour ! Je m'appelle %s et bienvenue sur mon profil !",
     "views_stat_label": "Vues",

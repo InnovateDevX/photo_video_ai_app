@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trail_ai_app/Widgets/image_crop_page.dart';
 import 'package:localization/localization.dart';
+import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/nsfw_dialog_helper.dart';
 
 class ImagePickerHelper {
   /// Opens a bottom sheet to pick between Gallery and Camera.
@@ -124,9 +126,41 @@ class ImagePickerHelper {
       ),
     );
 
+    if (croppedFile == null) return null;
+
+    // --- Safety Check ---
+    if (!context.mounted) return croppedFile;
+
+    try {
+      // Show checking overlay
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkImageFileSafe(croppedFile);
+      
+      if (context.mounted) Navigator.pop(context); // Remove loading
+    } catch (e) {
+      if (context.mounted) Navigator.pop(context); // Remove loading
+      
+      if (e is NsfwContentException) {
+        if (context.mounted) {
+          NsfwDialogHelper.showRestrictedContentDialog(context);
+        }
+        return null;
+      }
+      // Log other errors but don't block user
+      debugPrint('⚠️ [ImagePickerHelper] Safety check error: $e');
+    }
+
     return croppedFile;
   }
 }
+
 
 class _SourceTile extends StatelessWidget {
   final IconData icon;

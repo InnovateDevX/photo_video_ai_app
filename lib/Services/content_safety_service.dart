@@ -1,15 +1,16 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'remote_config_service.dart';
 
 /// Exception thrown when content is flagged by Azure Content Safety.
 class NsfwContentException implements Exception {
-  final String message;
-  NsfwContentException(this.message);
+  final String messageKey;
+  NsfwContentException(this.messageKey);
 
   @override
-  String toString() => message;
+  String toString() => messageKey;
 }
 
 class ContentSafetyService {
@@ -70,6 +71,12 @@ class ContentSafetyService {
     }
   }
 
+  /// Helper to check a [File] for safety.
+  Future<void> checkImageFileSafe(File file) async {
+    final bytes = await file.readAsBytes();
+    await checkImageSafe(bytes);
+  }
+
   /// Returns true if the [imageBytes] contains sexual content (severity > 1).
   /// Throws [NsfwContentException] if flagged.
   Future<void> checkImageSafe(Uint8List imageBytes) async {
@@ -81,7 +88,8 @@ class ContentSafetyService {
       debugPrint(
         '⚠️ [ContentSafetyService] Azure credentials not found. Skipping image check.',
       );
-      return;
+      // Throw exception to prevent NSFW images from being uploaded silently
+      throw NsfwContentException('azure_credentials_missing');
     }
 
     final uri = Uri.parse(
@@ -107,7 +115,7 @@ class ContentSafetyService {
         final json = jsonDecode(response.body);
         if (_isSexualContent(json)) {
           debugPrint('🚫 [ContentSafetyService] NSFW image detected!');
-          throw NsfwContentException('restricted_content_detected');
+          throw NsfwContentException('nsfw_image_detected');
         }
         debugPrint('✅ [ContentSafetyService] Image is safe.');
       } else {

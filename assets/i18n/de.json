@@ -193,6 +193,8 @@
     "use_template": "Vorlage verwenden",
     "share_action": "Teilen",
     "share_message": "Schau dir diese Kreation an!",
+    "restricted_content_detected": "Eingeschränkter Inhalt erkannt. Bitte passen Sie Ihren Prompt an und versuchen Sie es erneut.",
+    "nsfw_image_detected": "Eingeschränkter Inhalt im Bild erkannt. Bitte wählen Sie ein anderes Bild.",
     "guest": "Gast",
     "default_bio": "Hallo! Mein Name ist %s und willkommen auf meinem Profil!",
     "views_stat_label": "Aufrufe",

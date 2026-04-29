@@ -38,7 +38,7 @@ class ThumbnailService {
         return File(thumbPath);
       }
     } catch (e) {
-      debugPrint('❌ [ThumbnailService] extraction failed: $e');
+      debugPrint('❌ [ThumbnailService] extraction failed for $videoPath: $e');
     }
     return null;
   }
@@ -104,17 +104,31 @@ class ThumbnailService {
   static final Set<String> _processingReelIds = {};
 
   /// Process a public Reel: Generate thumbnail, upload to Storage, and update Firestore.
-  /// FIX: Removed backfill to liked/saved subcollections to prevent infinite snapshot loops.
-  Future<void> processReelThumbnail(Reel reel, String? uid) async {
-    if (reel.type != 'video' || reel.thumbnailUrl != null) return;
+  /// Returns the generated download URL if successful.
+  Future<String?> processReelThumbnail(Reel reel, String? uid) async {
+    debugPrint('🎥 [ThumbnailService] Entering processReelThumbnail for ${reel.id} (type: ${reel.type}, hasThumb: ${reel.thumbnailUrl != null})');
+    if (reel.type != 'video' || reel.thumbnailUrl != null) {
+      return reel.thumbnailUrl;
+    }
     
     // Prevent duplicate processing
-    if (_processingReelIds.contains(reel.id)) return;
+    if (_processingReelIds.contains(reel.id)) {
+      debugPrint('🎥 [ThumbnailService] Already processing thumbnail for ${reel.id}. Returning null.');
+      return null;
+    }
     _processingReelIds.add(reel.id);
 
+    if (reel.videoUrl.isEmpty) {
+      debugPrint('❌ [ThumbnailService] Cannot generate thumbnail: videoUrl is empty.');
+      _processingReelIds.remove(reel.id);
+      return null;
+    }
+
     debugPrint('🎥 [ThumbnailService] Generating thumbnail for Reel ${reel.id}');
+    debugPrint('🎥 [ThumbnailService] Video URL: ${reel.videoUrl}');
     final thumbFile = await _extractFrame(reel.videoUrl);
     if (thumbFile != null) {
+      debugPrint('✅ [ThumbnailService] Frame extracted: ${thumbFile.path}');
       try {
         final storageRef = _storage.ref().child(
           'reels/thumbnails/${reel.id}.jpg',
@@ -128,9 +142,11 @@ class ThumbnailService {
         });
         
         debugPrint('✅ [ThumbnailService] Reel thumbnail synced to public storage.');
+        return downloadUrl;
       } catch (e) {
-        if (e.toString().contains('unauthorized') && uid != null) {
-          debugPrint('⚠️ [ThumbnailService] Public storage unauthorized, saving to private folder...');
+        final errorStr = e.toString().toLowerCase();
+        if ((errorStr.contains('unauthorized') || errorStr.contains('permission-denied')) && uid != null) {
+          debugPrint('⚠️ [ThumbnailService] Public access denied, saving to private folder...');
           try {
             // Fallback: save to private storage if public upload fails
             final privateRef = _storage.ref().child('users/$uid/thumbnails/${reel.id}.jpg');
@@ -146,6 +162,7 @@ class ThumbnailService {
             
             await batch.commit();
             debugPrint('✅ [ThumbnailService] Private thumbnail synced and mirrored.');
+            return downloadUrl;
           } catch (privateError) {
             debugPrint('❌ [ThumbnailService] Private sync failed: $privateError');
           }
@@ -158,5 +175,6 @@ class ThumbnailService {
     } else {
       _processingReelIds.remove(reel.id);
     }
+    return null;
   }
 }

@@ -36,22 +36,20 @@ class MediaService {
         filePath = imageUrl;
       }
 
-      if (filePath != null) {
-        final success = await GallerySaver.saveImage(
-          filePath,
-          albumName: 'Trail AI',
+      final success = await GallerySaver.saveImage(
+        filePath,
+        albumName: 'Trail AI',
+      );
+      if (context.mounted && success == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Saved to gallery!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        if (context.mounted && success == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Saved to gallery!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          return File(filePath);
-        } else if (context.mounted) {
-          throw Exception('Failed to save to gallery');
-        }
+        return File(filePath);
+      } else if (context.mounted) {
+        throw Exception('Failed to save to gallery');
       }
       return null;
     } catch (e) {
@@ -95,22 +93,20 @@ class MediaService {
         filePath = videoUrl;
       }
 
-      if (filePath != null) {
-        final success = await GallerySaver.saveVideo(
-          filePath,
-          albumName: 'Trail AI',
+      final success = await GallerySaver.saveVideo(
+        filePath,
+        albumName: 'Trail AI',
+      );
+      if (context.mounted && success == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Video saved to gallery!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        if (context.mounted && success == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Video saved to gallery!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          return File(filePath);
-        } else if (context.mounted) {
-          throw Exception('Failed to save video to gallery');
-        }
+        return File(filePath);
+      } else if (context.mounted) {
+        throw Exception('Failed to save video to gallery');
       }
       return null;
     } catch (e) {
@@ -153,11 +149,9 @@ class MediaService {
         filePath = imageUrl;
       }
 
-      if (filePath != null) {
-        await Share.shareXFiles([
-          XFile(filePath),
-        ], text: shareText ?? 'share_outfit_text'.i18n());
-      }
+      await Share.shareXFiles([
+        XFile(filePath),
+      ], text: shareText ?? 'share_outfit_text'.i18n());
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -197,14 +191,12 @@ class MediaService {
         filePath = videoUrl;
       }
 
-      if (filePath != null) {
-        await Share.shareXFiles(
-          [XFile(filePath)],
-          text:
-              shareText ??
-              'Check out this video I generated with Trail AI!'.i18n(),
-        );
-      }
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        text:
+            shareText ??
+            'Check out this video I generated with Trail AI!'.i18n(),
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(

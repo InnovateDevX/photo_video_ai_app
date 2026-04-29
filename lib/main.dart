@@ -18,7 +18,6 @@ import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
 import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
 import 'firebase_options.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 
 void main() async {
   await runZonedGuarded(

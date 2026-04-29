@@ -1,8 +1,14 @@
+import 'package:trail_ai_app/Models/category_image.dart';
+import 'package:trail_ai_app/Models/reel.dart';
 import 'package:trail_ai_app/Widgets/topbar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:trail_ai_app/Services/thumbnail_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:trail_ai_app/pages/generation_page.dart';
 
 import 'package:trail_ai_app/pages/trending_see_all_page.dart';
 import 'dart:convert';
@@ -14,12 +20,13 @@ import '../Core/gradient.dart';
 import '../Core/colors.dart';
 import '../Services/credit_service.dart';
 import '../Services/data_service.dart';
+import '../Services/reel_service.dart';
 import '../Widgets/main_navigation.dart';
 import '../Widgets/ai_tools_grid.dart';
 
 // ── Per-category gallery state controller ────────────────────────────────────
 class _CategoryGalleryController {
-  final List<Reference> items = [];
+  final List<dynamic> items = []; // Can be Reference or CategoryImage
   bool isLoading = false;
   bool hasMore = true;
   final ScrollController scrollController = ScrollController();
@@ -119,12 +126,15 @@ class _HomepageState extends State<Homepage> {
       // Approximate position: each chip is roughly 100-120px wide
       final double targetOffset = _selectedCategoryIndex.value * 110.0;
       final double viewportWidth = MediaQuery.of(context).size.width;
-      
+
       // Center the chip
       final double centeredOffset = targetOffset - (viewportWidth / 2) + 55.0;
 
       _categoryTabScrollController.animateTo(
-        centeredOffset.clamp(0.0, _categoryTabScrollController.position.maxScrollExtent),
+        centeredOffset.clamp(
+          0.0,
+          _categoryTabScrollController.position.maxScrollExtent,
+        ),
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -138,7 +148,9 @@ class _HomepageState extends State<Homepage> {
     double minDistance = double.infinity;
 
     // The threshold is the top of the viewport plus the sticky header height
-    final double threshold = MediaQuery.of(context).padding.top + (MediaQuery.of(context).size.height * 0.15);
+    final double threshold =
+        MediaQuery.of(context).padding.top +
+        (MediaQuery.of(context).size.height * 0.15);
 
     for (int i = 0; i < categories.length; i++) {
       final key = _categoryKeys[categories[i]];
@@ -152,10 +164,10 @@ class _HomepageState extends State<Homepage> {
 
       // Get the position of the section relative to the screen
       final position = renderBox.localToGlobal(Offset.zero).dy;
-      
+
       // We want the category that is closest to our threshold (the top of the list area)
       final distance = (position - threshold).abs();
-      
+
       if (position < threshold + 100 && distance < minDistance) {
         minDistance = distance;
         activeIndex = i;
@@ -285,6 +297,20 @@ class _HomepageState extends State<Homepage> {
 
   Future<void> _loadCategoryIfNeeded(String category) async {
     final ctrl = _controllerFor(category);
+
+    // If we have structured data for this category, we don't need to fetch from Storage
+    if (DataService().categoryData.isNotEmpty) {
+      final structuredImages = DataService().getCategoryImages(category);
+      if (structuredImages.isNotEmpty && ctrl.items.isEmpty) {
+        setState(() {
+          ctrl.items.addAll(structuredImages);
+          ctrl.hasMore = false; // Structured data is loaded all at once for now
+        });
+        return;
+      }
+      if (structuredImages.isNotEmpty) return;
+    }
+
     if (ctrl.isLoading ||
         !ctrl.hasMore ||
         DataService().isCategoryFailed(category)) {
@@ -324,7 +350,7 @@ class _HomepageState extends State<Homepage> {
       // Perform a seamless continuous scroll to quickly glide down or up and locate it.
       await _findAndScrollToCategory(index, category);
     }
-    
+
     // Give it a small delay to ensure physics have settled before re-enabling listener
     await Future.delayed(const Duration(milliseconds: 100));
     _isAutoScrolling = false;
@@ -785,7 +811,12 @@ Widget trendingView(BuildContext context, Reference ref) {
   }
 
   return GestureDetector(
-    onTap: () => debugPrint('Image clicked'),
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const GenerationPage()),
+      );
+    },
     child: cachedUrl != null
         ? buildImage(cachedUrl)
         : FutureBuilder<String>(
@@ -805,10 +836,31 @@ Widget trendingView(BuildContext context, Reference ref) {
   );
 }
 
-Widget trendingView2(BuildContext context, Reference ref) {
+Widget trendingView2(BuildContext context, dynamic item) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final w = MediaQuery.of(context).size.width;
-  final cachedUrl = DataService().getCachedURL(ref);
+
+  String? imageUrl;
+  String? prompt;
+  String? modelId;
+  String? type;
+  String? reelId;
+
+  if (item is Reference) {
+    imageUrl = DataService().getCachedURL(item);
+  } else if (item is CategoryImage) {
+    prompt = item.prompt;
+    modelId = item.modelUsed;
+    reelId = item.reelId;
+    type = item.type;
+
+    if (reelId != null) {
+      imageUrl = item.thumbnailUrl;
+      type = 'video';
+    } else {
+      imageUrl = item.type == 'video' ? item.thumbnailUrl : item.imageUrl;
+    }
+  }
 
   Widget buildImage(String url) {
     return ClipRRect(
@@ -826,23 +878,289 @@ Widget trendingView2(BuildContext context, Reference ref) {
     );
   }
 
+  // Handle video tap - fetch reel from Firestore and navigate
+  void handleVideoTap() async {
+    if (item is CategoryImage && reelId != null) {
+      try {
+        final reelDoc = await FirebaseFirestore.instance
+            .collection('reels')
+            .doc(reelId)
+            .get();
+
+        if (reelDoc.exists && context.mounted) {
+          final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => GenerationPage(
+                initialCategory: 'video',
+                initialPrompt: reel.videoPrompt,
+                imageEditMode: reel.imageEdit,
+                imagePrompt: reel.imagePrompt,
+                videoPrompt: reel.videoPrompt,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('Error fetching reel: $e');
+      }
+    }
+  }
+
+  // If we have a reelId but no imageUrl, we need to fetch the reel and generate thumbnail
+  if (item is CategoryImage &&
+      reelId != null &&
+      (imageUrl == null || imageUrl.isEmpty)) {
+    return _ReelThumbnailWidget(
+      reelId: reelId,
+      videoUrl: item.imageUrl.isNotEmpty
+          ? item.imageUrl
+          : null, // Pass the URL from the JSON so we can start immediately
+      isDark: isDark,
+      w: w,
+      onTap: () => handleVideoTap(),
+    );
+  }
+
   return GestureDetector(
-    onTap: () => debugPrint('Image clicked'),
-    child: cachedUrl != null
-        ? buildImage(cachedUrl)
-        : FutureBuilder<String>(
-            future: DataService().getDownloadURL(ref),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(strokeWidth: w * 0.005),
-                );
-              }
-              if (snapshot.hasError || !snapshot.hasData) {
-                return const Icon(Icons.broken_image, color: Colors.grey);
-              }
-              return buildImage(snapshot.data!);
-            },
-          ),
+    onTap: () {
+      if (item is CategoryImage) {
+        if (reelId != null) {
+          handleVideoTap();
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => GenerationPage(
+                initialCategory: type ?? 'image',
+                initialPrompt: prompt ?? '',
+                initialModelId: modelId,
+              ),
+            ),
+          );
+        }
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const GenerationPage()),
+        );
+      }
+    },
+    child: imageUrl != null
+        ? buildImage(imageUrl)
+        : (item is Reference
+              ? FutureBuilder<String>(
+                  future: DataService().getDownloadURL(item),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: w * 0.005,
+                        ),
+                      );
+                    }
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return const Icon(Icons.broken_image, color: Colors.grey);
+                    }
+                    return buildImage(snapshot.data!);
+                  },
+                )
+              : const Icon(Icons.broken_image, color: Colors.grey)),
   );
+}
+
+/// Widget that fetches reel from Firestore and generates thumbnail if needed
+class _ReelThumbnailWidget extends StatefulWidget {
+  final String reelId;
+  final String?
+  videoUrl; // Optional: if we have it already, we can skip fetching Firestore for the thumbnail
+  final bool isDark;
+  final double w;
+  final VoidCallback onTap;
+
+  const _ReelThumbnailWidget({
+    required this.reelId,
+    this.videoUrl,
+    required this.isDark,
+    required this.w,
+    required this.onTap,
+  });
+
+  @override
+  State<_ReelThumbnailWidget> createState() => _ReelThumbnailWidgetState();
+}
+
+class _ReelThumbnailWidgetState extends State<_ReelThumbnailWidget> {
+  String? _thumbnailUrl;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    debugPrint(
+      '🔄 [_ReelThumbnailWidget] Initializing for reel: ${widget.reelId}',
+    );
+
+    // If we already have the videoUrl, we can start generating immediately
+    if (widget.videoUrl != null &&
+        widget.videoUrl!.isNotEmpty &&
+        widget.videoUrl!.startsWith('http')) {
+      _generateFromUrl(widget.videoUrl!);
+    }
+
+    try {
+      final reelDoc = await FirebaseFirestore.instance
+          .collection('reels')
+          .doc(widget.reelId)
+          .get();
+
+      if (!reelDoc.exists) {
+        if (mounted) {
+          setState(() {
+            _error = 'Reel not found';
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
+      debugPrint(
+        '🔄 [_ReelThumbnailWidget] Reel fetched: ${reel.id}, Type: ${reel.type}',
+      );
+
+      // Check if videoUrl is actually a video file
+      final isVideoFile =
+          reel.videoUrl.toLowerCase().contains('.mp4') ||
+          reel.videoUrl.toLowerCase().contains('.mov') ||
+          reel.videoUrl.toLowerCase().contains('.webm');
+
+      // If it's an image reel AND the videoUrl is NOT a video file, use it directly
+      // Otherwise, generate a thumbnail from the video
+      if (reel.type == 'image' && !isVideoFile) {
+        debugPrint(
+          '🔄 [_ReelThumbnailWidget] Image reel detected, using videoUrl as thumbnail.',
+        );
+        if (mounted) {
+          setState(() {
+            debugPrint(
+              '[DEBUG] Setting thumbnailUrl: ${reel.videoUrl}, isLoading: false',
+            );
+            _thumbnailUrl = reel.videoUrl;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // If we don't have a thumbnail yet and weren't already generating from the passed URL
+      if (reel.thumbnailUrl == null &&
+          (_thumbnailUrl == null || !_thumbnailUrl!.startsWith('http'))) {
+        _generateFromUrl(reel.videoUrl);
+      } else if (reel.thumbnailUrl != null) {
+        if (mounted) {
+          setState(() {
+            _thumbnailUrl = reel.thumbnailUrl;
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [_ReelThumbnailWidget] Error loading thumbnail: $e');
+      if (mounted && _thumbnailUrl == null) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _generateFromUrl(String url) async {
+    try {
+      // Create a temporary reel object for the service
+      final tempReel = Reel(id: widget.reelId, videoUrl: url, videoPrompt: '');
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final generatedUrl = await ThumbnailService().processReelThumbnail(
+        tempReel,
+        uid,
+      );
+
+      if (mounted && generatedUrl != null) {
+        debugPrint(
+          '🔄 [_ReelThumbnailWidget] Thumbnail process complete. URL: $generatedUrl',
+        );
+        setState(() {
+          _thumbnailUrl = generatedUrl;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ [_ReelThumbnailWidget] Error generating from URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          width: widget.w * 0.45,
+          decoration: BoxDecoration(
+            color: widget.isDark ? Colors.grey[850] : Colors.grey[300],
+            borderRadius: BorderRadius.circular(widget.w * 0.05),
+          ),
+          child: Center(
+            child: CircularProgressIndicator(
+              strokeWidth: widget.w * 0.005,
+              color: widget.isDark ? Colors.white70 : Colors.grey[600],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null || _thumbnailUrl == null) {
+      return GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          width: widget.w * 0.45,
+          decoration: BoxDecoration(
+            color: widget.isDark ? Colors.grey[850] : Colors.grey[300],
+            borderRadius: BorderRadius.circular(widget.w * 0.05),
+          ),
+          child: const Center(
+            child: Icon(Icons.videocam_off, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(widget.w * 0.05),
+        child: CachedNetworkImage(
+          imageUrl: _thumbnailUrl!,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Shimmer.fromColors(
+            baseColor: widget.isDark ? Colors.grey[850]! : Colors.grey[300]!,
+            highlightColor: widget.isDark
+                ? Colors.grey[700]!
+                : Colors.grey[100]!,
+            child: Container(color: Colors.white),
+          ),
+          errorWidget: (context, url, error) => const Icon(Icons.error_outline),
+        ),
+      ),
+    );
+  }
 }

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:trail_ai_app/Models/category_image.dart';
+import 'package:trail_ai_app/Models/reel.dart';
+import 'package:trail_ai_app/Services/data_service.dart';
+import 'package:trail_ai_app/pages/generation_page.dart';
 import '../Core/directory.dart';
 import '../Core/colors.dart';
 import 'settings_page.dart';
@@ -17,7 +22,7 @@ class TrendingSeeAllPage extends StatefulWidget {
 
 class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
   final int _pageSize = 10;
-  final List<Reference> _items = [];
+  final List<dynamic> _items = []; // Can be Reference or CategoryImage
   String? _nextPageToken;
   bool _isLoading = false;
   bool _hasMore = true;
@@ -49,6 +54,20 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
     });
 
     try {
+      // Check if we have structured data for this category
+      if (widget.categoryName != null) {
+        final structuredImages = DataService().getCategoryImages(
+          widget.categoryName!,
+        );
+        if (structuredImages.isNotEmpty) {
+          setState(() {
+            _items.addAll(structuredImages);
+            _hasMore = false; // Structured data is loaded all at once
+          });
+          return;
+        }
+      }
+
       final options = ListOptions(
         maxResults: _pageSize,
         pageToken: _nextPageToken,
@@ -198,7 +217,7 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
                           return _buildShimmerCard(isDark, sw);
                         }
                         return _TrendingSeeAllCard(
-                          ref: _items[index],
+                          item: _items[index],
                           isDark: isDark,
                         );
                       },
@@ -245,56 +264,104 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
 }
 
 class _TrendingSeeAllCard extends StatelessWidget {
-  final Reference ref;
+  final dynamic item; // Can be Reference or CategoryImage
   final bool isDark;
 
-  const _TrendingSeeAllCard({required this.ref, required this.isDark});
+  const _TrendingSeeAllCard({required this.item, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
 
-    return FutureBuilder<String>(
-      future: ref.getDownloadURL(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[850] : Colors.grey[200],
-              borderRadius: BorderRadius.circular(sw * 0.05),
-            ),
-            child: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: sw * 0.005,
-                color: Colors.orange,
+    String? imageUrl;
+    String? prompt;
+    String? modelId;
+    String? type;
+    String? reelId;
+
+    if (item is Reference) {
+      // FutureBuilder will handle the URL fetch
+    } else if (item is CategoryImage) {
+      // If reelId is present, it's a video - use thumbnailUrl if available
+      if (item.reelId != null) {
+        imageUrl = item.thumbnailUrl ?? item.imageUrl;
+        type = 'video';
+      } else {
+        // Regular image or video with direct URL
+        imageUrl = item.type == 'video'
+            ? (item.thumbnailUrl ?? item.imageUrl)
+            : item.imageUrl;
+        type = item.type;
+      }
+      prompt = item.prompt;
+      modelId = item.modelUsed;
+      reelId = item.reelId;
+    }
+
+    // Handle video tap - fetch reel from Firestore and navigate
+    void handleVideoTap() async {
+      if (item is CategoryImage && reelId != null) {
+        try {
+          final reelDoc = await FirebaseFirestore.instance
+              .collection('reels')
+              .doc(reelId)
+              .get();
+
+          if (reelDoc.exists && context.mounted) {
+            final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GenerationPage(
+                  initialCategory: 'video',
+                  initialPrompt: reel.videoPrompt,
+                  imageEditMode: reel.imageEdit,
+                  imagePrompt: reel.imagePrompt,
+                  videoPrompt: reel.videoPrompt,
+                ),
               ),
-            ),
-          );
+            );
+          }
+        } catch (e) {
+          debugPrint('Error fetching reel: $e');
         }
+      }
+    }
 
-        if (snapshot.hasError || !snapshot.hasData) {
-          return Container(
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[850] : Colors.grey[200],
-              borderRadius: BorderRadius.circular(sw * 0.05),
-            ),
-            child: Icon(
-              Icons.broken_image,
-              size: sw * 0.1,
-              color: Colors.grey[400],
-            ),
-          );
-        }
-
-        return Stack(
+    Widget buildMainContent(String url) {
+      return GestureDetector(
+        onTap: () {
+          if (item is CategoryImage) {
+            if (reelId != null) {
+              handleVideoTap();
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => GenerationPage(
+                    initialCategory: type ?? 'image',
+                    initialPrompt: prompt ?? '',
+                    initialModelId: modelId,
+                  ),
+                ),
+              );
+            }
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GenerationPage()),
+            );
+          }
+        },
+        child: Stack(
           children: [
             // Background Image
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(sw * 0.05),
                 child: CachedNetworkImage(
-                  imageUrl: snapshot.data!,
+                  imageUrl: url,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Shimmer.fromColors(
                     baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
@@ -344,7 +411,47 @@ class _TrendingSeeAllCard extends StatelessWidget {
               ),
             ),
           ],
-        );
+        ),
+      );
+    }
+
+    if (item is CategoryImage && imageUrl != null) {
+      return buildMainContent(imageUrl);
+    }
+
+    return FutureBuilder<String>(
+      future: (item as Reference).getDownloadURL(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[850] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(sw * 0.05),
+            ),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: sw * 0.005,
+                color: Colors.orange,
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[850] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(sw * 0.05),
+            ),
+            child: Icon(
+              Icons.broken_image,
+              size: sw * 0.1,
+              color: Colors.grey[400],
+            ),
+          );
+        }
+
+        return buildMainContent(snapshot.data!);
       },
     );
   }

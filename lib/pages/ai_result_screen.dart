@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/Core/colors.dart';
@@ -170,7 +169,6 @@ class _AIResultScreenState extends State<AIResultScreen> {
       ),
     );
   }
-
 
   Widget _buildMediaDisplay(double sw, double sh, bool isDark, bool isVideo) {
     // If it's the original image comparison (only for images)
@@ -391,10 +389,14 @@ class _AIResultScreenState extends State<AIResultScreen> {
               child: Container(
                 height: sh * 0.07,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.black.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.1),
+                    color: isDark
+                        ? Colors.white.withOpacity(0.12)
+                        : Colors.black.withOpacity(0.1),
                     width: sw * 0.003,
                   ),
                 ),
@@ -442,10 +444,14 @@ class _AIResultScreenState extends State<AIResultScreen> {
         child: Container(
           height: sh * 0.07,
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.03),
+            color: isDark
+                ? Colors.white.withOpacity(0.06)
+                : Colors.black.withOpacity(0.03),
             borderRadius: BorderRadius.circular(sw * 0.04),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08),
+              color: isDark
+                  ? Colors.white.withOpacity(0.12)
+                  : Colors.black.withOpacity(0.08),
               width: sw * 0.003,
             ),
           ),

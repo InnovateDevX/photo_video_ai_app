@@ -147,7 +147,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
         return StatefulBuilder(
           builder: (ctx, setSheet) {
             // ── Responsive Themed Grid Card ───────────────────────────────
-            Widget _buildThemedGridCard({
+            Widget buildThemedGridCard({
               required String label,
               String? subLabel,
               Widget? icon,
@@ -166,8 +166,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                     border: Border.all(
                       color: isSelected
                           ? (AppGradients.proGradient.colors.isNotEmpty
-                              ? AppGradients.proGradient.colors.first
-                              : Colors.orange)
+                                ? AppGradients.proGradient.colors.first
+                                : Colors.orange)
                           : Colors.white.withOpacity(0.08),
                       width: isSelected ? w * 0.005 : w * 0.002,
                     ),
@@ -189,10 +189,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                           overflow: TextOverflow.visible,
                         ),
                       ] else ...[
-                        if (icon != null)
-                          icon
-                        else
-                          SizedBox(height: w * 0.05),
+                        if (icon != null) icon else SizedBox(height: w * 0.05),
                       ],
                       // Responsive Divider Line
                       Container(
@@ -229,7 +226,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
               );
             }
 
-            Widget _buildAspectRatioIcon(String ratio, double w, bool isSelected) {
+            Widget buildAspectRatioIcon(
+              String ratio,
+              double w,
+              bool isSelected,
+            ) {
               double width = w * 0.08;
               double height = w * 0.08;
 
@@ -339,11 +340,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                         final isSelected = selectedValue == opt;
                         final isAspectRatio = title == 'aspect_ratio'.i18n();
 
-                        return _buildThemedGridCard(
+                        return buildThemedGridCard(
                           label: opt,
                           subLabel: subLabelSuffix,
                           icon: isAspectRatio
-                              ? _buildAspectRatioIcon(opt, w, isSelected)
+                              ? buildAspectRatioIcon(opt, w, isSelected)
                               : null,
                           isSelected: isSelected,
                           onTap: () {
@@ -389,7 +390,9 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                     color: const Color(
                                       0xFFFF9800,
                                     ).withOpacity(0.18),
-                                    borderRadius: BorderRadius.circular(w * 0.03),
+                                    borderRadius: BorderRadius.circular(
+                                      w * 0.03,
+                                    ),
                                   ),
                                   child: Text(
                                     'Stage 1 — Image Edit',
@@ -419,12 +422,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                               final m = widget.imageModels[i];
                               final isSel =
                                   widget.selectedImageModel?.id == m.id;
-                              return _buildThemedGridCard(
+                              return buildThemedGridCard(
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
                                 isSelected: isSel,
-                                icon: m.iconUrl != null &&
-                                        m.iconUrl!.isNotEmpty
+                                icon: m.iconUrl != null && m.iconUrl!.isNotEmpty
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(
                                           w * 0.02,
@@ -434,7 +436,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                           width: w * 0.08,
                                           height: w * 0.08,
                                           fit: BoxFit.contain,
-                                          errorWidget: (_, __, ___) => Icon(
+                                          errorWidget: (_, _, _) => Icon(
                                             Icons.smart_toy_outlined,
                                             size: w * 0.07,
                                             color: Colors.white54,
@@ -465,7 +467,9 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: Colors.blueAccent.withOpacity(0.18),
-                                    borderRadius: BorderRadius.circular(w * 0.03),
+                                    borderRadius: BorderRadius.circular(
+                                      w * 0.03,
+                                    ),
                                   ),
                                   child: Text(
                                     'Stage 2 — Video Generation',
@@ -495,12 +499,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                               final m = widget.videoModels[i];
                               final isSel =
                                   widget.selectedVideoModel?.id == m.id;
-                              return _buildThemedGridCard(
+                              return buildThemedGridCard(
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
                                 isSelected: isSel,
-                                icon: m.iconUrl != null &&
-                                        m.iconUrl!.isNotEmpty
+                                icon: m.iconUrl != null && m.iconUrl!.isNotEmpty
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(
                                           w * 0.02,
@@ -510,7 +513,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                           width: w * 0.08,
                                           height: w * 0.08,
                                           fit: BoxFit.contain,
-                                          errorWidget: (_, __, ___) => Icon(
+                                          errorWidget: (_, _, _) => Icon(
                                             Icons.smart_toy_outlined,
                                             size: w * 0.07,
                                             color: Colors.white54,
@@ -572,12 +575,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             itemBuilder: (_, i) {
                               final m = models[i];
                               final isSel = widget.selectedModel?.id == m.id;
-                              return _buildThemedGridCard(
+                              return buildThemedGridCard(
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
                                 isSelected: isSel,
-                                icon: m.iconUrl != null &&
-                                        m.iconUrl!.isNotEmpty
+                                icon: m.iconUrl != null && m.iconUrl!.isNotEmpty
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(
                                           w * 0.02,
@@ -587,7 +589,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                           width: w * 0.08,
                                           height: w * 0.08,
                                           fit: BoxFit.contain,
-                                          errorWidget: (_, __, ___) => Icon(
+                                          errorWidget: (_, _, _) => Icon(
                                             Icons.smart_toy_outlined,
                                             size: w * 0.07,
                                             color: Colors.white54,
@@ -761,8 +763,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                           buildSettingsNavigationTile(
                             icon: Icons.videocam_outlined,
                             label: 'Stage 2 — Video Model',
-                            value:
-                                widget.selectedVideoModel?.name ?? 'Default',
+                            value: widget.selectedVideoModel?.name ?? 'Default',
                             onTap: () => setSheet(() => activePage = 'model'),
                           ),
                         if (showAspectRatio)
@@ -840,7 +841,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
               case 'resolution':
                 body = buildOptionPanel(
                   title: 'resolution'.i18n(),
-                  options: activeOptions?.resolutions ??
+                  options:
+                      activeOptions?.resolutions ??
                       const ['480p', '720p', '1080p'],
                   selectedValue: widget.selectedResolution,
                   onSelected: widget.onResolutionChanged,
@@ -1056,7 +1058,11 @@ Widget _buildIcon(
             : const Color.fromRGBO(255, 255, 255, 0.2),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: Colors.white, size: w * 0.05), // Reduced from 0.06
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: w * 0.05,
+      ), // Reduced from 0.06
     ),
   );
 }

@@ -127,6 +127,8 @@
     "use_template": "Gunakan template",
     "share_action": "Bagikan",
     "share_message": "Lihat karya ini!",
+    "restricted_content_detected": "Konten terlarang terdeteksi. Harap ubah perintah Anda dan coba lagi.",
+    "nsfw_image_detected": "Konten terlarang terdeteksi di gambar. Harap pilih gambar lain.",
     "guest": "Tamu",
     "default_bio": "Halo! Nama saya %s dan selamat datang di profil saya!",
     "views_stat_label": "Dilihat",

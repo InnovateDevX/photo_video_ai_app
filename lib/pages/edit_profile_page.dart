@@ -6,6 +6,8 @@ import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:trail_ai_app/Services/profile_service.dart';
 import 'package:trail_ai_app/Services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/nsfw_dialog_helper.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? initialProfile;
@@ -94,12 +96,46 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    
-    if (image != null) {
+    final XFile? image =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+    if (image == null) return;
+
+    final file = File(image.path);
+
+    try {
+      // Show checking overlay
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(
+            child: CircularProgressIndicator(color: Color(0xFFD66031)),
+          ),
+        );
+      }
+
+      await ContentSafetyService().checkImageFileSafe(file);
+
+      if (mounted) Navigator.pop(context); // Remove loading
+
       setState(() {
-        _imageFile = File(image.path);
+        _imageFile = file;
       });
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Remove loading
+
+      if (e is NsfwContentException) {
+        if (mounted) {
+          NsfwDialogHelper.showRestrictedContentDialog(context);
+        }
+      } else {
+        debugPrint('⚠️ [EditProfilePage] Safety check error: $e');
+        // Still set the image if it's not a safety violation but some other error
+        setState(() {
+          _imageFile = file;
+        });
+      }
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
 import 'package:flutter/foundation.dart';
 import '../Core/directory.dart';
+import '../Models/category_image.dart';
 
 /// Centralized data caching service for Firebase resources.
 class DataService {
@@ -12,6 +13,8 @@ class DataService {
 
   // --- Cache ---
   List<String> categories = [];
+  List<CategoryData> categoryData =
+      []; // New: structured category data with images
   List<Reference> trendingItems = [];
   List<Reference> trending2Items = [];
   final Map<String, String> _urlCache = {};
@@ -51,12 +54,53 @@ class DataService {
 
       final jsonStr = config.categoriesJson;
       if (jsonStr.isNotEmpty && jsonStr != '[]') {
-        final List<dynamic> parsed = json.decode(jsonStr);
-        categories = parsed.cast<String>();
-        debugPrint('📦 [DataService] Categories cached: ${categories.length}');
+        final dynamic parsed = json.decode(jsonStr);
+
+        // Check if it's the new structured format or legacy string array
+        if (parsed is List) {
+          // Check if first item is an object (new format) or string (legacy)
+          if (parsed.isNotEmpty && parsed[0] is Map) {
+            categoryData = parsed.map((cat) {
+              final data = CategoryData.fromJson(cat as Map<String, dynamic>);
+              if (data.shuffle) {
+                data.images.shuffle();
+              }
+              return data;
+            }).toList();
+            categories = categoryData.map((c) => c.name).toList();
+            debugPrint(
+              '📦 [DataService] Structured categories cached: ${categories.length} (shuffled if enabled)',
+            );
+          } else {
+            // Legacy format: ["Action", "Adventure", ...]
+            categories = parsed.cast<String>();
+            debugPrint(
+              '📦 [DataService] Categories cached (legacy): ${categories.length}',
+            );
+          }
+        }
       }
     } catch (e) {
       debugPrint('❌ [DataService] Failed to fetch categories: $e');
+    }
+  }
+
+  /// Get category images with metadata for a specific category
+  List<CategoryImage> getCategoryImages(String categoryName) {
+    final category = categoryData.firstWhere(
+      (c) => c.name.toLowerCase() == categoryName.toLowerCase(),
+      orElse: () => CategoryData(name: categoryName, images: []),
+    );
+    return category.images;
+  }
+
+  /// Get image metadata for a specific image URL within a category
+  CategoryImage? getImageMetadata(String categoryName, String imageUrl) {
+    final images = getCategoryImages(categoryName);
+    try {
+      return images.firstWhere((img) => img.imageUrl == imageUrl);
+    } catch (e) {
+      return null;
     }
   }
 

@@ -17,7 +17,6 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 import '../Services/background_generation_service.dart';
-import '../Services/content_safety_service.dart';
 import '../Helpers/image_picker_helper.dart';
 
 class GenerationPage extends StatefulWidget {
@@ -34,6 +33,9 @@ class GenerationPage extends StatefulWidget {
   /// Prompt for Stage 2 (video generation). Only used when [imageEditMode] is true.
   final String videoPrompt;
 
+  /// Initial model ID to pre-select (e.g., from category image click)
+  final String? initialModelId;
+
   const GenerationPage({
     super.key,
     this.initialCategory = 'image',
@@ -42,6 +44,7 @@ class GenerationPage extends StatefulWidget {
     this.imageEditMode = false,
     this.imagePrompt = '',
     this.videoPrompt = '',
+    this.initialModelId,
   });
 
   @override
@@ -121,18 +124,53 @@ class _GenerationPageState extends State<GenerationPage> {
     await _creditService.initialize();
     if (mounted) {
       setState(() {
-        _updateSelectedModel();
+        // If initialModelId is provided, try to find and select that model
+        if (widget.initialModelId != null) {
+          _selectModelById(widget.initialModelId!);
+        } else {
+          _updateSelectedModel();
+        }
+
         // For two-stage pipeline, initialize both models
         if (widget.imageEditMode) {
           if (_replicateService.imageModels.isNotEmpty) {
-            _selectedImageModel = _replicateService.imageModels.first;
+            _selectedImageModel ??= _replicateService.imageModels.first;
           }
           if (_replicateService.videoModels.isNotEmpty) {
-            _selectedVideoModel = _replicateService.videoModels.first;
+            _selectedVideoModel ??= _replicateService.videoModels.first;
           }
         }
       });
     }
+  }
+
+  /// Selects a model by its ID from the available models
+  void _selectModelById(String modelId) {
+    // Try to find in image models first
+    final imageModel = _replicateService.imageModels.where(
+      (m) => m.id == modelId,
+    );
+    if (imageModel.isNotEmpty) {
+      _selectedCategory = 'image';
+      _selectedModel = imageModel.first;
+      _syncOptionsToModel();
+      return;
+    }
+
+    // Try to find in video models
+    final videoModel = _replicateService.videoModels.where(
+      (m) => m.id == modelId,
+    );
+    if (videoModel.isNotEmpty) {
+      _selectedCategory = 'video';
+      _selectedModel = videoModel.first;
+      _syncOptionsToModel();
+      return;
+    }
+
+    // Model not found, use default
+    debugPrint('⚠️ [GenerationPage] Model not found: $modelId');
+    _updateSelectedModel();
   }
 
   /// Updates [_selectedModel] based on [_selectedCategory].
@@ -518,8 +556,7 @@ class _GenerationPageState extends State<GenerationPage> {
     }
 
     // Credit gate — charge cost of both models
-    final totalCost =
-        (imageModel.creditUsed) + (videoModel.creditUsed);
+    final totalCost = (imageModel.creditUsed) + (videoModel.creditUsed);
 
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
@@ -540,9 +577,11 @@ class _GenerationPageState extends State<GenerationPage> {
     );
 
     if (!canProceed) {
-      setState(() => _isGenerating = false);
+      if (mounted) setState(() => _isGenerating = false);
       return;
     }
+
+    if (!mounted) return;
 
     // ── 3. Background Activity Prompt ──────────────────────────────────────────
     bool runInBackground = false;
@@ -646,9 +685,7 @@ class _GenerationPageState extends State<GenerationPage> {
                         // Wait Here (Secondary)
                         TextButton(
                           style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
-                              vertical: sh * 0.015,
-                            ),
+                            padding: EdgeInsets.symmetric(vertical: sh * 0.015),
                           ),
                           onPressed: () => Navigator.pop(context, false),
                           child: Text(
@@ -669,6 +706,8 @@ class _GenerationPageState extends State<GenerationPage> {
           },
         ) ??
         false;
+
+    if (!mounted) return;
 
     if (runInBackground) {
       // Deduct credits immediately
@@ -704,8 +743,9 @@ class _GenerationPageState extends State<GenerationPage> {
         modelConfig: imageModel,
         prompt: widget.imagePrompt,
         referenceImage: _selectedImage,
-        aspectRatio:
-            imageModel.supportsAspectRatio ? _selectedAspectRatio : null,
+        aspectRatio: imageModel.supportsAspectRatio
+            ? _selectedAspectRatio
+            : null,
       );
 
       final tempFile = await _downloadToTempFile(editedImageUrl);
@@ -715,8 +755,9 @@ class _GenerationPageState extends State<GenerationPage> {
         modelConfig: videoModel,
         prompt: widget.videoPrompt,
         referenceImage: tempFile,
-        aspectRatio:
-            videoModel.supportsAspectRatio ? _selectedAspectRatio : null,
+        aspectRatio: videoModel.supportsAspectRatio
+            ? _selectedAspectRatio
+            : null,
         extraVariables: {
           'duration': int.tryParse(_selectedDuration.replaceAll('s', '')),
           'resolution': _selectedResolution,
@@ -791,11 +832,7 @@ class _GenerationPageState extends State<GenerationPage> {
               children: [
                 Column(
                   children: [
-                    _buildHeader(
-                      screenWidth,
-                      screenHeight,
-                      isDark,
-                    ),
+                    _buildHeader(screenWidth, screenHeight, isDark),
 
                     // Content Display — hidden when keyboard is open
                     if (MediaQuery.of(context).viewInsets.bottom == 0)
@@ -821,7 +858,8 @@ class _GenerationPageState extends State<GenerationPage> {
                       isDark: isDark,
                       controller: _promptController,
                       selectedImage: _selectedImage,
-                      onRemoveImage: () => setState(() => _selectedImage = null),
+                      onRemoveImage: () =>
+                          setState(() => _selectedImage = null),
                     ),
                     Padding(
                       padding: EdgeInsets.only(
@@ -925,11 +963,7 @@ class _GenerationPageState extends State<GenerationPage> {
     );
   }
 
-  Widget _buildHeader(
-    double screenWidth,
-    double screenHeight,
-    bool isDark,
-  ) {
+  Widget _buildHeader(double screenWidth, double screenHeight, bool isDark) {
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: screenWidth * 0.04,
