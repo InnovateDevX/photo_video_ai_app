@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:localization/localization.dart';
 import 'package:trail_ai_app/Services/replicate_service.dart';

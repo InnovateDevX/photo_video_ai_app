@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_remote_config
   firebase_storage
   flutter_localization
+  flutter_onnxruntime
   gal
   permission_handler_windows
   share_plus

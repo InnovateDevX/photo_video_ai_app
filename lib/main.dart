@@ -13,7 +13,7 @@ import 'package:trail_ai_app/Services/ad_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:trail_ai_app/Core/theme_notifier.dart';
 import 'package:trail_ai_app/Core/locale_notifier.dart';
-import 'package:trail_ai_app/core/app_initializer.dart';
+import 'package:trail_ai_app/Core/app_initializer.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
 import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
@@ -69,7 +69,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final String? initialUid;
 
-  const MyApp({super.key, this.initialUid});
+  const MyApp({super.key, required this.initialUid});
 
   @override
   Widget build(BuildContext context) {

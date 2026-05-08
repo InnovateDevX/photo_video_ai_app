@@ -76,6 +76,10 @@ dependencies:
   purchases_flutter: ^10.0.1
   purchases_ui_flutter: ^10.0.1
   video_thumbnail: ^0.5.3
+  pro_image_editor:
+    path: "D:/andriod_practice/photo editor package/pro_image_editor-stable"
+  image_background_remover: ^2.0.0
+
 
 dev_dependencies:
   flutter_test:
@@ -106,6 +110,8 @@ flutter:
     - assets/images/
     - assets/masks/
     - assets/i18n/
+    - assets/effects/lens/
+    - assets/effects/prism/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
