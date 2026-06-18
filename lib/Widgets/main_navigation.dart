@@ -58,10 +58,9 @@ class MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final h = MediaQuery.of(context).size.height;
 
     final navRow = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildNavItem('assets/iconoir_home.png', 0, isDark),
         _buildNavItem('assets/Group 48095579.png', 1, isDark),
@@ -75,48 +74,48 @@ class MainNavigationState extends State<MainNavigation> {
       backgroundColor: isDark ? Colors.black : Colors.white,
       extendBody: true, // Always extend body to allow the blur/glass effect
       body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            height:
-                (h * 0.09).clamp(60.0, 100.0) +
-                MediaQuery.of(context).padding.bottom,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.75)
-                  : Colors.white.withValues(alpha: 0.95),
-              border: Border(
-                top: BorderSide(
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          bottom: (MediaQuery.of(context).padding.bottom > 0)
+              ? MediaQuery.of(context).padding.bottom
+              : 24.0,
+        ),
+        child: Container(
+          height: 72,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(36),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.6)
+                    : Colors.black.withValues(alpha: 0.1),
+                blurRadius: 30,
+                spreadRadius: 4,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(36),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              child: Container(
+                decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.1),
-                  width: 1,
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(36),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.white.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
                 ),
+                child: navRow,
               ),
-              boxShadow: [
-                if (!isDark)
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                if (isDark)
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: (MediaQuery.of(context).padding.bottom > 0)
-                    ? MediaQuery.of(context).padding.bottom
-                    : h * 0.025,
-              ),
-              child: navRow,
             ),
           ),
         ),
@@ -126,39 +125,50 @@ class MainNavigationState extends State<MainNavigation> {
 
   Widget _buildNavItem(String assetPath, int index, bool isDark) {
     bool isSelected = _currentIndex == index;
-    final iconSize = (MediaQuery.of(context).size.width * 0.06).clamp(
-      24.0,
-      32.0,
-    );
+    final iconSize = 26.0;
+
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
-        child: Image.asset(
-          assetPath,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? Colors.white : Colors.black)
-              : (isDark ? Colors.white54 : Colors.black54),
-          width: iconSize,
-          height: iconSize,
+              ? (isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.08))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: AnimatedScale(
+          scale: isSelected ? 1.1 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutBack,
+          child: Image.asset(
+            assetPath,
+            color: isSelected
+                ? (isDark ? Colors.white : Colors.black)
+                : (isDark ? Colors.white54 : Colors.black54),
+            width: iconSize,
+            height: iconSize,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCentralItem(bool isDark) {
-    final w = MediaQuery.of(context).size.width;
-    final outerSize = (w * 0.14).clamp(50.0, 70.0);
-    final innerSize = (w * 0.11).clamp(40.0, 56.0);
-    final iconSize = (w * 0.07).clamp(24.0, 36.0);
+    final outerSize = 56.0;
+    final innerSize = 46.0;
+    final iconSize = 28.0;
 
     return GestureDetector(
       onTap: _onCentralButtonTapped,
       child: SizedBox(
-        width: w * 0.16,
-        height: w * 0.16,
+        width: outerSize,
+        height: outerSize,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -168,8 +178,8 @@ class MainNavigationState extends State<MainNavigation> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : Colors.black.withValues(alpha: 0.08),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03),
               ),
               child: Center(
                 child: Container(
@@ -195,9 +205,8 @@ class MainNavigationState extends State<MainNavigation> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final w = MediaQuery.of(ctx).size.width;
-        final h = MediaQuery.of(ctx).size.height;
         return ClipRRect(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(w * 0.06)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
@@ -207,36 +216,36 @@ class MainNavigationState extends State<MainNavigation> {
                 w * 0.05,
                 w * 0.06,
               ),
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(0, 0, 0, 0.5),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(w * 0.06)),
+              decoration: const BoxDecoration(
+                color: Color.fromRGBO(0, 0, 0, 0.5),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: w * 0.1,
-                    height: h * 0.005,
-                    margin: EdgeInsets.only(bottom: h * 0.025),
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       color: Colors.white30,
-                      borderRadius: BorderRadius.circular(w * 0.25),
+                      borderRadius: BorderRadius.circular(99),
                     ),
                   ),
-                  Text(
+                  const Text(
                     'Create New',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: w * 0.05,
+                      fontSize: 20,
                     ),
                   ),
-                  SizedBox(height: h * 0.01),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     'Choose an image to edit',
-                    style: TextStyle(color: Colors.white60, fontSize: w * 0.035),
+                    style: TextStyle(color: Colors.white60, fontSize: 14),
                   ),
-                  SizedBox(height: h * 0.03),
+                  const SizedBox(height: 24),
                   Row(
                     children: [
                       Expanded(
@@ -256,12 +265,12 @@ class MainNavigationState extends State<MainNavigation> {
                       ),
                     ],
                   ),
-                  SizedBox(height: h * 0.02),
+                  const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
-                    child: Text(
+                    child: const Text(
                       'Cancel',
-                      style: TextStyle(color: Colors.white54, fontSize: w * 0.04),
+                      style: TextStyle(color: Colors.white54, fontSize: 16),
                     ),
                   ),
                 ],
@@ -286,9 +295,7 @@ class MainNavigationState extends State<MainNavigation> {
     // Navigate to image editor
     final result = await Navigator.push<File?>(
       context,
-      MaterialPageRoute(
-        builder: (_) => ImageEditorPage(imageFile: pickedFile),
-      ),
+      MaterialPageRoute(builder: (_) => ImageEditorPage(imageFile: pickedFile)),
     );
 
     // Optionally navigate to selection page after editing
@@ -328,13 +335,13 @@ class _SourceTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Colors.white, size: w * 0.08),
-            SizedBox(height: w * 0.02),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
-                fontSize: w * 0.035,
+                fontSize: 14,
               ),
             ),
           ],
