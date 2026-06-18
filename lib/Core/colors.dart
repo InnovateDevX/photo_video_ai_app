@@ -73,7 +73,9 @@ class AppColors {
   }
 
   static Color profileGridItemBorder(bool isDark) {
-    return isDark ? Colors.grey[700]! : const Color(0xFFE46633).withValues(alpha: 0.3);
+    return isDark
+        ? Colors.grey[700]!
+        : const Color(0xFFE46633).withValues(alpha: 0.3);
   }
 
   // Category Colors

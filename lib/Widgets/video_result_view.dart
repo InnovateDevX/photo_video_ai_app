@@ -19,7 +19,6 @@ class VideoResultView extends StatefulWidget {
 class _VideoResultViewState extends State<VideoResultView> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
-  String? _initializedUrl;
 
   @override
   void initState() {
@@ -37,7 +36,7 @@ class _VideoResultViewState extends State<VideoResultView> {
 
   Future<void> _initializePlayer() async {
     final url = widget.videoUrl;
-    
+
     // Dispose previous controller if it exists
     if (_controller != null) {
       final oldController = _controller!;
@@ -63,7 +62,6 @@ class _VideoResultViewState extends State<VideoResultView> {
         setState(() {
           _controller = controller;
           _isInitialized = true;
-          _initializedUrl = url;
         });
         controller.setLooping(true);
         controller.play();

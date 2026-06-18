@@ -11,7 +11,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/pages/generation_page.dart';
 
 import 'package:trail_ai_app/pages/trending_see_all_page.dart';
+import 'package:trail_ai_app/pages/category_preview_page.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:shimmer/shimmer.dart';
 import 'package:localization/localization.dart';
 import '../Core/directory.dart';
@@ -22,6 +24,7 @@ import '../Services/credit_service.dart';
 import '../Services/data_service.dart';
 import '../Widgets/main_navigation.dart';
 import '../Widgets/ai_tools_grid.dart';
+import '../Widgets/reel_video_player.dart';
 
 // ── Per-category gallery state controller ────────────────────────────────────
 class _CategoryGalleryController {
@@ -73,13 +76,11 @@ class _HomepageState extends State<Homepage> {
   final ValueNotifier<int> _selectedCategoryIndex = ValueNotifier<int>(0);
   List<String> categories = [];
 
-  // --- Trending 1 Pagination State ---
-  final int _pageSize = 10;
-  final List<Reference> _trendingItems = [];
-  String? _trendingNextPageToken;
-  bool _isLoadingTrending = false;
-  bool _hasMoreTrending = true;
-  final ScrollController _trendingScrollController = ScrollController();
+  // --- Trending Carousel State ---
+  final List<CategoryImage> _trendingItems = [];
+  late final PageController _trendingPageController;
+  int _trendingPage = 0;
+  Timer? _trendingAutoScrollTimer;
 
   // --- Per-category gallery controllers ---
   final Map<String, _CategoryGalleryController> _categoryControllers = {};
@@ -87,12 +88,15 @@ class _HomepageState extends State<Homepage> {
 
   final ScrollController _mainScrollController = ScrollController();
   final ScrollController _categoryTabScrollController = ScrollController();
+  final Map<String, GlobalKey> _chipKeys = {};
   bool _isAutoScrolling = false;
+  Timer? _scrollSettleTimer; // debounce: only update chip after scroll settles
 
   @override
   void initState() {
     super.initState();
     CreditService().initialize();
+    _trendingPageController = PageController(viewportFraction: 0.88);
 
     final dataService = DataService();
     if (dataService.categories.isNotEmpty) {
@@ -102,80 +106,99 @@ class _HomepageState extends State<Homepage> {
       _fetchCategories();
     }
 
+    debugPrint(
+      '🖼️ [HomePage] initState. DataService trending length: ${dataService.trendingItems.length}',
+    );
     if (dataService.trendingItems.isNotEmpty) {
       _trendingItems.addAll(dataService.trendingItems);
+      _startTrendingAutoScroll();
     } else {
       _fetchTrendingPage();
     }
 
-    _trendingScrollController.addListener(() {
-      if (_trendingScrollController.position.pixels >=
-          _trendingScrollController.position.maxScrollExtent - 200) {
-        _fetchTrendingPage();
-      }
-    });
-
     _mainScrollController.addListener(_onMainScroll);
-
     _selectedCategoryIndex.addListener(_scrollToActiveTab);
   }
 
   void _scrollToActiveTab() {
-    if (_categoryTabScrollController.hasClients) {
-      // Approximate position: each chip is roughly 100-120px wide
-      final double targetOffset = _selectedCategoryIndex.value * 110.0;
-      final double viewportWidth = MediaQuery.of(context).size.width;
+    final index = _selectedCategoryIndex.value;
+    if (index < 0 || index >= categories.length) return;
+    if (!_categoryTabScrollController.hasClients) return;
 
-      // Center the chip
-      final double centeredOffset = targetOffset - (viewportWidth / 2) + 55.0;
-
+    final key = _chipKeys[categories[index]];
+    if (key?.currentContext == null) {
+      // Chip not rendered yet (lazy) — fall back to rough estimate
+      final double rough = (index * 110.0) - (MediaQuery.of(context).size.width / 2) + 55.0;
       _categoryTabScrollController.animateTo(
-        centeredOffset.clamp(
-          0.0,
-          _categoryTabScrollController.position.maxScrollExtent,
-        ),
+        rough.clamp(0.0, _categoryTabScrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+      return;
     }
+
+    // Measure the chip's actual pixel position within the scroll view
+    final chipBox = key!.currentContext!.findRenderObject() as RenderBox?;
+    if (chipBox == null) return;
+
+    // Get chip's global position and convert to scroll-local offset
+    final chipGlobal = chipBox.localToGlobal(Offset.zero).dx;
+    final chipWidth = chipBox.size.width;
+    final viewportWidth = MediaQuery.of(context).size.width;
+    final currentScroll = _categoryTabScrollController.offset;
+
+    // The scroll offset needed to center this chip
+    final targetScroll = currentScroll + chipGlobal - (viewportWidth - chipWidth) / 2.0;
+
+    _categoryTabScrollController.animateTo(
+      targetScroll.clamp(0.0, _categoryTabScrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
+
 
   void _onMainScroll() {
     if (_isAutoScrolling || categories.isEmpty) return;
 
-    int? activeIndex;
-    double minDistance = double.infinity;
-
-    // The threshold is the top of the viewport plus the sticky header height
+    // Compute which category is currently at the top of the viewport
+    final h = MediaQuery.of(context).size.height;
+    final stickyHeaderHeight = h * 0.085;
     final double threshold =
-        MediaQuery.of(context).padding.top +
-        (MediaQuery.of(context).size.height * 0.15);
+        MediaQuery.of(context).padding.top + stickyHeaderHeight + 20;
+
+    int? candidateIndex;
+    double minDistance = double.infinity;
 
     for (int i = 0; i < categories.length; i++) {
       final key = _categoryKeys[categories[i]];
       if (key == null) continue;
-
-      final context = key.currentContext;
-      if (context == null) continue;
-
-      final renderBox = context.findRenderObject() as RenderBox?;
+      final ctx = key.currentContext;
+      if (ctx == null) continue;
+      final renderBox = ctx.findRenderObject() as RenderBox?;
       if (renderBox == null) continue;
 
-      // Get the position of the section relative to the screen
       final position = renderBox.localToGlobal(Offset.zero).dy;
 
-      // We want the category that is closest to our threshold (the top of the list area)
-      final distance = (position - threshold).abs();
-
-      if (position < threshold + 100 && distance < minDistance) {
-        minDistance = distance;
-        activeIndex = i;
+      if (position <= threshold + 100) {
+        final distance = (threshold - position).abs();
+        if (distance < minDistance) {
+          minDistance = distance;
+          candidateIndex = i;
+        }
       }
     }
 
-    if (activeIndex != null && activeIndex != _selectedCategoryIndex.value) {
-      _selectedCategoryIndex.value = activeIndex;
-    }
+    if (candidateIndex == null) return;
+
+    // Debounce: cancel any pending update and wait for scroll to settle
+    _scrollSettleTimer?.cancel();
+    _scrollSettleTimer = Timer(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      if (candidateIndex != _selectedCategoryIndex.value) {
+        _selectedCategoryIndex.value = candidateIndex!;
+      }
+    });
   }
 
   void _initializeCategoryMeta() {
@@ -185,9 +208,25 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
+  void _startTrendingAutoScroll() {
+    _trendingAutoScrollTimer?.cancel();
+    if (_trendingItems.length <= 1) return;
+    _trendingAutoScrollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || !_trendingPageController.hasClients) return;
+      final next = (_trendingPage + 1) % _trendingItems.length;
+      _trendingPageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
   @override
   void dispose() {
-    _trendingScrollController.dispose();
+    _trendingAutoScrollTimer?.cancel();
+    _scrollSettleTimer?.cancel();
+    _trendingPageController.dispose();
     _mainScrollController.dispose();
     _categoryTabScrollController.dispose();
     _selectedCategoryIndex.dispose();
@@ -200,50 +239,18 @@ class _HomepageState extends State<Homepage> {
   // ── Trending ───────────────────────────────────────────────────────────────
 
   Future<void> _fetchTrendingPage() async {
-    if (_isLoadingTrending || !_hasMoreTrending) return;
-    setState(() => _isLoadingTrending = true);
-
-    try {
-      final options = ListOptions(
-        maxResults: _pageSize,
-        pageToken: _trendingNextPageToken,
+    debugPrint(
+      '🖼️ [HomePage] _fetchTrendingPage called. DataService length: ${DataService().trendingItems.length}',
+    );
+    if (mounted) {
+      setState(() {
+        _trendingItems.clear();
+        _trendingItems.addAll(DataService().trendingItems);
+      });
+      debugPrint(
+        '🖼️ [HomePage] _trendingItems updated. length: ${_trendingItems.length}',
       );
-      final listResult = await FirebaseStorage.instance
-          .ref(AppDirectories.trendingDirectory)
-          .list(options);
-
-      if (mounted) {
-        setState(() {
-          _trendingItems.addAll(listResult.items);
-          DataService().updateTrendingCache(_trendingItems);
-          if (listResult.nextPageToken != null) {
-            _trendingNextPageToken = listResult.nextPageToken;
-          } else {
-            _hasMoreTrending = false;
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching trending: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Trending Error: ${e.toString().replaceAll('com.google.firebase.storage.', '')}',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 10),
-            action: SnackBarAction(
-              label: 'Dismiss',
-              onPressed: () {},
-              textColor: Colors.white,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoadingTrending = false);
+      _startTrendingAutoScroll();
     }
   }
 
@@ -257,12 +264,25 @@ class _HomepageState extends State<Homepage> {
       final categoriesJson = config.categoriesJson;
       if (categoriesJson.isEmpty || categoriesJson == '[]') return;
 
-      final List<dynamic> parsedCategories = json.decode(categoriesJson);
+      final List<dynamic> parsed = json.decode(categoriesJson);
 
       if (mounted) {
         setState(() {
-          categories = parsedCategories.cast<String>();
-          DataService().categories = categories;
+          if (parsed.isNotEmpty && parsed[0] is Map) {
+            final categoryData = parsed.map((cat) {
+              final data = CategoryData.fromJson(cat as Map<String, dynamic>);
+              if (data.shuffle) {
+                data.images.shuffle();
+              }
+              return data;
+            }).toList();
+            DataService().categoryData = categoryData;
+            categories = categoryData.map((c) => c.name).toList();
+            DataService().categories = categories;
+          } else {
+            categories = parsed.cast<String>();
+            DataService().categories = categories;
+          }
           _initializeCategoryMeta();
         });
       }
@@ -300,14 +320,30 @@ class _HomepageState extends State<Homepage> {
     // If we have structured data for this category, we don't need to fetch from Storage
     if (DataService().categoryData.isNotEmpty) {
       final structuredImages = DataService().getCategoryImages(category);
-      if (structuredImages.isNotEmpty && ctrl.items.isEmpty) {
-        setState(() {
-          ctrl.items.addAll(structuredImages);
-          ctrl.hasMore = false; // Structured data is loaded all at once for now
-        });
+      if (structuredImages.isNotEmpty) {
+        if (ctrl.items.length >= structuredImages.length) {
+          if (mounted) setState(() => ctrl.hasMore = false);
+          return;
+        }
+
+        if (mounted) setState(() => ctrl.isLoading = true);
+
+        // Simulate network delay for stress-testing and UX
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        final nextItems = structuredImages
+            .skip(ctrl.items.length)
+            .take(10)
+            .toList();
+        if (mounted) {
+          setState(() {
+            ctrl.items.addAll(nextItems);
+            ctrl.hasMore = ctrl.items.length < structuredImages.length;
+            ctrl.isLoading = false;
+          });
+        }
         return;
       }
-      if (structuredImages.isNotEmpty) return;
     }
 
     if (ctrl.isLoading ||
@@ -428,40 +464,72 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
 
-            // --- Trending Banner ---
+            // --- Trending Banner Carousel ---
             SliverToBoxAdapter(
-              child: SizedBox(
-                height: h * 0.18,
-                child: _trendingItems.isEmpty && _isLoadingTrending
-                    ? _buildShimmerLoading(isDark, w, h)
-                    : _trendingItems.isEmpty
-                    ? const Center(child: Text('No images found'))
-                    : ListView.builder(
-                        controller: _trendingScrollController,
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.symmetric(horizontal: w * 0.04),
-                        itemCount:
-                            _trendingItems.length + (_hasMoreTrending ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _trendingItems.length) {
-                            return Padding(
-                              padding: EdgeInsets.all(w * 0.02),
-                              child: _buildSingleShimmerBlock(
-                                isDark,
-                                width: w * 0.3,
+              child: _trendingItems.isEmpty
+                  ? const SizedBox.shrink()
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: h * 0.22,
+                          child: PageView.builder(
+                            controller: _trendingPageController,
+                            onPageChanged: (i) =>
+                                setState(() => _trendingPage = i),
+                            itemCount: _trendingItems.length,
+                            itemBuilder: (context, index) {
+                              return AnimatedScale(
+                                scale: _trendingPage == index ? 1.0 : 0.93,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: w * 0.02,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                      w * 0.055,
+                                    ),
+                                    child: trendingView2(
+                                      context,
+                                      _trendingItems[index],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: h * 0.012),
+                        // ── Dot Indicators ───────────────────────────────────
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(_trendingItems.length, (i) {
+                            final isActive = i == _trendingPage;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              margin: EdgeInsets.symmetric(
+                                horizontal: w * 0.008,
+                              ),
+                              width: isActive ? w * 0.055 : w * 0.018,
+                              height: w * 0.018,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(w * 0.01),
+                                color: isActive
+                                    ? const Color(0xFFFF9800)
+                                    : (isDark
+                                          ? Colors.grey.shade600
+                                          : Colors.grey.shade300),
                               ),
                             );
-                          }
-                          return Container(
-                            margin: EdgeInsets.only(right: w * 0.03),
-                            child: trendingView(context, _trendingItems[index]),
-                          );
-                        },
-                      ),
-              ),
+                          }),
+                        ),
+                      ],
+                    ),
             ),
 
-            SliverToBoxAdapter(child: SizedBox(height: h * 0.03)),
+            SliverToBoxAdapter(child: SizedBox(height: h * 0.015)),
 
             // --- Quick AI Tools ---
             SliverToBoxAdapter(child: _buildQuickAiTools(context, isDark)),
@@ -483,7 +551,12 @@ class _HomepageState extends State<Homepage> {
                         scrollDirection: Axis.horizontal,
                         itemCount: categories.length,
                         itemBuilder: (context, index) {
+                          final chipKey = _chipKeys.putIfAbsent(
+                            categories[index],
+                            () => GlobalKey(),
+                          );
                           return Padding(
+                            key: chipKey,
                             padding: EdgeInsets.only(right: w * 0.025),
                             child: categoryChip(
                               label: categories[index],
@@ -712,25 +785,38 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
 
   final tools = [
     AiTool(
-      'tool_upscale'.i18n(),
-      AppDirectories.iconUpscale,
+      id: 'upscale',
+      label: 'tool_upscale'.i18n(),
+      imagePath: AppDirectories.iconUpscale,
       route: AppRoutes.upscale,
     ),
-    AiTool('tool_re_edit'.i18n(), AppDirectories.iconReEdit),
-    AiTool('tool_ai_image'.i18n(), AppDirectories.iconAiImage),
     AiTool(
-      'tool_ai_video'.i18n(),
-      AppDirectories.iconAiVideo,
+      id: 're_edit',
+      label: 'tool_re_edit'.i18n(),
+      imagePath: AppDirectories.iconReEdit,
+      autoTriggerImagePicker: true,
+    ),
+    AiTool(
+      id: 'image',
+      label: 'tool_ai_image'.i18n(),
+      imagePath: AppDirectories.iconAiImage,
+    ),
+    AiTool(
+      id: 'video',
+      label: 'tool_ai_video'.i18n(),
+      imagePath: AppDirectories.iconAiVideo,
       initialCategory: 'video',
     ),
     AiTool(
-      'tool_cloth'.i18n(),
-      AppDirectories.iconCloth,
+      id: 'cloth',
+      label: 'tool_cloth'.i18n(),
+      imagePath: AppDirectories.iconCloth,
       route: AppRoutes.outfitChange,
     ),
     AiTool(
-      'tool_bg_ai'.i18n(),
-      AppDirectories.iconBgAi,
+      id: 'background',
+      label: 'tool_bg_ai'.i18n(),
+      imagePath: AppDirectories.iconBgAi,
       route: AppRoutes.background,
     ),
   ];
@@ -788,62 +874,17 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
 
 // ── Image tile widgets ────────────────────────────────────────────────────────
 
-Widget trendingView(BuildContext context, Reference ref) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final w = MediaQuery.of(context).size.width;
-  final cachedUrl = DataService().getCachedURL(ref);
-
-  Widget buildImage(String url) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(w * 0.04),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Shimmer.fromColors(
-          baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-          highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(color: Colors.white),
-        ),
-        errorWidget: (context, url, error) => const Icon(Icons.error_outline),
-      ),
-    );
-  }
-
-  return GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const GenerationPage()),
-      );
-    },
-    child: cachedUrl != null
-        ? buildImage(cachedUrl)
-        : FutureBuilder<String>(
-            future: DataService().getDownloadURL(ref),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(strokeWidth: w * 0.005),
-                );
-              }
-              if (snapshot.hasError || !snapshot.hasData) {
-                return const Icon(Icons.broken_image, color: Colors.grey);
-              }
-              return buildImage(snapshot.data!);
-            },
-          ),
-  );
-}
-
 Widget trendingView2(BuildContext context, dynamic item) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final w = MediaQuery.of(context).size.width;
 
   String? imageUrl;
+  String? videoUrl;
   String? prompt;
   String? modelId;
   String? type;
   String? reelId;
+  String? categoryName;
 
   if (item is Reference) {
     imageUrl = DataService().getCachedURL(item);
@@ -852,20 +893,39 @@ Widget trendingView2(BuildContext context, dynamic item) {
     modelId = item.modelUsed;
     reelId = item.reelId;
     type = item.type;
+    categoryName = item.categoryName;
+    videoUrl = item.videoUrl;
 
-    if (reelId != null) {
-      imageUrl = item.thumbnailUrl;
-      type = 'video';
+    if (type == 'video' && videoUrl == null) {
+      // fallback for older json logic where imageUrl held the video
+      if (item.imageUrl.endsWith('.mp4')) {
+        videoUrl = item.imageUrl;
+      } else {
+        imageUrl = item.thumbnailUrl ?? item.imageUrl;
+      }
     } else {
-      imageUrl = item.type == 'video' ? item.thumbnailUrl : item.imageUrl;
+      imageUrl = item.imageUrl;
     }
   }
 
-  Widget buildImage(String url) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(w * 0.05),
-      child: CachedNetworkImage(
-        imageUrl: url,
+  Widget buildMedia() {
+    if (videoUrl != null && videoUrl.isNotEmpty) {
+      return ReelVideoPlayer(
+        videoUrl: videoUrl,
+        seamlessLoop: true,
+        enablePlayPauseGesture: false,
+        borderRadius: BorderRadius.circular(w * 0.05),
+        placeholder: Shimmer.fromColors(
+          baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+          highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+          child: Container(color: Colors.white),
+        ),
+      );
+    }
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
         fit: BoxFit.cover,
         placeholder: (context, url) => Shimmer.fromColors(
           baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
@@ -873,44 +933,95 @@ Widget trendingView2(BuildContext context, dynamic item) {
           child: Container(color: Colors.white),
         ),
         errorWidget: (context, url, error) => const Icon(Icons.error_outline),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[850] : Colors.grey[300],
+        borderRadius: BorderRadius.circular(w * 0.05),
       ),
+      child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
     );
   }
 
-  // Handle video tap - fetch reel from Firestore and navigate
+  // Handle video tap - fetch reel from Firestore and navigate to preview
   void handleVideoTap() async {
     if (item is CategoryImage && reelId != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
       try {
         final reelDoc = await FirebaseFirestore.instance
             .collection('reels')
             .doc(reelId)
             .get();
 
+        if (context.mounted) Navigator.pop(context); // close dialog
+
         if (reelDoc.exists && context.mounted) {
           final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => GenerationPage(
-                initialCategory: 'video',
-                initialPrompt: reel.videoPrompt,
+              builder: (_) => CategoryPreviewPage(
+                imageUrl: reel.thumbnailUrl,
+                videoUrl: reel.videoUrl,
+                prompt: reel.videoPrompt,
+                modelId: modelId,
+                type: 'video',
+                isEditable: item.isEditable,
                 imageEditMode: reel.imageEdit,
-                imagePrompt: reel.imagePrompt,
-                videoPrompt: reel.videoPrompt,
+                onTryStyle: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GenerationPage(
+                        initialCategory: 'video',
+                        initialPrompt: reel.videoPrompt,
+                        imageEditMode: reel.imageEdit,
+                        imagePrompt: reel.imagePrompt,
+                        videoPrompt: reel.videoPrompt,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           );
+          return;
         }
       } catch (e) {
+        if (context.mounted) Navigator.pop(context); // close dialog
         debugPrint('Error fetching reel: $e');
+      }
+
+      // Fallback: if doc doesn't exist or fetch failed, open the preview with local data
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CategoryPreviewPage(
+              imageUrl: imageUrl,
+              videoUrl: videoUrl,
+              prompt: prompt,
+              modelId: modelId,
+              type: type,
+              isEditable: item.isEditable,
+            ),
+          ),
+        );
       }
     }
   }
 
-  // If we have a reelId but no imageUrl, we need to fetch the reel and generate thumbnail
+  // If we have a reelId but no imageUrl and no videoUrl, we need to fetch the reel and generate thumbnail
   if (item is CategoryImage &&
       reelId != null &&
-      (imageUrl == null || imageUrl.isEmpty)) {
+      (imageUrl == null || imageUrl.isEmpty) &&
+      (videoUrl == null || videoUrl.isEmpty)) {
     return _ReelThumbnailWidget(
       reelId: reelId,
       videoUrl: item.imageUrl.isNotEmpty
@@ -923,18 +1034,29 @@ Widget trendingView2(BuildContext context, dynamic item) {
   }
 
   return GestureDetector(
+    behavior: HitTestBehavior.opaque,
     onTap: () {
       if (item is CategoryImage) {
-        if (reelId != null) {
+        if (type == 'category' && categoryName != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TrendingSeeAllPage(categoryName: categoryName),
+            ),
+          );
+        } else if (reelId != null) {
           handleVideoTap();
         } else {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => GenerationPage(
-                initialCategory: type ?? 'image',
-                initialPrompt: prompt ?? '',
-                initialModelId: modelId,
+              builder: (_) => CategoryPreviewPage(
+                imageUrl: imageUrl,
+                videoUrl: videoUrl,
+                prompt: prompt,
+                modelId: modelId,
+                type: type,
+                isEditable: item.isEditable,
               ),
             ),
           );
@@ -946,26 +1068,38 @@ Widget trendingView2(BuildContext context, dynamic item) {
         );
       }
     },
-    child: imageUrl != null
-        ? buildImage(imageUrl)
-        : (item is Reference
-              ? FutureBuilder<String>(
-                  future: DataService().getDownloadURL(item),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: w * 0.005,
-                        ),
-                      );
-                    }
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return const Icon(Icons.broken_image, color: Colors.grey);
-                    }
-                    return buildImage(snapshot.data!);
-                  },
-                )
-              : const Icon(Icons.broken_image, color: Colors.grey)),
+    child: (item is Reference)
+        ? FutureBuilder<String>(
+            future: DataService().getDownloadURL(item),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(strokeWidth: w * 0.005),
+                );
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return const Icon(Icons.broken_image, color: Colors.grey);
+              }
+              // It's a reference, so it's guaranteed to be an image (legacy)
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(w * 0.05),
+                child: CachedNetworkImage(
+                  imageUrl: snapshot.data!,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+                    highlightColor: isDark
+                        ? Colors.grey[700]!
+                        : Colors.grey[100]!,
+                    child: Container(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error_outline),
+                ),
+              );
+            },
+          )
+        : buildMedia(),
   );
 }
 

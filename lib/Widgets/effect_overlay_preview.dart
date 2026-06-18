@@ -79,11 +79,13 @@ class _EffectPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw background for visibility
+    // Background is transparent to allow the editor content to show through below the stack
+    /*
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       Paint()..color = const Color(0xFF1A1A1A),
     );
+    */
 
     // 1. Draw base image if present
     if (baseImage != null) {
@@ -99,11 +101,6 @@ class _EffectPainter extends CustomPainter {
 
     // 2. Draw overlay if present
     if (overlayImage != null) {
-      final overlayPaint = Paint()
-        ..color = Color.fromRGBO(255, 255, 255, opacity)
-        ..blendMode = blendMode
-        ..style = PaintingStyle.fill;
-
       final srcRect = Rect.fromLTWH(
         0,
         0,
@@ -111,6 +108,12 @@ class _EffectPainter extends CustomPainter {
         overlayImage!.height.toDouble(),
       );
       final dstRect = Rect.fromLTWH(0, 0, size.width, size.height);
+
+      final overlayPaint = Paint()
+        ..color = Colors.white.withValues(alpha: opacity)
+        ..blendMode = blendMode
+        ..filterQuality = FilterQuality.high;
+
       canvas.drawImageRect(overlayImage!, srcRect, dstRect, overlayPaint);
     }
 

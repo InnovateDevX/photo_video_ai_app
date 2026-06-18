@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -12,8 +13,6 @@ import 'package:trail_ai_app/Services/reel_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
 import 'package:trail_ai_app/Models/reel.dart';
 import 'package:trail_ai_app/Models/generated_asset.dart';
-import 'package:trail_ai_app/Models/user_asset.dart';
-import 'package:trail_ai_app/Services/asset_service.dart';
 import 'package:trail_ai_app/pages/edit_profile_page.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/pages/reels_page.dart';
@@ -49,29 +48,23 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       setState(() {
         _lastUid = currentUid;
-        _likedReelsStream = _reelService.getLikedReelsStream();
-        _savedReelsStream = _reelService.getSavedReelsStream();
+        // Use local notifier streams — no Firebase needed
+        _likedReelsStream = Stream.value(_reelService.likedReelsNotifier.value);
+        _savedReelsStream = Stream.value(_reelService.savedReelsNotifier.value);
         _streamsInitialized = true;
       });
     }
   }
 
-  /// Force refresh the streams when switching tabs
+  /// Force refresh the streams from local notifiers
   void _refreshStreams() {
     debugPrint(
       '🔄 [ProfilePage] Refreshing streams for tab $_selectedTabIndex',
     );
     setState(() {
-      _likedReelsStream = _reelService.getLikedReelsStream();
-      _savedReelsStream = _reelService.getSavedReelsStream();
+      _likedReelsStream = Stream.value(_reelService.likedReelsNotifier.value);
+      _savedReelsStream = Stream.value(_reelService.savedReelsNotifier.value);
     });
-
-    // Also trigger an immediate one-time fetch for the current tab
-    if (_selectedTabIndex == 1) {
-      _reelService.fetchSavedReelsOnce();
-    } else if (_selectedTabIndex == 2) {
-      _reelService.fetchLikedReelsOnce();
-    }
   }
 
   @override
@@ -251,16 +244,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: EdgeInsets.symmetric(horizontal: w * 0.05),
                   child: _selectedTabIndex == 0
                       ? _buildPersistentAssetsGrid(w, h, isDark)
-                      : (isGuest
-                            ? _buildLoginPrompt(w, h, isDark)
-                            : _buildReelsGrid(
-                                w,
-                                h,
-                                isDark,
-                                _selectedTabIndex == 1
-                                    ? _savedReelsStream
-                                    : _likedReelsStream,
-                              )),
+                      : _buildReelsGrid(
+                          w,
+                          h,
+                          isDark,
+                          _selectedTabIndex == 1
+                              ? _savedReelsStream
+                              : _likedReelsStream,
+                        ),
                 ),
 
                 SizedBox(height: h * 0.15),
@@ -273,45 +264,22 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildPersistentAssetsGrid(double w, double h, bool isDark) {
-    final user = FirebaseAuth.instance.currentUser;
-    return StreamBuilder<List<UserAsset>>(
-      stream: AssetService().getUserAssetsStream(),
-      builder: (context, snapshot) {
-        debugPrint(
-          '📡 [ProfilePage] My Assets Stream Update: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, docs: ${snapshot.data?.length ?? 0}',
-        );
-
-        // Wait for Firebase to respond on first load
-        if (!snapshot.hasData &&
-            snapshot.connectionState == ConnectionState.waiting) {
-          debugPrint('⏳ [ProfilePage] My Assets: Waiting for Firebase...');
+    return ValueListenableBuilder<List<GeneratedAsset>>(
+      valueListenable: LocalStorageService().assetsNotifier,
+      builder: (context, assets, child) {
+        if (assets.isEmpty) {
           return Padding(
             padding: EdgeInsets.only(top: h * 0.05),
-            child: const Center(child: CircularProgressIndicator()),
+            child: Text(
+              "no_generated_assets".i18n(),
+              style: TextStyle(
+                color: AppColors.textColor(isDark).withValues(alpha: 0.6),
+                fontSize: w * 0.04,
+              ),
+              textAlign: TextAlign.center,
+            ),
           );
         }
-
-        // Only fall back to local assets if Firebase has an error
-        if (snapshot.hasError) {
-          debugPrint(
-            '❌ [ProfilePage] My Assets Firebase Error: ${snapshot.error}',
-          );
-          return _buildLocalAssetsGrid(w, h, isDark);
-        }
-
-        final assets = snapshot.data ?? [];
-
-        if (assets.isEmpty) {
-          // Firebase returned empty - try local assets as fallback
-          debugPrint(
-            '📭 [ProfilePage] My Assets: Firebase empty, checking local...',
-          );
-          return _buildLocalAssetsGrid(w, h, isDark);
-        }
-
-        debugPrint(
-          '✅ [ProfilePage] My Assets: Showing ${assets.length} Firebase assets',
-        );
 
         return GridView.builder(
           padding: EdgeInsets.zero,
@@ -326,19 +294,14 @@ class _ProfilePageState extends State<ProfilePage> {
           itemCount: assets.length,
           itemBuilder: (context, index) {
             final asset = assets[index];
-            final isVideo = asset.type == 'video';
+            final file = File(asset.filePath);
 
-            if (isVideo &&
-                asset.thumbnailUrl == null &&
+            if (asset.category == 'video' &&
+                asset.thumbnailPath == null &&
                 !_processingIds.contains(asset.id)) {
               _processingIds.add(asset.id);
-              final uid = user?.uid;
-              if (uid != null) {
-                ThumbnailService().processUserAsset(uid, asset);
-              }
+              ThumbnailService().processGeneratedAsset(asset);
             }
-
-            final thumbUrl = asset.thumbnailUrl ?? asset.url;
 
             return GestureDetector(
               onTap: () {
@@ -363,7 +326,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       body: SafeArea(
-                        child: AIResultScreen(resultImageUrl: asset.url),
+                        child: AIResultScreen(resultImageUrl: asset.filePath),
                       ),
                     ),
                   ),
@@ -379,58 +342,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 clipBehavior: Clip.hardEdge,
-                child: asset.type == 'image'
-                    ? CachedNetworkImage(
-                        imageUrl: thumbUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey.shade900,
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white38,
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => const Icon(
-                          Icons.broken_image,
-                          color: Colors.white38,
-                        ),
+                child: !file.existsSync()
+                    ? Icon(
+                        Icons.broken_image,
+                        color: AppColors.textColor(isDark).withValues(alpha: 0.5),
                       )
+                    : asset.category == 'image'
+                    ? Image.file(file, fit: BoxFit.cover)
                     : Stack(
                         fit: StackFit.expand,
                         children: [
-                          if (asset.thumbnailUrl != null)
-                            CachedNetworkImage(
-                              imageUrl: asset.thumbnailUrl!,
+                          if (asset.thumbnailPath != null &&
+                              File(asset.thumbnailPath!).existsSync())
+                            Image.file(
+                              File(asset.thumbnailPath!),
                               fit: BoxFit.cover,
                             )
                           else
-                            Container(color: Colors.grey.shade900),
-                          const Center(
+                            Container(color: Colors.black),
+                          Center(
                             child: Icon(
                               Icons.play_circle_fill,
                               color: Colors.white,
-                              size: 36,
-                            ),
-                          ),
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Icon(
-                                Icons.videocam,
-                                color: Colors.white70,
-                                size: 12,
-                              ),
+                              size: w * 0.08,
                             ),
                           ),
                         ],
@@ -442,6 +376,7 @@ class _ProfilePageState extends State<ProfilePage> {
       },
     );
   }
+
 
   Widget _buildLocalAssetsGrid(double w, double h, bool isDark) {
     return ValueListenableBuilder<List<GeneratedAsset>>(
@@ -573,48 +508,35 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// FIX: Now accepts [cachedReels] — the last known list from the parent state.
-  /// The StreamBuilder updates the cache whenever new data arrives, but if
-  /// snapshot.hasData is momentarily false (asyncMap mid-flight), the grid
-  /// renders from the cache instead of showing a spinner or going blank.
+  /// Builds the liked or saved reels grid, reactively listening to local storage notifiers.
   Widget _buildReelsGrid(
     double w,
     double h,
     bool isDark,
-    Stream<List<Reel>> stream,
+    Stream<List<Reel>> stream, // kept for API compat but no longer used
   ) {
     final user = FirebaseAuth.instance.currentUser;
-    return StreamBuilder<List<Reel>>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          debugPrint(
-            '❌ [ProfilePage] Stream Error (Tab $_selectedTabIndex): ${snapshot.error}',
-          );
-        }
+    final notifier = _selectedTabIndex == 1
+        ? _reelService.savedReelsNotifier
+        : _reelService.likedReelsNotifier;
 
-        // Use fresh data if available
-        final reels = snapshot.data ?? [];
-        debugPrint(
-          '📡 [ProfilePage] Stream Update (Tab $_selectedTabIndex): ${reels.length} reels found. ConnectionState: ${snapshot.connectionState}',
-        );
-
-        // Only show the spinner when we have absolutely nothing yet
-        // and the stream is genuinely waiting.
-        final isFirstLoad =
-            !snapshot.hasData &&
-            snapshot.connectionState == ConnectionState.waiting;
-
-        if (isFirstLoad) {
+    return ValueListenableBuilder<List<Reel>>(
+      valueListenable: notifier,
+      builder: (context, reels, _) {
+        if (reels.isEmpty) {
           return Padding(
             padding: EdgeInsets.only(top: h * 0.05),
-            child: const Center(child: CircularProgressIndicator()),
+            child: Text(
+              _selectedTabIndex == 1
+                  ? 'No saved reels yet'
+                  : 'No liked reels yet',
+              style: TextStyle(
+                color: AppColors.textColor(isDark).withValues(alpha: 0.5),
+                fontSize: w * 0.04,
+              ),
+              textAlign: TextAlign.center,
+            ),
           );
-        }
-
-        if (reels.isEmpty) {
-          // Fallback to blank screen as requested
-          return SizedBox(height: h * 0.2);
         }
 
         return GridView.builder(

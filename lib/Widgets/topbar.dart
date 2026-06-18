@@ -27,13 +27,17 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
     );
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.15)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.15,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 40,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.15, end: 1.0)
-            .chain(CurveTween(curve: Curves.bounceIn)),
+        tween: Tween<double>(
+          begin: 1.15,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.bounceIn)),
         weight: 60,
       ),
     ]).animate(_controller);
@@ -68,12 +72,16 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(width: width * 0.03),
-            Text(
-              'ai_generate_title'.i18n(),
-              style: TextStyle(
-                fontSize: width * 0.06,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textColor(isDark),
+            Flexible(
+              child: Text(
+                'ai_generate_title'.i18n(),
+                style: TextStyle(
+                  fontSize: width * 0.055,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textColor(isDark),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             const Spacer(),
@@ -109,15 +117,14 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
                           children: [
                             Container(
                               alignment: Alignment.center,
-                              padding: EdgeInsets.fromLTRB(
-                                width * 0.05,
-                                height * 0.008,
-                                width * 0.05,
-                                height * 0.008,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: width * 0.03,
+                                vertical: height * 0.006,
                               ),
                               decoration: ProGradientDecoration(
-                                borderRadius:
-                                    BorderRadius.circular(width * 0.05),
+                                borderRadius: BorderRadius.circular(
+                                  width * 0.05,
+                                ),
                               ),
                               child: Text(
                                 'pro'.i18n(),
@@ -161,4 +168,3 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
     );
   }
 }
-

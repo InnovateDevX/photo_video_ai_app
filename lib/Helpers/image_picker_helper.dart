@@ -5,16 +5,100 @@ import 'package:image_picker/image_picker.dart';
 import 'package:trail_ai_app/Widgets/image_crop_page.dart';
 import 'package:localization/localization.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/nsfw_dialog_helper.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 
 class ImagePickerHelper {
-  /// Opens a bottom sheet to pick between Gallery and Camera.
-  /// Returns the [File] of the cropped image, or null if cancelled.
+  /// Wrapper for backward compatibility.
   static Future<File?> pickAndCropImage(
     BuildContext context, {
     double? targetAspectRatio,
+  }) {
+    return pickImage(
+      context: context,
+      crop: true,
+      targetAspectRatio: targetAspectRatio,
+    );
+  }
+
+  /// Centralized image picker that handles source selection, cropping, and safety checks.
+  /// If [source] is null and [context] is provided, it shows a bottom sheet to select source.
+  /// If [crop] is true, it navigates to ImageCropPage after picking.
+  static Future<File?> pickImage({
+    BuildContext? context,
+    bool crop = false,
+    double? targetAspectRatio,
+    ImageSource? source,
   }) async {
-    final source = await showModalBottomSheet<ImageSource>(
+    if (source == null && context != null) {
+      source = await _showSourcePicker(context);
+    }
+
+    // Default to gallery if still null
+    source ??= ImageSource.gallery;
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+
+    if (pickedFile == null) return null;
+
+    File file = File(pickedFile.path);
+
+    // --- Safety Check ---
+    try {
+      if (context != null && context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(
+            child: CircularProgressIndicator(color: Color(0xFFD66031)),
+          ),
+        );
+      }
+
+      await ContentSafetyService().checkImageFileSafe(file);
+
+      if (context != null && context.mounted) {
+        Navigator.pop(context); // Remove loading
+      }
+    } catch (e) {
+      if (context != null && context.mounted) {
+        Navigator.pop(context); // Remove loading
+        if (e is NsfwContentException) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        } else {
+          debugPrint('⚠️ [ImagePickerHelper] Safety check error: $e');
+        }
+      } else if (e is NsfwContentException) {
+        // Rethrow if no context so callers like BLoC can handle it
+        rethrow;
+      }
+      return null;
+    }
+
+    if (crop && context != null && context.mounted) {
+      final croppedFile = await Navigator.push<File?>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropPage(
+            imageFile: file,
+            aspectRatio: targetAspectRatio,
+          ),
+        ),
+      );
+      if (croppedFile == null) return null;
+      file = croppedFile;
+    }
+
+    return file;
+  }
+
+  static Future<ImageSource?> _showSourcePicker(BuildContext context) async {
+    return showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
@@ -101,66 +185,8 @@ class ImagePickerHelper {
         );
       },
     );
-
-    if (source == null) return null;
-
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: source,
-      imageQuality: 85,
-      maxWidth: 1024,
-      maxHeight: 1024,
-    );
-    
-    if (pickedFile == null) return null;
-
-    if (!context.mounted) return null;
-
-    final File? croppedFile = await Navigator.push<File?>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ImageCropPage(
-          imageFile: File(pickedFile.path),
-          aspectRatio: targetAspectRatio,
-        ),
-      ),
-    );
-
-    if (croppedFile == null) return null;
-
-    // --- Safety Check ---
-    if (!context.mounted) return croppedFile;
-
-    try {
-      // Show checking overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFD66031)),
-        ),
-      );
-
-      await ContentSafetyService().checkImageFileSafe(croppedFile);
-      
-      if (context.mounted) Navigator.pop(context); // Remove loading
-    } catch (e) {
-      if (context.mounted) Navigator.pop(context); // Remove loading
-      
-      if (e is NsfwContentException) {
-        if (context.mounted) {
-          NsfwDialogHelper.showRestrictedContentDialog(context);
-        }
-        return null;
-      }
-      // Log other errors but don't block user
-      debugPrint('⚠️ [ImagePickerHelper] Safety check error: $e');
-    }
-
-    return croppedFile;
   }
 }
-
 
 class _SourceTile extends StatelessWidget {
   final IconData icon;

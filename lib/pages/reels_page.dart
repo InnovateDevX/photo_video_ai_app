@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:trail_ai_app/Models/reel.dart';
 import 'package:trail_ai_app/Services/reel_service.dart';
 import 'package:trail_ai_app/Widgets/reel_video_player.dart';
@@ -7,6 +8,7 @@ import 'package:trail_ai_app/Services/auth_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:localization/localization.dart';
+import 'package:trail_ai_app/Services/replicate_service.dart';
 
 class ReelsPage extends StatefulWidget {
   const ReelsPage({super.key});
@@ -20,6 +22,7 @@ class _ReelsPageState extends State<ReelsPage> {
   final AuthService _authService = AuthService();
 
   late PageController _pageController;
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -77,11 +80,25 @@ class _ReelsPageState extends State<ReelsPage> {
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
+            physics: const BouncingScrollPhysics(),
             itemCount: reels.length,
+            onPageChanged: (index) {
+              setState(() => _currentPage = index);
+              // Preload the next reel's video into cache for instant swipe
+              if (index + 1 < reels.length) {
+                DefaultCacheManager()
+                    .getSingleFile(reels[index + 1].videoUrl)
+                    .then(
+                      (_) => debugPrint('📦 [Reels] Preloaded next reel video'),
+                    )
+                    .catchError((_) {});
+              }
+            },
             itemBuilder: (context, index) {
               return ReelItemWidget(
                 reel: reels[index],
                 reelService: _reelService,
+                isActive: index == _currentPage,
               );
             },
           );
@@ -91,27 +108,34 @@ class _ReelsPageState extends State<ReelsPage> {
   }
 }
 
-class ReelItemWidget extends StatelessWidget {
+class ReelItemWidget extends StatefulWidget {
   final Reel reel;
   final ReelService reelService;
+  final bool isActive;
 
   const ReelItemWidget({
     super.key,
     required this.reel,
     required this.reelService,
+    this.isActive = true,
   });
 
+  @override
+  State<ReelItemWidget> createState() => _ReelItemWidgetState();
+}
+
+class _ReelItemWidgetState extends State<ReelItemWidget> {
   void _useTemplate(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GenerationPage(
-          initialPrompt: reel.videoPrompt,
-          initialCategory: reel.imageEdit ? 'image' : reel.type,
-          initialIsEditable: reel.isEditable,
-          imageEditMode: reel.imageEdit,
-          imagePrompt: reel.imagePrompt,
-          videoPrompt: reel.videoPrompt,
+          initialPrompt: widget.reel.videoPrompt,
+          initialCategory: widget.reel.imageEdit ? 'image' : widget.reel.type,
+          initialIsEditable: widget.reel.isEditable,
+          imageEditMode: widget.reel.imageEdit,
+          imagePrompt: widget.reel.imagePrompt,
+          videoPrompt: widget.reel.videoPrompt,
         ),
       ),
     );
@@ -121,12 +145,40 @@ class ReelItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
+    final reel = widget.reel;
+    final reelService = widget.reelService;
+
+    // Calculate dynamic credit cost
+    final replicateService = ReplicateService();
+    int creditCost = 0;
+    if (reel.imageEdit) {
+      final imgCost = replicateService.imageModels.isNotEmpty
+          ? replicateService.imageModels.first.creditUsed
+          : 0;
+      final vidCost = replicateService.videoModels.isNotEmpty
+          ? replicateService.videoModels.first.creditUsed
+          : 0;
+      creditCost = imgCost + vidCost;
+    } else {
+      if (reel.type == 'video') {
+        creditCost = replicateService.videoModels.isNotEmpty
+            ? replicateService.videoModels.first.creditUsed
+            : 0;
+      } else {
+        creditCost = replicateService.imageModels.isNotEmpty
+            ? replicateService.imageModels.first.creditUsed
+            : 0;
+      }
+    }
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Background Video
-        ReelVideoPlayer(videoUrl: reel.videoUrl),
+        // Only load video player for the active page — prevents resource fight
+        if (widget.isActive)
+          ReelVideoPlayer(videoUrl: reel.videoUrl, seamlessLoop: true)
+        else
+          Container(color: Colors.black),
 
         // Gradient overlay for better text visibility
         Positioned(
@@ -207,7 +259,7 @@ class ReelItemWidget extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        'use_template'.i18n(),
+                        '${'use_template'.i18n()} ⚡ $creditCost',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -256,14 +308,15 @@ class _LikeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: reelService.isReelLiked(reel.id),
-      builder: (context, snapshot) {
-        final isLiked = snapshot.data ?? false;
+    // ValueListenableBuilder reacts immediately when likedReelsNotifier changes
+    return ValueListenableBuilder<List<Reel>>(
+      valueListenable: reelService.likedReelsNotifier,
+      builder: (context, likedReels, _) {
+        final isLiked = likedReels.any((r) => r.id == reel.id);
         return _ActionButton(
           icon: isLiked ? Icons.favorite : Icons.favorite_outline,
           color: isLiked ? Colors.red : Colors.white,
-          label: _formatCount(reel.likesCount),
+          label: _formatCount(reel.likesCount + (isLiked ? 1 : 0)),
           onTap: () {
             if (isLiked) {
               reelService.unlikeReel(reel.id);
@@ -285,14 +338,15 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: reelService.isReelSaved(reel.id),
-      builder: (context, snapshot) {
-        final isSaved = snapshot.data ?? false;
+    // ValueListenableBuilder reacts immediately when savedReelsNotifier changes
+    return ValueListenableBuilder<List<Reel>>(
+      valueListenable: reelService.savedReelsNotifier,
+      builder: (context, savedReels, _) {
+        final isSaved = savedReels.any((r) => r.id == reel.id);
         return _ActionButton(
           icon: isSaved ? Icons.bookmark : Icons.bookmark_outline,
           color: isSaved ? Colors.yellow : Colors.white,
-          label: _formatCount(reel.savedCount),
+          label: _formatCount(reel.savedCount + (isSaved ? 1 : 0)),
           onTap: () {
             if (isSaved) {
               reelService.unsaveReel(reel.id);

@@ -22,22 +22,29 @@ class EditorToolsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayTools = expanded ? tools : tools.take(4).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Wrap(
-        spacing: 0,
-        runSpacing: 20,
-        alignment: WrapAlignment.spaceEvenly,
-        children: displayTools.map((t) {
-          return _ToolButton(
-            tool: t,
-            isActive: activeTool == t.tool,
-            onTap: () => onToolSelected(t.tool),
-            isDark: isDark,
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(
+          horizontal: AppEditorConstants.w(context, 0.03),
+          vertical: 8,
+        ),
+        itemCount: tools.length,
+        itemBuilder: (context, index) {
+          final t = tools[index];
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppEditorConstants.w(context, 0.02),
+            ),
+            child: _ToolButton(
+              tool: t,
+              isActive: activeTool == t.tool,
+              onTap: () => onToolSelected(t.tool),
+              isDark: isDark,
+            ),
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -58,33 +65,43 @@ class _ToolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final btnSize = AppEditorConstants.sp(
+      context,
+      AppEditorConstants.toolBtnSize,
+    );
 
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: screenWidth / 4 - 8,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: SizedBox(
+        width: 70,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: AppEditorConstants.toolBtnSize,
-              height: AppEditorConstants.toolBtnSize,
+              width: btnSize,
+              height: btnSize,
               decoration: BoxDecoration(
                 color: isActive
                     ? AppEditorConstants.accent
                     : AppEditorConstants.iconBg(isDark),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                tool.icon,
-                color: AppEditorConstants.primaryText(isDark),
-                size: 24,
-              ),
+              child: tool.icon is IconData
+                  ? Icon(
+                      tool.icon as IconData,
+                      color: AppEditorConstants.primaryText(isDark),
+                      size: btnSize * 0.5,
+                    )
+                  : Padding(
+                      padding: EdgeInsets.all(btnSize * 0.22),
+                      child: Image.asset(
+                        tool.icon as String,
+                        color: AppEditorConstants.primaryText(isDark),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               tool.label,
               textAlign: TextAlign.center,
@@ -92,11 +109,13 @@ class _ToolButton extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: isActive
-                    ? AppEditorConstants.accent
+                    ? AppEditorConstants.textActive(isDark)
                     : AppEditorConstants.textDim(isDark),
-                fontSize: AppEditorConstants.toolLabelSize,
-                fontWeight: FontWeight.w500,
-                height: 1.2,
+                fontSize: AppEditorConstants.sp(
+                  context,
+                  AppEditorConstants.toolLabelSize,
+                ),
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ],
@@ -127,7 +146,7 @@ class EditorFilterThumbnails extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: filters.asMap().entries.map((entry) {
           final i = entry.key;
@@ -136,64 +155,59 @@ class EditorFilterThumbnails extends StatelessWidget {
 
           return GestureDetector(
             onTap: () => onChanged(i),
-            child: Container(
-              width: 64,
-              height: 64,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color: AppEditorConstants.iconBg(isDark),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color:
-                      active ? AppEditorConstants.accent : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ColorFiltered(
-                      colorFilter: f.matrix != null
-                          ? ColorFilter.matrix(f.matrix!)
-                          : const ColorFilter.mode(
-                              Colors.transparent, BlendMode.dst),
-                      child: Image.file(
-                        imageFile,
-                        fit: BoxFit.cover,
-                        cacheWidth: 150, // Optimize for thumbnails
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppEditorConstants.iconBg(isDark),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: active
+                            ? AppEditorConstants.accent
+                            : Colors.transparent,
+                        width: 2,
                       ),
                     ),
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withAlpha(180),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                        child: Text(
-                          f.name,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: ColorFiltered(
+                        colorFilter: f.matrix != null
+                            ? ColorFilter.matrix(f.matrix!)
+                            : const ColorFilter.mode(
+                                Colors.transparent,
+                                BlendMode.dst,
+                              ),
+                        child: Image.file(
+                          imageFile,
+                          fit: BoxFit.cover,
+                          cacheWidth: 150, // Optimize for thumbnails
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      f.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: active
+                            ? AppEditorConstants.accent
+                            : (isDark ? Colors.white70 : Colors.black87),
+                        fontSize: 9,
+                        fontWeight: active ? FontWeight.bold : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -222,7 +236,7 @@ class EditorEffectThumbnails extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           // None option

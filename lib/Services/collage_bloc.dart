@@ -90,9 +90,15 @@ class CollageSelecting extends CollageState {
     this.credits = 0,
     // Initialize with max size (9), all nulls
     this.selectedImages = const [
-      null, null, null,
-      null, null, null,
-      null, null, null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
     ],
   });
 
@@ -121,7 +127,12 @@ class CollageSelecting extends CollageState {
   }
 
   @override
-  List<Object?> get props => [selectedType, imageCount, credits, selectedImages];
+  List<Object?> get props => [
+    selectedType,
+    imageCount,
+    credits,
+    selectedImages,
+  ];
 }
 
 /// Gate / credit check is running (brief interstitial).
@@ -217,11 +228,13 @@ class CollageBloc extends Bloc<CollageEvent, CollageState> {
   void _onTypeSelected(CollageTypeSelected event, Emitter<CollageState> emit) {
     if (state is CollageSelecting) {
       final s = state as CollageSelecting;
-      emit(s.copyWith(
-        selectedType: event.collageType,
-        imageCount: event.imageCount,
-        selectedImages: List<File?>.filled(9, null),
-      ));
+      emit(
+        s.copyWith(
+          selectedType: event.collageType,
+          imageCount: event.imageCount,
+          selectedImages: List<File?>.filled(9, null),
+        ),
+      );
     }
   }
 
@@ -241,11 +254,13 @@ class CollageBloc extends Bloc<CollageEvent, CollageState> {
     Emitter<CollageState> emit,
   ) async {
     final s = state as CollageSelecting;
-    emit(CollageCheckingGate(
-      selectedImages: s.selectedImages,
-      selectedType: s.selectedType,
-      imageCount: s.imageCount,
-    ));
+    emit(
+      CollageCheckingGate(
+        selectedImages: s.selectedImages,
+        selectedType: s.selectedType,
+        imageCount: s.imageCount,
+      ),
+    );
 
     final canProceed = await GenerationGate.check(
       context: event.context,
@@ -258,22 +273,26 @@ class CollageBloc extends Bloc<CollageEvent, CollageState> {
       emit(const CollageGateBlocked());
       // Bounce back to selection after a brief pause so the UI doesn't flash.
       await Future.delayed(const Duration(milliseconds: 300));
-      emit(CollageSelecting(
-        credits: _creditService.credits,
-        selectedType: s.selectedType,
-        imageCount: s.imageCount,
-        selectedImages: s.selectedImages,
-      ));
+      emit(
+        CollageSelecting(
+          credits: _creditService.credits,
+          selectedType: s.selectedType,
+          imageCount: s.imageCount,
+          selectedImages: s.selectedImages,
+        ),
+      );
       return;
     }
 
     final gateState = state as CollageCheckingGate;
     // Gate passed → tell the UI to trigger the collage widget's save/render.
-    emit(CollageRendering(
-      selectedImages: gateState.selectedImages,
-      selectedType: gateState.selectedType,
-      imageCount: gateState.imageCount,
-    ));
+    emit(
+      CollageRendering(
+        selectedImages: gateState.selectedImages,
+        selectedType: gateState.selectedType,
+        imageCount: gateState.imageCount,
+      ),
+    );
   }
 
   Future<void> _onRendered(

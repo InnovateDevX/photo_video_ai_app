@@ -32,11 +32,14 @@ class RemoteConfigService {
         'replicate_collage_model': '{}',
         'replicate_logo_model': '{}',
         'replicate_filter_model': '{}',
+        'replicate_retouch_model': '{}',
         'replicate_filter_styles': '[]',
         'tool_demos': '{}',
         'admob_rewarded_interstitial_ad_unit_id': '',
         'initial_credits': 100,
+        'trending_data': '{}',
         'categories': '[]',
+        'reels_data': '[]',
         'pro_weekly': '',
         'pro_yearly': '',
         'pro_monthly': '',
@@ -50,9 +53,8 @@ class RemoteConfigService {
         'rc_android_key': '', // Add in Firebase Remote Config
         'rc_ios_key': '',
         'rc_credits_map': '{}',
-        'azure_content_safety_endpoint':
-            'https://acs-innovatedevx.cognitiveservices.azure.com',
-        'azure_content_safety_key': '', // Add in Firebase Remote Config
+        'google_cloud_api_key': '', // Add in Firebase Remote Config
+        'tool_badges': '{}',
       });
 
       // 2. Configure Settings
@@ -107,11 +109,15 @@ class RemoteConfigService {
   String get collageModelJson => getString('replicate_collage_model');
   String get logoModelJson => getString('replicate_logo_model');
   String get filterModelJson => getString('replicate_filter_model');
+  String get retouchModelJson => getString('replicate_retouch_model');
   String get filterStylesJson => getString('replicate_filter_styles');
   String get rewardedAdUnitId =>
       getString('admob_rewarded_interstitial_ad_unit_id');
   int get initialCredits => getInt('initial_credits');
   String get categoriesJson => getString('categories');
+  String get toolBadgesJson => getString('tool_badges');
+  String get trendingDataJson => getString('trending_data');
+  String get reelsJson => getString('reels_data');
 
   // Pricing
   String get proWeekly => getString('pro_weekly');
@@ -130,7 +136,5 @@ class RemoteConfigService {
   String get rcIosKey => getString('rc_ios_key');
   String get rcCreditsMapJson => getString('rc_credits_map');
 
-  String get azureContentSafetyEndpoint =>
-      getString('azure_content_safety_endpoint');
-  String get azureContentSafetyKey => getString('azure_content_safety_key');
+  String get googleCloudApiKey => getString('google_cloud_api_key');
 }

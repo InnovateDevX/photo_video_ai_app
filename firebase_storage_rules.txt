@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 1. PUBLIC PROFILES (Avatars must be visible to others)
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 2. STRICTLY PRIVATE USER FILES
+    // No other user or anonymous person can ever view or write these.
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 3. STICKERS
+    // Allows anyone to read stickers, but strictly prevents writing/editing/deleting
+    match /stickers/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 4. EVERYTHING ELSE (Categories, Trendings, Videos)
+    // FIXED: Removed 'stickers' from exclusion - it was blocking stickers!
+    // Allows anyone to read them, but strictly prevents writing/editing properties
+    match /{folder}/{allPaths=**} {
+      allow read: if folder != 'users' && folder != 'profiles';
+      allow write: if false;
+    }
+
+    // 5. Files exactly at the root level
+    match /{fileName} {
+       allow read: if true;
+    }
+  }
+}

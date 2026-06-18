@@ -4,6 +4,8 @@ import 'package:equatable/equatable.dart';
 class EffectOverlay extends Equatable {
   final String id;
   final String category;
+  final String? portraitPath;
+  final String? squarePath;
   final String assetPath;
   final String thumbnailPath;
   final double defaultOpacity;
@@ -12,17 +14,27 @@ class EffectOverlay extends Equatable {
   const EffectOverlay({
     required this.id,
     required this.category,
+    this.portraitPath,
+    this.squarePath,
     required this.assetPath,
     required this.thumbnailPath,
     this.defaultOpacity = 1.0,
     this.blendMode = BlendMode.screen,
   });
 
+  String getEffectivePath(bool isPortrait) {
+    if (isPortrait && portraitPath != null) return portraitPath!;
+    if (!isPortrait && squarePath != null) return squarePath!;
+    return assetPath;
+  }
+
   factory EffectOverlay.fromJson(Map<String, dynamic> json) {
     return EffectOverlay(
       id: json['id'] as String,
       category: json['category'] as String,
       assetPath: json['assetPath'] as String,
+      portraitPath: json['portraitPath'] as String?,
+      squarePath: json['squarePath'] as String?,
       thumbnailPath: json['thumbnailPath'] as String,
       defaultOpacity: (json['defaultOpacity'] as num?)?.toDouble() ?? 1.0,
       blendMode: _parseBlendMode(json['blendMode'] as String?),
@@ -50,8 +62,16 @@ class EffectOverlay extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, category, assetPath, thumbnailPath, defaultOpacity, blendMode];
+  List<Object?> get props => [
+    id,
+    category,
+    assetPath,
+    thumbnailPath,
+    defaultOpacity,
+    blendMode,
+  ];
 
   @override
-  String toString() => 'EffectOverlay(id: $id, category: $category, blendMode: $blendMode)';
+  String toString() =>
+      'EffectOverlay(id: $id, category: $category, blendMode: $blendMode)';
 }

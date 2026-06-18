@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,13 +11,14 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:trail_ai_app/Core/theme_notifier.dart';
 import 'package:trail_ai_app/Core/locale_notifier.dart';
 import 'package:trail_ai_app/Core/app_initializer.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
+import 'package:trail_ai_app/Services/reel_service.dart';
 import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
+import 'package:trail_ai_app/pages/onboarding_page.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -25,7 +27,7 @@ void main() async {
       WidgetsFlutterBinding.ensureInitialized();
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
+        SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.dark,
@@ -33,18 +35,24 @@ void main() async {
           systemNavigationBarContrastEnforced: false,
         ),
       );
-      await dotenv.load(fileName: ".env");
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+
+      // ── Firebase App Check (guards Firestore & Storage from bot abuse) ───
       // await FirebaseAppCheck.instance.activate(
-      //   androidProvider: AndroidProvider.debug,
-      //   appleProvider: AppleProvider.debug,
+      //   providerAndroid: kReleaseMode
+      //       ? PlayIntegrityAndroidProvider.new()
+      //       : DebugAndroidProvider.new(),
+      //   providerApple: kReleaseMode
+      //       ? DeviceCheckAppleProvider.new()
+      //       : DebugAppleProvider.new(),
       // );
 
       await GoogleSignIn.instance.initialize();
       await MobileAds.instance.initialize();
       await LocalStorageService().initialize();
+      await ReelService().initialize();
 
       FlutterError.onError =
           FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -58,7 +66,11 @@ void main() async {
       await NotificationService().initialize();
       final initializer = AppInitializer();
       final uid = await initializer.initializeUser();
-      runApp(MyApp(initialUid: uid));
+
+      // Check if user has completed onboarding
+      final bool onboardingDone = await OnboardingPage.hasCompleted();
+
+      runApp(MyApp(initialUid: uid, showOnboarding: !onboardingDone));
     },
     (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -68,8 +80,13 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final String? initialUid;
+  final bool showOnboarding;
 
-  const MyApp({super.key, required this.initialUid});
+  const MyApp({
+    super.key,
+    required this.initialUid,
+    this.showOnboarding = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +147,9 @@ class MyApp extends StatelessWidget {
               builder: (context, child) {
                 return GlobalNotificationOverlay(child: child!);
               },
-              initialRoute: AppRoutes.home,
+              initialRoute: showOnboarding
+                  ? AppRoutes.onboarding
+                  : AppRoutes.home,
               routes: getAppRoutes(),
             );
           },

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../Models/effect_overlay.dart';
 import '../Services/effect_engine.dart';
+import '../Services/effect_service.dart';
 
 class EffectEditorProvider extends ChangeNotifier {
   final EffectEngine _engine = EffectEngine();
@@ -10,7 +11,7 @@ class EffectEditorProvider extends ChangeNotifier {
   File? _baseImageFile;
   ui.Image? _baseImage;
   ui.Image? _overlayImage;
-  
+
   EffectOverlay? _selectedEffect;
   double _opacity = 0.8;
   bool _isLoading = false;
@@ -47,9 +48,34 @@ class EffectEditorProvider extends ChangeNotifier {
     try {
       // Release old overlay memory
       _overlayImage?.dispose();
-      
-      // Decode the overlay asset
-      _overlayImage = await _engine.decodeImageFromAsset(effect.assetPath);
+
+      final isPortrait =
+          _baseImage == null || _baseImage!.width < _baseImage!.height;
+      final path = effect.getEffectivePath(isPortrait);
+      final filename = path.split('/').last.split('.').first;
+      final index = int.tryParse(filename.replaceAll(RegExp(r'\D'), '')) ?? 1;
+
+      ui.Image? newImage;
+      try {
+        final bytes = await EffectService().getEffectImage(
+          category: effect.category,
+          index: index,
+          isPortrait: isPortrait,
+        );
+        if (bytes != null && bytes.isNotEmpty) {
+          final codec = await ui.instantiateImageCodec(bytes);
+          final frame = await codec.getNextFrame();
+          newImage = frame.image;
+        }
+      } catch (e) {
+        debugPrint(
+          'Failed to load overlay from Firebase, falling back to local asset: $e',
+        );
+      }
+
+      newImage ??= await _engine.decodeImageFromAsset(path);
+
+      _overlayImage = newImage;
       _opacity = effect.defaultOpacity;
     } catch (e) {
       debugPrint('Error loading effect: $e');
@@ -80,7 +106,7 @@ class EffectEditorProvider extends ChangeNotifier {
     }
 
     ui.Image finalUiImage;
-    
+
     if (_overlayImage != null && _selectedEffect != null) {
       finalUiImage = await _engine.composite(
         baseImage: _baseImage!,
@@ -93,20 +119,22 @@ class EffectEditorProvider extends ChangeNotifier {
     }
 
     final bytes = await _engine.exportToBytes(finalUiImage);
-    
+
     // Save to a temporary file
     final tempDir = Directory.systemTemp;
-    final file = File('${tempDir.path}/effect_export_${DateTime.now().millisecondsSinceEpoch}.png');
+    final file = File(
+      '${tempDir.path}/effect_export_${DateTime.now().millisecondsSinceEpoch}.png',
+    );
     await file.writeAsBytes(bytes);
-    
+
     // Dispose the exported image if it's a new one
     if (finalUiImage != _baseImage) {
       finalUiImage.dispose();
     }
-    
+
     return file;
   }
-  
+
   @override
   void dispose() {
     _baseImage?.dispose();

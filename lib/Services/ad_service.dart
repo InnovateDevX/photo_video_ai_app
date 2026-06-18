@@ -30,13 +30,13 @@ class AdService {
 
     try {
       final config = RemoteConfigService();
-      
+
       // Ensure RemoteConfigService is initialized
       await config.initialize();
 
       // Get the ad unit ID from Remote Config
       _rewardedAdUnitId = config.rewardedAdUnitId;
-      
+
       debugPrint(
         '🔧 [AdService] Retrieved ad unit ID length: ${_rewardedAdUnitId.length}',
       );

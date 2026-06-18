@@ -207,5 +207,9 @@
     "liked_tab": "Beğenilenler",
     "nothing_here": "Henüz burada bir şey yok.",
     "no_generated_assets": "Henüz oluşturulmuş varlık yok.",
-    "result_appbar_title": "Sonuç"
+    "result_appbar_title": "Sonuç",
+    "restricted_text_title": "Kısıtlanmış metin",
+    "restricted_text_message": "Promptunuz, güvenlik yönergelerimizi ihlal eden metin içeriyor. Lütfen promptunuzu değiştirin ve tekrar deneyin.",
+    "restricted_image_title": "Kısıtlanmış görsel",
+    "restricted_image_message": "Seçilen görsel, güvenlik yönergelerimizi ihlal eden içerik içeriyor. Lütfen farklı bir görsel seçin."
 }

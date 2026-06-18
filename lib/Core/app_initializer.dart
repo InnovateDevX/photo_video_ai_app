@@ -35,7 +35,7 @@ class AppInitializer {
 
   Future<String?> initializeUser() async {
     debugPrint('🚀 [AppInitializer] Starting user initialization…');
-    
+
     // ── Step 0: Initialize Remote Config ──────────────────────────────────
     // Do this first so other services can use it immediately.
     await RemoteConfigService().initialize();
@@ -119,7 +119,7 @@ class AppInitializer {
       // ── Step 4: Publish session for the whole app ─────────────────────────
       UserSession.instance.uid = uid;
       UserSession.instance.deviceId = deviceId;
-      
+
       // Sync identity with RevenueCat
       unawaited(SubscriptionService().logIn(uid));
 
@@ -133,6 +133,9 @@ class AppInitializer {
       // ── Step 6: Pre-cache demo images in background ───────────────────────
       unawaited(_precacheDemoImages());
 
+      // ── Step 7: Stickers load on-demand (when user taps a category tab) ─────
+      // No pre-loading needed anymore.
+
       debugPrint('🏁 [AppInitializer] Done. uid=$uid, deviceId=$deviceId');
       return uid;
     } catch (e, stack) {
@@ -142,8 +145,8 @@ class AppInitializer {
       try {
         String? fallbackUid = _authService.currentUser?.uid;
         if (fallbackUid == null) {
-           final credential = await _authService.signInAnonymously();
-           fallbackUid = credential.user?.uid;
+          final credential = await _authService.signInAnonymously();
+          fallbackUid = credential.user?.uid;
         }
         if (fallbackUid != null) UserSession.instance.uid = fallbackUid;
         return fallbackUid;
@@ -178,8 +181,10 @@ class AppInitializer {
 
       if (imageUrls.isEmpty) return;
 
-      debugPrint('🖼️ [AppInitializer] Pre-caching ${imageUrls.length} demo images...');
-      
+      debugPrint(
+        '🖼️ [AppInitializer] Pre-caching ${imageUrls.length} demo images...',
+      );
+
       final cacheManager = DefaultCacheManager();
       for (final url in imageUrls) {
         // Use a safe async wrapper to prevent one failure from stopping the loop

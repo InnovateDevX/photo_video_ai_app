@@ -50,7 +50,7 @@ class _ImageCropPageState extends State<ImageCropPage> {
           toolbarWidgetColor: isDark ? Colors.white : Colors.black87,
           backgroundColor: isDark ? const Color(0xFF161616) : Colors.white,
           activeControlsWidgetColor: const Color(0xFF9B59B6),
-          dimmedLayerColor: Colors.black.withOpacity(0.7),
+          dimmedLayerColor: Colors.black.withValues(alpha: 0.7),
           cropFrameColor: const Color(0xFF9B59B6),
           cropGridColor: Colors.white24,
           showCropGrid: true,
@@ -192,7 +192,7 @@ class _ImageCropPageState extends State<ImageCropPage> {
                           border: Border.all(
                             color: AppColors.creditsCardBorder(
                               isDark,
-                            ).withOpacity(0.5),
+                            ).withValues(alpha: 0.5),
                           ),
                         ),
                         child: Center(
@@ -292,7 +292,7 @@ class _CircleBtn extends StatelessWidget {
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),

@@ -195,7 +195,7 @@ class _AiCollageViewState extends State<_AiCollageView>
           _progressController.forward(from: 0);
           // Briefly wait for loading screen to mount and UI to stabilize.
           await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted) {
+          if (context.mounted) {
             await _triggerSave();
           }
         }
@@ -204,19 +204,21 @@ class _AiCollageViewState extends State<_AiCollageView>
         }
         if (state is CollageError) {
           _progressController.stop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${state.message}')),
-          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${'error'.i18n()}${state.message}')),
+            );
+          }
         }
       },
       builder: (context, state) {
         final selectedType = state is CollageSelecting
             ? state.selectedType
             : state is CollageCheckingGate
-                ? state.selectedType
-                : state is CollageRendering
-                    ? state.selectedType
-                    : CollageType.vSplit;
+            ? state.selectedType
+            : state is CollageRendering
+            ? state.selectedType
+            : CollageType.vSplit;
 
         return Scaffold(
           backgroundColor: AppColors.backgroundColor(isDark),
@@ -340,22 +342,28 @@ class _AiCollageViewState extends State<_AiCollageView>
                 aspectRatio: 1.0,
                 child: RepaintBoundary(
                   key: _collageKey,
-                  child: _templates.firstWhere((t) => t.type == selectedType).slots.isEmpty
+                  child:
+                      _templates
+                          .firstWhere((t) => t.type == selectedType)
+                          .slots
+                          .isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : CollageGrid(
-                          template: _templates.firstWhere((t) => t.type == selectedType),
+                          template: _templates.firstWhere(
+                            (t) => t.type == selectedType,
+                          ),
                           isExporting: state is CollageRendering,
                           selectedImages: state is CollageSelecting
                               ? state.imagesForCurrentTemplate
                               : state is CollageCheckingGate
-                                  ? state.selectedImages
-                                  : state is CollageRendering
-                                      ? state.selectedImages
-                                      : [],
+                              ? state.selectedImages
+                              : state is CollageRendering
+                              ? state.selectedImages
+                              : [],
                           onImagePicked: (index, file) {
-                            context
-                                .read<CollageBloc>()
-                                .add(CollageImagePicked(index, file));
+                            context.read<CollageBloc>().add(
+                              CollageImagePicked(index, file),
+                            );
                           },
                         ),
                 ),
@@ -395,7 +403,9 @@ class _AiCollageViewState extends State<_AiCollageView>
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(w * 0.04),
                         border: Border.all(
-                          color: isSelected ? Colors.orange : Colors.transparent,
+                          color: isSelected
+                              ? Colors.orange
+                              : Colors.transparent,
                           width: 2.5,
                         ),
                       ),
@@ -599,7 +609,7 @@ class _CircleBtn extends StatelessWidget {
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),

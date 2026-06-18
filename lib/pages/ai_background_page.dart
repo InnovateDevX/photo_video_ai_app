@@ -1,10 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:image_background_remover/image_background_remover.dart';
-import 'package:image/image.dart' as img;
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
 import 'package:localization/localization.dart';
@@ -18,6 +13,7 @@ import 'package:trail_ai_app/Services/media_service.dart';
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 import 'package:trail_ai_app/Widgets/topbar.dart';
 
 enum _PageState { selection, loading, result }
@@ -109,19 +105,38 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
       return;
     }
 
-    // Use local blur processing for Blur option (faster, free, more reliable)
-    if (_selectedStyle == 'Blur') {
-      await _blurBackgroundLocally();
-      return;
-    }
-
-    // Use AI for Remove Background
-    final model = _replicateService.removeBgModel;
+    final model = _selectedStyle == 'Blur'
+        ? _replicateService.blurBgModel
+        : _replicateService.removeBgModel;
     if (model == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('no_model_selected'.i18n())));
       return;
+    }
+
+    // --- Safety Check ---
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkImageFileSafe(_selectedImage!);
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (e is NsfwContentException) {
+        if (mounted) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        }
+        return;
+      }
+      debugPrint('⚠️ [AiBackgroundPage] Image safety check error: $e');
     }
 
     setState(() => _pageState = _PageState.loading);
@@ -142,7 +157,9 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
     try {
       final url = await _replicateService.generateContent(
         modelConfig: model,
-        prompt: 'remove background, clean cutout',
+        prompt: _selectedStyle == 'Blur'
+            ? 'blur background'
+            : 'remove background, clean cutout',
         referenceImage: _selectedImage,
       );
 
@@ -166,142 +183,12 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
         setState(() => _pageState = _PageState.selection);
 
         if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
           );
         }
-      }
-    }
-  }
-
-  /// Applies blur to the background locally using Flutter's image processing.
-  /// This is faster, free, and produces consistent results.
-  Future<void> _blurBackgroundLocally() async {
-    if (_selectedImage == null) return;
-
-    setState(() => _pageState = _PageState.loading);
-    _progressController.forward(from: 0);
-
-    try {
-      // Read the image bytes
-      final bytes = await _selectedImage!.readAsBytes();
-
-      if (!mounted) return;
-
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      // 1. Get subject cutout
-      final ui.Image foregroundImage = await BackgroundRemover.instance
-          .removeBg(bytes);
-
-      // 2. Decode original to img.Image (PIL equivalent)
-      final img.Image? original = img.decodeImage(bytes);
-      if (original == null) throw Exception('Failed to decode image');
-      
-      // Convert to RGBA if needed (PIL equivalent)
-      final img.Image originalRgba = original.convert(numChannels: 4);
-
-      // 3. Blur the original image (PIL GaussianBlur equivalent)
-      // radius = sigma in PIL terms. Fixed to 15 to match Python default.
-      const int blurRadius = 15; 
-      final img.Image blurredBg = img.gaussianBlur(originalRgba, radius: blurRadius);
-
-      // 4. Convert blurred background back to ui.Image
-      final Uint8List blurredBytes = Uint8List.fromList(img.encodePng(blurredBg));
-      final ui.Codec bgCodec = await ui.instantiateImageCodec(blurredBytes);
-      final ui.FrameInfo bgFrame = await bgCodec.getNextFrame();
-      final ui.Image blurredBgImage = bgFrame.image;
-
-      final double imgWidth = blurredBgImage.width.toDouble();
-      final double imgHeight = blurredBgImage.height.toDouble();
-
-      // 3. Compose final result - blurred background + sharp foreground
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, imgWidth, imgHeight));
-
-      // Draw the blurred background
-      canvas.drawImage(blurredBgImage, Offset.zero, Paint());
-
-      // Draw the foreground subject on top (scaled to fit)
-      double scaleX = imgWidth / foregroundImage.width.toDouble();
-      double scaleY = imgHeight / foregroundImage.height.toDouble();
-      double scale = scaleX > scaleY ? scaleX : scaleY;
-
-      canvas.save();
-      canvas.translate(imgWidth / 2, imgHeight / 2);
-      canvas.scale(scale);
-      canvas.translate(
-        -foregroundImage.width.toDouble() / 2,
-        -foregroundImage.height.toDouble() / 2,
-      );
-      canvas.drawImage(foregroundImage, Offset.zero, Paint());
-      canvas.restore();
-
-      // 4. Convert to image and save
-      final picture = recorder.endRecording();
-      final resultImg = await picture.toImage(
-        imgWidth.toInt(),
-        imgHeight.toInt(),
-      );
-
-      final byteData = await resultImg.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      final resultBytes = byteData!.buffer.asUint8List();
-
-      // Clean up
-      foregroundImage.dispose();
-      blurredBgImage.dispose();
-
-      if (!mounted) return;
-      Navigator.pop(context); // Hide loading
-
-      // Save to file
-      final dir = await getTemporaryDirectory();
-      final outputFile = File(
-        '${dir.path}/blur_bg_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await outputFile.writeAsBytes(resultBytes);
-
-      if (mounted) {
-        _progressController.stop();
-        setState(() {
-          _generatedImageUrl = outputFile.path;
-          _pageState = _PageState.result;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Background blurred successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Hide loading if open
-        _progressController.stop();
-        setState(() => _pageState = _PageState.selection);
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -371,7 +258,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -477,7 +364,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.file(_selectedImage!, fit: BoxFit.cover),
+                              Image.file(_selectedImage!, fit: BoxFit.contain),
                               Positioned(
                                 top: w * 0.03,
                                 right: w * 0.03,
@@ -805,7 +692,7 @@ class CheckedPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = isDark ? Colors.white10 : Colors.black.withOpacity(0.05);
+      ..color = isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05);
     final double step = screenWidth * 0.025;
 
     for (double i = 0; i < size.width; i += step) {

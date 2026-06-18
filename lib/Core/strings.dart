@@ -139,7 +139,7 @@ class AppStrings {
   static const String clothswap = 'clothswap';
   static const String videoCategory = 'video_category';
   static const String imageCategory = 'image_category';
-  static const String AiVideo = 'ai_video_tool';
+  static const String aiVideoTool = 'ai_video_tool';
   static const String backgroundAi = 'background_ai';
   static const String aiFilterStyle = 'ai_filter_style';
   static const String aiFilterTitle = 'ai_filter_title';

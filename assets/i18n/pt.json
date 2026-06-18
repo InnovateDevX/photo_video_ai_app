@@ -207,5 +207,9 @@
     "liked_tab": "Curtidos",
     "nothing_here": "Nada aqui ainda.",
     "no_generated_assets": "Nenhum ativo gerado ainda.",
-    "result_appbar_title": "Resultado"
+    "result_appbar_title": "Resultado",
+    "restricted_text_title": "Texto restrito",
+    "restricted_text_message": "Seu prompt contém texto que viola nossas diretrizes de segurança. Por favor, modifique seu prompt e tente novamente.",
+    "restricted_image_title": "Imagem restrita",
+    "restricted_image_message": "A imagem selecionada contém conteúdo que viola nossas diretrizes de segurança. Por favor, escolha uma imagem diferente."
 }

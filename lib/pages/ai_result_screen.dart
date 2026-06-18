@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/Core/colors.dart';
+import 'dart:ui';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:localization/localization.dart';
 import 'package:trail_ai_app/Services/media_service.dart';
@@ -9,6 +10,7 @@ import 'package:trail_ai_app/pages/upscale_page.dart';
 import 'package:video_player/video_player.dart';
 import 'package:trail_ai_app/Services/review_service.dart';
 import 'package:trail_ai_app/Services/asset_service.dart';
+import '../Helpers/feedback_helper.dart';
 
 class AIResultScreen extends StatefulWidget {
   final File? originalImage;
@@ -23,6 +25,7 @@ class AIResultScreen extends StatefulWidget {
 
   // Visual Customization
   final BoxFit fit;
+  final bool isNsfw;
 
   const AIResultScreen({
     super.key,
@@ -34,6 +37,7 @@ class AIResultScreen extends StatefulWidget {
     this.customActionIcon,
     this.onCustomAction,
     this.fit = BoxFit.contain, // Default to contain to ensure it's not cropped
+    this.isNsfw = false,
   });
 
   @override
@@ -45,6 +49,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
   bool _showOriginal = false;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
+  bool? _isLiked;
 
   @override
   void initState() {
@@ -140,6 +145,46 @@ class _AIResultScreenState extends State<AIResultScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sw * 0.04, vertical: sh * 0.01),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new,
+                        color: AppColors.textColor(isDark),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      FeedbackHelper.showFeedbackSheet(context, isDark: isDark);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.flag_outlined,
+                        color: AppColors.textColor(isDark),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: sw * 0.04),
@@ -150,7 +195,65 @@ class _AIResultScreenState extends State<AIResultScreen> {
                     // Media Display Container
                     _buildMediaDisplay(sw, sh, isDark, isVideo),
 
-                    SizedBox(height: sh * 0.03),
+                    SizedBox(height: sh * 0.02),
+
+                    // Feedback row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Was this generation helpful?',
+                          style: TextStyle(
+                            color: AppColors.secondaryTextColor(isDark),
+                            fontSize: sw * 0.038,
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.03),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() => _isLiked = true);
+                            FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _isLiked == true
+                                  ? Colors.green.withValues(alpha: 0.2)
+                                  : (isDark ? Colors.white12 : Colors.grey.shade200),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isLiked == true ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                              color: _isLiked == true ? Colors.green : AppColors.textColor(isDark),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.03),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() => _isLiked = false);
+                            FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _isLiked == false
+                                  ? Colors.red.withValues(alpha: 0.2)
+                                  : (isDark ? Colors.white12 : Colors.grey.shade200),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isLiked == false ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
+                              color: _isLiked == false ? Colors.red : AppColors.textColor(isDark),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: sh * 0.02),
 
                     // Action Pills (Enhance/Try Again)
                     if (widget.onReEdit != null || widget.onTryAgain != null)
@@ -187,19 +290,21 @@ class _AIResultScreenState extends State<AIResultScreen> {
               _mediaWrapper(
                 child: InteractiveViewer(
                   maxScale: 3.5,
-                  child: _showOriginal
-                      ? Image.file(widget.originalImage!, fit: BoxFit.contain)
-                      : widget.resultImageUrl.startsWith('http')
-                      ? CachedNetworkImage(
-                          imageUrl: widget.resultImageUrl,
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) =>
-                              _buildPlaceholder(isDark),
-                        )
-                      : Image.file(
-                          File(widget.resultImageUrl),
-                          fit: BoxFit.contain,
-                        ),
+                  child: Center(
+                    child: _showOriginal
+                        ? Image.file(widget.originalImage!, fit: widget.fit)
+                        : widget.resultImageUrl.startsWith('http')
+                        ? CachedNetworkImage(
+                            imageUrl: widget.resultImageUrl,
+                            fit: widget.fit,
+                            placeholder: (context, url) =>
+                                _buildPlaceholder(isDark),
+                          )
+                        : Image.file(
+                            File(widget.resultImageUrl),
+                            fit: widget.fit,
+                          ),
+                  ),
                 ),
               ),
               Positioned(
@@ -225,35 +330,59 @@ class _AIResultScreenState extends State<AIResultScreen> {
     }
 
     // Default Video/Image Display
+    Widget mediaWidget = isVideo
+        ? (_isVideoInitialized && _videoController != null
+            ? AspectRatio(
+                aspectRatio: _videoController!.value.aspectRatio,
+                child: VideoPlayer(_videoController!),
+              )
+            : _buildPlaceholder(isDark))
+        : InteractiveViewer(
+            maxScale: 3.0,
+            child: Center(
+              child: widget.resultImageUrl.startsWith('http')
+                  ? CachedNetworkImage(
+                      imageUrl: widget.resultImageUrl,
+                      fit: widget.fit,
+                      placeholder: (context, url) =>
+                          _buildPlaceholder(isDark),
+                      errorWidget: (context, url, err) =>
+                          const Icon(Icons.error_outline),
+                    )
+                  : Image.file(
+                      File(widget.resultImageUrl),
+                      fit: widget.fit,
+                    ),
+            ),
+          );
+
+    if (widget.isNsfw) {
+      mediaWidget = Stack(
+        fit: StackFit.expand,
+        children: [
+          ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: mediaWidget,
+          ),
+          Container(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: const Center(
+              child: Icon(
+                Icons.visibility_off,
+                color: Colors.white,
+                size: 48,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: sh * 0.72,
       ), // Flexible vertical limit
-      child: _mediaWrapper(
-        child: isVideo
-            ? (_isVideoInitialized && _videoController != null
-                  ? AspectRatio(
-                      aspectRatio: _videoController!.value.aspectRatio,
-                      child: VideoPlayer(_videoController!),
-                    )
-                  : _buildPlaceholder(isDark))
-            : InteractiveViewer(
-                maxScale: 3.0,
-                child: widget.resultImageUrl.startsWith('http')
-                    ? CachedNetworkImage(
-                        imageUrl: widget.resultImageUrl,
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) =>
-                            _buildPlaceholder(isDark),
-                        errorWidget: (context, url, err) =>
-                            const Icon(Icons.error_outline),
-                      )
-                    : Image.file(
-                        File(widget.resultImageUrl),
-                        fit: BoxFit.contain,
-                      ),
-              ),
-      ),
+      child: _mediaWrapper(child: mediaWidget),
     );
   }
 
@@ -263,7 +392,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
+            color: Colors.black.withValues(alpha: 0.35),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -340,12 +469,17 @@ class _AIResultScreenState extends State<AIResultScreen> {
           // Download Button
           Expanded(
             child: GestureDetector(
-              onTap: _isDownloading ? null : _downloadImage,
+              onTap: (_isDownloading || widget.isNsfw) ? null : _downloadImage,
               child: Container(
                 height: sh * 0.07,
-                decoration: ProGradientDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                ),
+                decoration: widget.isNsfw 
+                  ? BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(28),
+                    )
+                  : ProGradientDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
                 child: Center(
                   child: _isDownloading
                       ? SizedBox(
@@ -385,18 +519,18 @@ class _AIResultScreenState extends State<AIResultScreen> {
           // Share Button
           Expanded(
             child: GestureDetector(
-              onTap: _shareImage,
+              onTap: widget.isNsfw ? null : _shareImage,
               child: Container(
                 height: sh * 0.07,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.black.withOpacity(0.05),
+                  color: (isDark || widget.isNsfw)
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withOpacity(0.12)
-                        : Colors.black.withOpacity(0.1),
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.black.withValues(alpha: 0.1),
                     width: sw * 0.003,
                   ),
                 ),
@@ -406,14 +540,14 @@ class _AIResultScreenState extends State<AIResultScreen> {
                     children: [
                       Icon(
                         Icons.share_rounded,
-                        color: AppColors.textColor(isDark),
+                        color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
                         size: sw * 0.055,
                       ),
                       SizedBox(width: sw * 0.02),
                       Text(
                         'share'.i18n(),
                         style: TextStyle(
-                          color: AppColors.textColor(isDark),
+                          color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
                           fontWeight: FontWeight.bold,
                           fontSize: sw * 0.04,
                         ),
@@ -445,13 +579,13 @@ class _AIResultScreenState extends State<AIResultScreen> {
           height: sh * 0.07,
           decoration: BoxDecoration(
             color: isDark
-                ? Colors.white.withOpacity(0.06)
-                : Colors.black.withOpacity(0.03),
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(sw * 0.04),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.08),
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.08),
               width: sw * 0.003,
             ),
           ),

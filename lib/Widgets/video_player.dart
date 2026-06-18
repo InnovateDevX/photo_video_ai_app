@@ -27,15 +27,15 @@ class _VideoBannerState extends State<VideoBanner> {
         _controller.addListener(() {
           if (!mounted) return;
           final value = _controller.value;
-          if (value.duration > Duration.zero && 
-              value.position >= value.duration - const Duration(milliseconds: 50)) {
+          if (value.duration > Duration.zero &&
+              value.position >=
+                  value.duration - const Duration(milliseconds: 50)) {
             _controller.seekTo(Duration.zero);
             _controller.play();
           }
         });
         _controller.play();
       });
-
   }
 
   @override

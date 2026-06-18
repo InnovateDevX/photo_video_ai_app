@@ -45,7 +45,9 @@ class LocalStorageService {
     await prefs.setStringList(_assetsKey, assetsJsonStrList);
 
     assetsNotifier.value = updatedList;
-    debugPrint('✅ [LocalStorageService] Successfully saved asset metadata to local SharedPreferences.');
+    debugPrint(
+      '✅ [LocalStorageService] Successfully saved asset metadata to local SharedPreferences.',
+    );
   }
 
   Future<void> deleteAsset(String id) async {
@@ -88,8 +90,9 @@ class LocalStorageService {
       return a;
     }).toList();
 
-    final List<String> assetsJsonStrList =
-        updatedList.map((e) => e.toJson()).toList();
+    final List<String> assetsJsonStrList = updatedList
+        .map((e) => e.toJson())
+        .toList();
     await prefs.setStringList(_assetsKey, assetsJsonStrList);
 
     assetsNotifier.value = updatedList;

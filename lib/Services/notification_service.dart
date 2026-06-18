@@ -85,15 +85,16 @@ class NotificationService {
           ?.createNotificationChannel(channel);
 
       // Create a background progress channel
-      const AndroidNotificationChannel progressChannel = AndroidNotificationChannel(
-        'ai_background_progress',
-        'AI Background Tasks',
-        description: 'Ongoing progress of AI generations',
-        importance: Importance.low,
-        playSound: false,
-        enableVibration: false,
-        showBadge: false,
-      );
+      const AndroidNotificationChannel progressChannel =
+          AndroidNotificationChannel(
+            'ai_background_progress',
+            'AI Background Tasks',
+            description: 'Ongoing progress of AI generations',
+            importance: Importance.low,
+            playSound: false,
+            enableVibration: false,
+            showBadge: false,
+          );
 
       await _notificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -125,7 +126,7 @@ class NotificationService {
     // Set background handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // Initial Token Sync (will fail if UID isn't ready, but that's okay, 
+    // Initial Token Sync (will fail if UID isn't ready, but that's okay,
     // AppInitializer will call syncTokenNow() later).
     syncTokenNow();
 
@@ -173,39 +174,40 @@ class NotificationService {
       final assets = LocalStorageService().assetsNotifier.value;
       final asset = assets.firstWhere((a) => a.id == payload);
       navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (routeContext) => Scaffold(
-              backgroundColor: Theme.of(routeContext).brightness == Brightness.dark
-                  ? const Color(0xFF15181C)
-                  : Colors.white,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Theme.of(routeContext).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                  onPressed: () => Navigator.pop(routeContext),
+        MaterialPageRoute(
+          builder: (routeContext) => Scaffold(
+            backgroundColor:
+                Theme.of(routeContext).brightness == Brightness.dark
+                ? const Color(0xFF15181C)
+                : Colors.white,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Theme.of(routeContext).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
                 ),
-                title: Text(
-                  'Result',
-                  style: TextStyle(
-                    color: Theme.of(routeContext).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                ),
+                onPressed: () => Navigator.pop(routeContext),
               ),
-              body: SafeArea(
-                child: AIResultScreen(resultImageUrl: asset.filePath),
+              title: Text(
+                'Result',
+                style: TextStyle(
+                  color: Theme.of(routeContext).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
+                ),
               ),
             ),
+            body: SafeArea(
+              child: AIResultScreen(resultImageUrl: asset.filePath),
+            ),
           ),
-        );
-      } catch (e) {
+        ),
+      );
+    } catch (e) {
       debugPrint('🔔 [NotificationService] Asset ID not found locally: $e');
     }
   }
@@ -277,16 +279,16 @@ class NotificationService {
           'ai_background_progress',
           'AI Background Tasks',
           channelDescription: 'Ongoing progress of AI generations',
-          importance: Importance.low, 
+          importance: Importance.low,
           priority: Priority.low,
           onlyAlertOnce: true,
           showProgress: true,
           maxProgress: maxProgress,
           progress: progress ?? 0,
           indeterminate: progress == null,
-          ongoing: true, 
+          ongoing: true,
           autoCancel: false,
-          color: const Color(0xFFF16E14), 
+          color: const Color(0xFFF16E14),
           icon: '@mipmap/ic_launcher',
           showWhen: true,
           usesChronometer: true, // Shows how long the task has been running

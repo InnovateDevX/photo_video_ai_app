@@ -61,9 +61,9 @@ class GenerationGate {
     if (adResult == false) {
       // User dismissed/failed the ad without completing it
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('watch_complete_ad'.i18n())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('watch_complete_ad'.i18n())));
       }
       return false;
     }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_collage_widget/utils/collage_type.dart';
 
@@ -50,7 +51,7 @@ class CollageTemplate {
       final List<dynamic> slotsJson = jsonMap['slots'];
       slots = slotsJson.map((s) => CollageSlot.fromJson(s)).toList();
     } catch (e) {
-      print("Error loading slots for $jsonPath: $e");
+      debugPrint("Error loading slots for $jsonPath: $e");
     }
   }
 }

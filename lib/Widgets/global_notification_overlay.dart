@@ -152,17 +152,17 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay>
                         ),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? Colors.black.withOpacity(0.7)
-                              : Colors.white.withOpacity(0.8),
+                              ? Colors.black.withValues(alpha: 0.7)
+                              : Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: (isDark ? Colors.white : Colors.black)
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             width: 0.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -175,8 +175,10 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay>
                               padding: EdgeInsets.all(sw * 0.02),
                               decoration: BoxDecoration(
                                 color: _errorMessage != null
-                                    ? Colors.red.withOpacity(0.1)
-                                    : const Color(0xFFFF9800).withOpacity(0.1),
+                                    ? Colors.red.withValues(alpha: 0.1)
+                                    : const Color(
+                                        0xFFFF9800,
+                                      ).withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(

@@ -12,6 +12,7 @@ import 'package:trail_ai_app/Services/generation_gate.dart';
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 import 'package:trail_ai_app/Widgets/topbar.dart';
 
 enum _PageState { selection, loading, result }
@@ -82,12 +83,36 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
       return;
     }
 
-    final model = _replicateService.headshotModel; 
+    final model = _replicateService.headshotModel;
     if (model == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Model not configured.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Model not configured.')));
       return;
+    }
+
+    // --- Safety Check ---
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkImageFileSafe(_selectedImage!);
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (e is NsfwContentException) {
+        if (mounted) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        }
+        return;
+      }
+      debugPrint('⚠️ [AiHeadshotPage] Image safety check error: $e');
     }
 
     setState(() => _pageState = _PageState.loading);
@@ -108,15 +133,16 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
     try {
       final url = await _replicateService.generateContent(
         modelConfig: model,
-        prompt: 'professional business headshot, linkedin profile picture, highly detailed',
+        prompt:
+            'professional business headshot, linkedin profile picture, highly detailed',
         referenceImage: _selectedImage,
       );
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('credit_deducted'.i18n())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
       }
 
       if (mounted) {
@@ -130,35 +156,11 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
       if (mounted) {
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
-        
+
         if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
         } else if (e.toString().toLowerCase().contains('timeout')) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('timeout_title'.i18n()),
-              content: Text('timeout_message'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
+          ErrorDialogHelper.showTimeoutDialog(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
@@ -237,7 +239,7 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -341,7 +343,7 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.file(_selectedImage!, fit: BoxFit.cover),
+                              Image.file(_selectedImage!, fit: BoxFit.contain),
                               Positioned(
                                 top: w * 0.03,
                                 right: w * 0.03,
@@ -419,12 +421,20 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
                       children: [
                         GestureDetector(
                           onTap: _pickImage,
-                          child: _buildSmallCardIcon(context, Icons.find_replace_outlined, isDark),
+                          child: _buildSmallCardIcon(
+                            context,
+                            Icons.find_replace_outlined,
+                            isDark,
+                          ),
                         ),
                         SizedBox(width: w * 0.02),
-                         GestureDetector(
+                        GestureDetector(
                           onTap: () {},
-                          child: _buildSmallCardIcon(context, Icons.view_sidebar_outlined, isDark),
+                          child: _buildSmallCardIcon(
+                            context,
+                            Icons.view_sidebar_outlined,
+                            isDark,
+                          ),
                         ),
                       ],
                     ),
@@ -433,10 +443,10 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
               ),
             ),
 
-             SizedBox(height: h * 0.03),
+            SizedBox(height: h * 0.03),
 
             // --- AI Suggestion Card ---
-             Container(
+            Container(
               padding: EdgeInsets.all(w * 0.04),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.grey[100],
@@ -450,7 +460,7 @@ class _AiHeadshotPageState extends State<AiHeadshotPage>
                 children: [
                   Row(
                     children: [
-                       Icon(
+                      Icon(
                         Icons.lightbulb,
                         color: Colors.brown, // Or similar color from mockup
                         size: w * 0.05,

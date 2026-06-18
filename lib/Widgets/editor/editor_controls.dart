@@ -21,16 +21,19 @@ class EditorSliderRow extends StatelessWidget {
     final primaryText = AppEditorConstants.primaryText(isDark);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppEditorConstants.w(context, 0.05),
+        vertical: AppEditorConstants.h(context, 0.015),
+      ),
       child: Row(
         children: [
           SizedBox(
-            width: 70,
+            width: AppEditorConstants.w(context, 0.18),
             child: Text(
               label,
               style: TextStyle(
                 color: primaryText,
-                fontSize: 12,
+                fontSize: AppEditorConstants.sp(context, 12),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -49,11 +52,14 @@ class EditorSliderRow extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 44,
+            width: AppEditorConstants.sp(context, 44),
             child: Text(
               '${(value * 100).round()}%',
               textAlign: TextAlign.right,
-              style: TextStyle(color: primaryText, fontSize: 12),
+              style: TextStyle(
+                color: primaryText,
+                fontSize: AppEditorConstants.sp(context, 12),
+              ),
             ),
           ),
         ],
@@ -84,10 +90,13 @@ class EditorMiniSliderRow extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 60,
+          width: AppEditorConstants.sp(context, 60),
           child: Text(
             label,
-            style: TextStyle(color: primaryText, fontSize: 11),
+            style: TextStyle(
+              color: primaryText,
+              fontSize: AppEditorConstants.sp(context, 11),
+            ),
           ),
         ),
         Expanded(
@@ -103,11 +112,14 @@ class EditorMiniSliderRow extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: 40,
+          width: AppEditorConstants.sp(context, 40),
           child: Text(
             '${(value * 100).round()}%',
             textAlign: TextAlign.right,
-            style: TextStyle(color: primaryText, fontSize: 11),
+            style: TextStyle(
+              color: primaryText,
+              fontSize: AppEditorConstants.sp(context, 11),
+            ),
           ),
         ),
       ],
@@ -139,7 +151,9 @@ class EditorDualSliderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppEditorConstants.w(context, 0.05),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -149,7 +163,7 @@ class EditorDualSliderRow extends StatelessWidget {
             onChanged: leftOnChanged,
             isDark: isDark,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppEditorConstants.h(context, 0.01)),
           EditorMiniSliderRow(
             label: rightLabel,
             value: rightValue,
@@ -179,36 +193,41 @@ class EditorColorDots extends StatelessWidget {
   Widget build(BuildContext context) {
     final hslColors = AppEditorConstants.hslColors;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: hslColors.asMap().entries.map((entry) {
-        final i = entry.key;
-        final c = entry.value;
-        final active = selectedIndex == i;
-        final isWhite = c == Colors.white;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: hslColors.asMap().entries.map((entry) {
+          final i = entry.key;
+          final c = entry.value;
+          final active = selectedIndex == i;
+          final isWhite = c == Colors.white;
 
-        return GestureDetector(
-          onTap: () => onChanged(i),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: c.withAlpha(isWhite || active ? 255 : 100),
-                border: Border.all(
-                  color: active ? AppEditorConstants.accent : Colors.white24,
-                  width: active ? 2.5 : 1.5,
+          return GestureDetector(
+            onTap: () => onChanged(i),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppEditorConstants.w(context, 0.015),
+              ),
+              child: Container(
+                width: AppEditorConstants.sp(context, 20),
+                height: AppEditorConstants.sp(context, 20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.withAlpha(isWhite || active ? 255 : 100),
+                  border: Border.all(
+                    color: active ? AppEditorConstants.accent : Colors.white24,
+                    width: active ? 2.5 : 1.5,
+                  ),
+                  boxShadow: active
+                      ? [BoxShadow(color: c.withAlpha(100), blurRadius: 8)]
+                      : null,
                 ),
-                boxShadow: active
-                    ? [BoxShadow(color: c.withAlpha(100), blurRadius: 8)]
-                    : null,
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -230,58 +249,69 @@ class EditorSubToolsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: tools.map((t) {
+    // Each item gets a fixed width based on screen size so text is never clipped.
+    // The row is horizontally scrollable, fulfilling the user's request for a
+    // horizontal scroll list that never cuts off any tool.
+    final itemW = AppEditorConstants.w(context, 0.18).clamp(64.0, 90.0);
+    return SizedBox(
+      // Constrain the height explicitly so nothing in the outer Column overflows
+      height: 88,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: tools.length,
+        itemBuilder: (context, index) {
+          final t = tools[index];
           final active = activeSubTool == t.subTool;
 
           return GestureDetector(
             onTap: () => onChanged(t.subTool),
             behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 72,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+            child: SizedBox(
+              width: itemW,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: AppEditorConstants.sp(context, 44),
+                    height: AppEditorConstants.sp(context, 44),
                     decoration: BoxDecoration(
                       color: active
-                          ? AppEditorConstants.accent.withAlpha(30)
-                          : AppEditorConstants.iconBg(isDark),
+                          ? AppEditorConstants.accent.withAlpha(20)
+                          : Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: active
-                            ? AppEditorConstants.accent
-                            : Colors.transparent,
-                        width: 1.5,
-                      ),
                     ),
-                    child: Icon(
-                      t.icon,
-                      color: active
-                          ? AppEditorConstants.accent
-                          : AppEditorConstants.primaryText(
-                              isDark,
-                            ).withAlpha(180),
-                      size: 22,
-                    ),
+                    child: t.icon is IconData
+                        ? Icon(
+                            t.icon as IconData,
+                            size: AppEditorConstants.sp(context, 22),
+                            color: active
+                                ? AppEditorConstants.accent
+                                : AppEditorConstants.textDim(isDark),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Image.asset(
+                              t.icon as String,
+                              color: active
+                                  ? AppEditorConstants.accent
+                                  : AppEditorConstants.textDim(isDark),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     t.label,
-                    textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: active
                           ? AppEditorConstants.accent
                           : AppEditorConstants.textDim(isDark),
-                      fontSize: 10,
+                      fontSize: AppEditorConstants.sp(context, 10),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -289,7 +319,7 @@ class EditorSubToolsRow extends StatelessWidget {
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -314,7 +344,7 @@ class EditorBrushRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: brushes.map((b) {
           final active = activeMode == b.mode;
@@ -327,21 +357,23 @@ class EditorBrushRow extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: active
-                    ? AppEditorConstants.accent.withAlpha(30)
+                    ? AppEditorConstants.accent
                     : AppEditorConstants.iconBg(isDark),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: active
-                      ? AppEditorConstants.accent
-                      : Colors.transparent,
-                  width: 1.5,
-                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: AppEditorConstants.accent.withAlpha(80),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
               ),
               child: Icon(
                 b.icon,
                 color: active
-                    ? AppEditorConstants.accent
-                    : AppEditorConstants.primaryText(isDark).withAlpha(180),
+                    ? Colors.white
+                    : AppEditorConstants.primaryText(isDark).withAlpha(150),
                 size: 24,
               ),
             ),
@@ -371,7 +403,7 @@ class EditorShapeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: shapes.map((s) {
           final active = activeMode == s.mode;
@@ -384,21 +416,23 @@ class EditorShapeRow extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: active
-                    ? AppEditorConstants.accent.withAlpha(30)
+                    ? AppEditorConstants.accent
                     : AppEditorConstants.iconBg(isDark),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: active
-                      ? AppEditorConstants.accent
-                      : Colors.transparent,
-                  width: 1.5,
-                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: AppEditorConstants.accent.withAlpha(80),
+                          blurRadius: 8,
+                        ),
+                      ]
+                    : null,
               ),
               child: Icon(
                 s.icon,
                 color: active
-                    ? AppEditorConstants.accent
-                    : AppEditorConstants.primaryText(isDark).withAlpha(180),
+                    ? Colors.white
+                    : AppEditorConstants.primaryText(isDark).withAlpha(150),
                 size: 24,
               ),
             ),
@@ -436,16 +470,229 @@ class EditorEffectTabs extends StatelessWidget {
           return GestureDetector(
             onTap: () => onChanged(cat),
             child: Padding(
-              padding: const EdgeInsets.only(right: 20),
+              padding: EdgeInsets.only(
+                right: AppEditorConstants.w(context, 0.05),
+              ),
               child: Text(
                 cat.toUpperCase(),
                 style: TextStyle(
                   color: active
                       ? AppEditorConstants.accent
                       : AppEditorConstants.textDim(isDark),
-                  fontSize: 13,
+                  fontSize: AppEditorConstants.sp(context, 12),
                   fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                  letterSpacing: 0.5,
                 ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+/// Unified tab switcher for Markup and Shape
+class EditorPaintTabs extends StatelessWidget {
+  final EditorSubTool activeTab;
+  final ValueChanged<EditorSubTool> onChanged;
+  final bool isDark;
+
+  const EditorPaintTabs({
+    super.key,
+    required this.activeTab,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildTab('Markup', EditorSubTool.markup),
+        SizedBox(width: AppEditorConstants.w(context, 0.08)),
+        _buildTab('Shape', EditorSubTool.shape),
+      ],
+    );
+  }
+
+  Widget _buildTab(String label, EditorSubTool tab) {
+    final active = activeTab == tab;
+    return GestureDetector(
+      onTap: () => onChanged(tab),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: active
+              ? AppEditorConstants.accent
+              : AppEditorConstants.textDim(isDark),
+          fontSize: 14,
+          fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tab switcher for Text editor (Font vs Basic)
+class EditorTextTabs extends StatelessWidget {
+  final EditorSubTool activeTab;
+  final ValueChanged<EditorSubTool> onChanged;
+  final bool isDark;
+
+  const EditorTextTabs({
+    super.key,
+    required this.activeTab,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildTab('Font', EditorSubTool.textFont),
+        SizedBox(width: AppEditorConstants.w(context, 0.08)),
+        _buildTab('Basic', EditorSubTool.textStyle),
+      ],
+    );
+  }
+
+  Widget _buildTab(String label, EditorSubTool tab) {
+    final active = activeTab == tab;
+    return GestureDetector(
+      onTap: () => onChanged(tab),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: active
+              ? AppEditorConstants.accent
+              : AppEditorConstants.textDim(isDark),
+          fontSize: 14,
+          fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+/// Individual font selection card
+class EditorFontCard extends StatelessWidget {
+  final String fontFamily;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool isDark;
+  final TextStyle fontStyle;
+
+  const EditorFontCard({
+    super.key,
+    required this.fontFamily,
+    required this.isSelected,
+    required this.onTap,
+    required this.isDark,
+    required this.fontStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppEditorConstants.accent
+              : AppEditorConstants.iconBg(isDark),
+          borderRadius: BorderRadius.circular(20),
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFFD66031), Color(0xFFB54D26)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            fontFamily,
+            style: fontStyle.copyWith(
+              color: isSelected
+                  ? Colors.white
+                  : AppEditorConstants.primaryText(isDark),
+              fontSize: 14,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// premium color picker row
+class EditorColorRow extends StatelessWidget {
+  final Color selectedColor;
+  final ValueChanged<Color> onChanged;
+  final bool isDark;
+
+  const EditorColorRow({
+    super.key,
+    required this.selectedColor,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      Colors.white,
+      const Color(0xFF007AFF), // Blue
+      const Color(0xFFFF3B30), // Red
+      const Color(0xFF4CD964), // Green
+      const Color(0xFFFFCC00), // Yellow
+      const Color(0xFF5856D6), // Purple
+      const Color(0xFF333333), // Dark Grey
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: colors.map((c) {
+          final active = selectedColor == c;
+          return GestureDetector(
+            onTap: () => onChanged(c),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c,
+                  border: Border.all(
+                    color: active ? Colors.white : Colors.white24,
+                    width: active ? 2 : 1,
+                  ),
+                  boxShadow: active
+                      ? [BoxShadow(color: c.withAlpha(80), blurRadius: 6)]
+                      : null,
+                ),
+                child: active
+                    ? Center(
+                        child: Container(
+                          width: 4,
+                          height: 4,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
             ),
           );

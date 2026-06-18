@@ -5,11 +5,12 @@ import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/Models/category_image.dart';
 import 'package:trail_ai_app/Models/reel.dart';
+import 'package:trail_ai_app/pages/category_preview_page.dart';
 import 'package:trail_ai_app/Services/data_service.dart';
 import 'package:trail_ai_app/pages/generation_page.dart';
-import '../Core/directory.dart';
 import '../Core/colors.dart';
 import 'settings_page.dart';
+import '../Widgets/reel_video_player.dart';
 
 class TrendingSeeAllPage extends StatefulWidget {
   final String? categoryName;
@@ -54,48 +55,32 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
     });
 
     try {
-      // Check if we have structured data for this category
+      // Simulate network delay to test loading states and stress test smoothly
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      List<dynamic> allItems = [];
       if (widget.categoryName != null) {
-        final structuredImages = DataService().getCategoryImages(
-          widget.categoryName!,
-        );
-        if (structuredImages.isNotEmpty) {
-          setState(() {
-            _items.addAll(structuredImages);
-            _hasMore = false; // Structured data is loaded all at once
-          });
-          return;
-        }
+        allItems = DataService().getCategoryImages(widget.categoryName!);
+      } else {
+        allItems = DataService().trendingItems;
       }
 
-      final options = ListOptions(
-        maxResults: _pageSize,
-        pageToken: _nextPageToken,
-      );
-
-      // Fetch based on category or default to trending
-      final path = (widget.categoryName != null)
-          ? 'categories/${widget.categoryName}'
-          : AppDirectories.trendingDirectory2;
-
-      final listResult = await FirebaseStorage.instance.ref(path).list(options);
-
+      // Slice the next chunk of items
+      final nextItems = allItems.skip(_items.length).take(_pageSize).toList();
+      
       setState(() {
-        _items.addAll(listResult.items);
-        if (listResult.nextPageToken != null) {
-          _nextPageToken = listResult.nextPageToken;
-        } else {
-          _hasMore = false;
-        }
+        _items.addAll(nextItems);
+        // We have more items if we haven't reached the total length
+        _hasMore = _items.length < allItems.length;
       });
     } catch (e) {
-      debugPrint(
-        'Error fetching items for category ${widget.categoryName}: $e',
-      );
+      debugPrint('Error fetching items: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -275,74 +260,131 @@ class _TrendingSeeAllCard extends StatelessWidget {
     final sh = MediaQuery.of(context).size.height;
 
     String? imageUrl;
+    String? videoUrl;
     String? prompt;
     String? modelId;
     String? type;
     String? reelId;
+    String? categoryName;
 
     if (item is Reference) {
       // FutureBuilder will handle the URL fetch
     } else if (item is CategoryImage) {
-      // If reelId is present, it's a video - use thumbnailUrl if available
-      if (item.reelId != null) {
-        imageUrl = item.thumbnailUrl ?? item.imageUrl;
-        type = 'video';
-      } else {
-        // Regular image or video with direct URL
-        imageUrl = item.type == 'video'
-            ? (item.thumbnailUrl ?? item.imageUrl)
-            : item.imageUrl;
-        type = item.type;
-      }
       prompt = item.prompt;
       modelId = item.modelUsed;
       reelId = item.reelId;
+      type = item.type;
+      categoryName = item.categoryName;
+      videoUrl = item.videoUrl;
+
+      if (type == 'video' && videoUrl == null) {
+        if (item.imageUrl.endsWith('.mp4')) {
+          videoUrl = item.imageUrl;
+        } else {
+          imageUrl = item.thumbnailUrl ?? item.imageUrl;
+        }
+      } else {
+        imageUrl = item.imageUrl;
+      }
     }
 
-    // Handle video tap - fetch reel from Firestore and navigate
     void handleVideoTap() async {
       if (item is CategoryImage && reelId != null) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const Center(child: CircularProgressIndicator()),
+        );
         try {
           final reelDoc = await FirebaseFirestore.instance
               .collection('reels')
               .doc(reelId)
               .get();
 
+          if (context.mounted) Navigator.pop(context); // close dialog
+
           if (reelDoc.exists && context.mounted) {
             final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => GenerationPage(
-                  initialCategory: 'video',
-                  initialPrompt: reel.videoPrompt,
+                builder: (_) => CategoryPreviewPage(
+                  imageUrl: reel.thumbnailUrl,
+                  videoUrl: reel.videoUrl,
+                  prompt: reel.videoPrompt,
+                  modelId: modelId,
+                  type: 'video',
+                  isEditable: item.isEditable,
                   imageEditMode: reel.imageEdit,
-                  imagePrompt: reel.imagePrompt,
-                  videoPrompt: reel.videoPrompt,
+                  onTryStyle: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GenerationPage(
+                          initialCategory: 'video',
+                          initialPrompt: reel.videoPrompt,
+                          imageEditMode: reel.imageEdit,
+                          imagePrompt: reel.imagePrompt,
+                          videoPrompt: reel.videoPrompt,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             );
+            return;
           }
         } catch (e) {
+          if (context.mounted) Navigator.pop(context); // close dialog
           debugPrint('Error fetching reel: $e');
+        }
+
+        // Fallback: if doc doesn't exist or fetch failed, open preview with local data
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CategoryPreviewPage(
+                imageUrl: imageUrl,
+                videoUrl: videoUrl,
+                prompt: prompt,
+                modelId: modelId,
+                type: type,
+                isEditable: item.isEditable,
+              ),
+            ),
+          );
         }
       }
     }
 
-    Widget buildMainContent(String url) {
+    Widget buildMedia() {
       return GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           if (item is CategoryImage) {
-            if (reelId != null) {
+            if (type == 'category' && categoryName != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      TrendingSeeAllPage(categoryName: categoryName),
+                ),
+              );
+            } else if (reelId != null) {
               handleVideoTap();
             } else {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => GenerationPage(
-                    initialCategory: type ?? 'image',
-                    initialPrompt: prompt ?? '',
-                    initialModelId: modelId,
+                  builder: (_) => CategoryPreviewPage(
+                    imageUrl: imageUrl,
+                    videoUrl: videoUrl,
+                    prompt: prompt,
+                    modelId: modelId,
+                    type: type,
+                    isEditable: item.isEditable,
                   ),
                 ),
               );
@@ -356,23 +398,40 @@ class _TrendingSeeAllCard extends StatelessWidget {
         },
         child: Stack(
           children: [
-            // Background Image
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(sw * 0.05),
-                child: CachedNetworkImage(
-                  imageUrl: url,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-                    highlightColor: isDark
-                        ? Colors.grey[700]!
-                        : Colors.grey[100]!,
-                    child: Container(color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.error_outline),
-                ),
+                child: (videoUrl != null && videoUrl.isNotEmpty)
+                    ? ReelVideoPlayer(
+                        videoUrl: videoUrl,
+                        seamlessLoop: true,
+                        enablePlayPauseGesture: false,
+                        borderRadius: BorderRadius.circular(sw * 0.05),
+                        placeholder: Shimmer.fromColors(
+                          baseColor: isDark
+                              ? Colors.grey[850]!
+                              : Colors.grey[300]!,
+                          highlightColor: isDark
+                              ? Colors.grey[700]!
+                              : Colors.grey[100]!,
+                          child: Container(color: Colors.white),
+                        ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: imageUrl ?? '',
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: isDark
+                              ? Colors.grey[850]!
+                              : Colors.grey[300]!,
+                          highlightColor: isDark
+                              ? Colors.grey[700]!
+                              : Colors.grey[100]!,
+                          child: Container(color: Colors.white),
+                        ),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error_outline),
+                      ),
               ),
             ),
 
@@ -415,8 +474,8 @@ class _TrendingSeeAllCard extends StatelessWidget {
       );
     }
 
-    if (item is CategoryImage && imageUrl != null) {
-      return buildMainContent(imageUrl);
+    if (item is CategoryImage) {
+      return buildMedia();
     }
 
     return FutureBuilder<String>(
@@ -451,7 +510,7 @@ class _TrendingSeeAllCard extends StatelessWidget {
           );
         }
 
-        return buildMainContent(snapshot.data!);
+        return buildMedia();
       },
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:trail_ai_app/Core/editor_constants.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
 
 /// Custom top bar widget for the image editor
 /// Provides undo, redo, reset, and done actions
@@ -12,6 +11,9 @@ class EditorTopBar extends StatelessWidget {
   final VoidCallback onDone;
   final bool isDark;
   final bool showUndoRedo;
+  final bool canUndo;
+  final bool canRedo;
+  final bool isProcessing;
 
   const EditorTopBar({
     super.key,
@@ -22,6 +24,9 @@ class EditorTopBar extends StatelessWidget {
     required this.onDone,
     required this.isDark,
     this.showUndoRedo = true,
+    this.canUndo = false,
+    this.canRedo = false,
+    this.isProcessing = false,
   });
 
   @override
@@ -35,10 +40,10 @@ class EditorTopBar extends StatelessWidget {
       right: 0,
       child: Container(
         padding: EdgeInsets.only(
-          top: topPadding + 8,
-          left: 16,
-          right: 16,
-          bottom: 16,
+          top: topPadding + AppEditorConstants.h(context, 0.01),
+          left: AppEditorConstants.w(context, 0.04),
+          right: AppEditorConstants.w(context, 0.04),
+          bottom: AppEditorConstants.h(context, 0.02),
         ),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -55,7 +60,7 @@ class EditorTopBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _TopBarBtn(
-              icon: Icons.arrow_back_ios_new,
+              icon: Icons.close,
               onTap: onBack,
               primaryText: primaryText,
             ),
@@ -64,16 +69,22 @@ class EditorTopBar extends StatelessWidget {
                 children: [
                   _TopBarBtn(
                     icon: Icons.undo,
-                    onTap: onUndo ?? () {},
+                    onTap: (canUndo && !isProcessing)
+                        ? (onUndo ?? () {})
+                        : () {},
                     primaryText: primaryText,
+                    disabled: !canUndo || isProcessing,
                   ),
-                  const SizedBox(width: 20),
+                  SizedBox(width: AppEditorConstants.w(context, 0.05)),
                   _TopBarBtn(
                     icon: Icons.redo,
-                    onTap: onRedo ?? () {},
+                    onTap: (canRedo && !isProcessing)
+                        ? (onRedo ?? () {})
+                        : () {},
                     primaryText: primaryText,
+                    disabled: !canRedo || isProcessing,
                   ),
-                  const SizedBox(width: 20),
+                  SizedBox(width: AppEditorConstants.w(context, 0.05)),
                   _TopBarBtn(
                     icon: Icons.refresh,
                     onTap: onReset ?? () {},
@@ -193,25 +204,31 @@ class _TopBarBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color primaryText;
+  final bool disabled;
 
   const _TopBarBtn({
     required this.icon,
     required this.onTap,
     required this.primaryText,
+    this.disabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: disabled ? null : onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: AppEditorConstants.sp(context, 40),
+        height: AppEditorConstants.sp(context, 40),
         decoration: const BoxDecoration(
           color: Colors.transparent,
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: primaryText, size: 22),
+        child: Icon(
+          icon,
+          color: disabled ? primaryText.withValues(alpha: 0.3) : primaryText,
+          size: AppEditorConstants.sp(context, 22),
+        ),
       ),
     );
   }
@@ -220,14 +237,14 @@ class _TopBarBtn extends StatelessWidget {
 /// Compare button widget for showing original image
 class EditorCompareButton extends StatelessWidget {
   final bool showOriginal;
-  final VoidCallback onTap;
+  final ValueChanged<bool> onCompareChanged;
   final double panelHeight;
   final bool isDark;
 
   const EditorCompareButton({
     super.key,
     required this.showOriginal,
-    required this.onTap,
+    required this.onCompareChanged,
     required this.panelHeight,
     required this.isDark,
   });
@@ -237,13 +254,15 @@ class EditorCompareButton extends StatelessWidget {
     final primaryText = AppEditorConstants.primaryText(isDark);
 
     return Positioned(
-      right: 16,
-      bottom: panelHeight + 16,
+      right: AppEditorConstants.w(context, 0.04),
+      bottom: panelHeight + AppEditorConstants.h(context, 0.02),
       child: GestureDetector(
-        onTap: onTap,
+        onTapDown: (_) => onCompareChanged(true),
+        onTapUp: (_) => onCompareChanged(false),
+        onTapCancel: () => onCompareChanged(false),
         child: Container(
-          width: 40,
-          height: 40,
+          width: AppEditorConstants.sp(context, 40),
+          height: AppEditorConstants.sp(context, 40),
           decoration: BoxDecoration(
             color: primaryText.withAlpha(30),
             shape: BoxShape.circle,
@@ -252,7 +271,7 @@ class EditorCompareButton extends StatelessWidget {
           child: Icon(
             Icons.compare,
             color: showOriginal ? AppEditorConstants.accent : primaryText,
-            size: 20,
+            size: AppEditorConstants.sp(context, 20),
           ),
         ),
       ),

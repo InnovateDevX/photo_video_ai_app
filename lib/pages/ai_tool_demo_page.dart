@@ -24,7 +24,8 @@ class AiToolDemoPage extends StatefulWidget {
           final toolData = configMap[searchKey] as Map<String, dynamic>;
           final String? url = toolData['videoUrl'] ?? toolData['videourl'];
           final String? img = toolData['imageUrl'] ?? toolData['imageurl'];
-          return (url != null && url.isNotEmpty) || (img != null && img.isNotEmpty);
+          return (url != null && url.isNotEmpty) ||
+              (img != null && img.isNotEmpty);
         }
       }
     } catch (e) {
@@ -54,7 +55,7 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
     // 1. Fetch URLs and metadata synchronously so the UI renders the image immediately
     final rc = RemoteConfigService();
     Map<String, dynamic>? currentToolData;
-    
+
     try {
       final jsonStr = rc.getString('tool_demos');
       if (jsonStr.isNotEmpty && jsonStr != '[]' && jsonStr != '{}') {
@@ -62,9 +63,12 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
         final String searchKey = widget.tool.route ?? widget.tool.label;
         if (configMap.containsKey(searchKey)) {
           currentToolData = configMap[searchKey] as Map<String, dynamic>;
-          _videoUrl = currentToolData['videoUrl'] ?? currentToolData['videourl'];
-          _imageUrl = currentToolData['imageUrl'] ?? currentToolData['imageurl'];
-          _description = currentToolData['description'] ?? "Experience the power of AI.";
+          _videoUrl =
+              currentToolData['videoUrl'] ?? currentToolData['videourl'];
+          _imageUrl =
+              currentToolData['imageUrl'] ?? currentToolData['imageurl'];
+          _description =
+              currentToolData['description'] ?? "Experience the power of AI.";
         }
       }
     } catch (e) {
@@ -85,24 +89,41 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
 
     AIModelConfig? modelConfig;
     switch (widget.tool.route) {
-      case '/upscale': modelConfig = rs.upscaleModel; break;
-      case '/outfitChange': modelConfig = rs.clothModel; break;
-      case '/background': modelConfig = rs.backgroundModel; break;
-      case '/restore': modelConfig = rs.restoreModel; break;
-      case '/headshot': modelConfig = rs.headshotModel; break;
-      case '/sticker': modelConfig = rs.stickerTextModel ?? rs.stickerImageModel; break;
-      case '/collage': modelConfig = rs.collageModel; break;
-      case '/logo': modelConfig = rs.logoModel; break;
+      case '/upscale':
+        modelConfig = rs.upscaleModel;
+        break;
+      case '/outfitChange':
+        modelConfig = rs.clothModel;
+        break;
+      case '/background':
+        modelConfig = rs.backgroundModel;
+        break;
+      case '/restore':
+        modelConfig = rs.restoreModel;
+        break;
+      case '/headshot':
+        modelConfig = rs.headshotModel;
+        break;
+      case '/sticker':
+        modelConfig = rs.stickerTextModel ?? rs.stickerImageModel;
+        break;
+      case '/collage':
+        modelConfig = rs.collageModel;
+        break;
+      case '/logo':
+        modelConfig = rs.logoModel;
+        break;
     }
 
     if (modelConfig == null) {
       if (widget.tool.initialCategory == 'video' && rs.videoModels.isNotEmpty) {
         modelConfig = rs.videoModels.first;
-      } else if (widget.tool.initialCategory == 'image' && rs.imageModels.isNotEmpty) {
+      } else if (widget.tool.initialCategory == 'image' &&
+          rs.imageModels.isNotEmpty) {
         modelConfig = rs.imageModels.first;
       }
     }
-    
+
     if (modelConfig != null) {
       _creditCost = modelConfig.creditUsed;
     } else {
@@ -110,20 +131,26 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
     }
 
     if (currentToolData != null) {
-        final configKey = currentToolData['configKey'];
-        if (configKey != null && configKey is String && configKey.isNotEmpty) {
-           final configStr = rc.getString(configKey);
-           if (configStr.isNotEmpty && configStr != '{}' && configStr != '[]') {
-              try {
-                final decoded = jsonDecode(configStr);
-                if (decoded is Map<String, dynamic> && decoded.containsKey('credit_used')) {
-                   _creditCost = (decoded['credit_used'] as num).toInt();
-                } else if (decoded is List && decoded.isNotEmpty && decoded.first is Map<String, dynamic> && decoded.first.containsKey('credit_used')) {
-                   _creditCost = (decoded.first['credit_used'] as num).toInt();
-                }
-              } catch(e) { /* ignore parse error */ }
-           }
+      final configKey = currentToolData['configKey'];
+      if (configKey != null && configKey is String && configKey.isNotEmpty) {
+        final configStr = rc.getString(configKey);
+        if (configStr.isNotEmpty && configStr != '{}' && configStr != '[]') {
+          try {
+            final decoded = jsonDecode(configStr);
+            if (decoded is Map<String, dynamic> &&
+                decoded.containsKey('credit_used')) {
+              _creditCost = (decoded['credit_used'] as num).toInt();
+            } else if (decoded is List &&
+                decoded.isNotEmpty &&
+                decoded.first is Map<String, dynamic> &&
+                decoded.first.containsKey('credit_used')) {
+              _creditCost = (decoded.first['credit_used'] as num).toInt();
+            }
+          } catch (e) {
+            /* ignore parse error */
+          }
         }
+      }
     }
 
     if (mounted) setState(() {});
@@ -158,10 +185,13 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
   @override
   Widget build(BuildContext context) {
     // If videoUrl is null, we return a blank loading screen briefly while it falls back
-    if ((_videoUrl == null || _videoUrl!.isEmpty) && (_imageUrl == null || _imageUrl!.isEmpty)) {
+    if ((_videoUrl == null || _videoUrl!.isEmpty) &&
+        (_imageUrl == null || _imageUrl!.isEmpty)) {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        body: const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
       );
     }
 
@@ -176,7 +206,8 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
           FutureBuilder(
             future: Future.delayed(const Duration(milliseconds: 350)),
             builder: (context, snapshot) {
-              final Widget placeholderWidget = _imageUrl != null && _imageUrl!.isNotEmpty
+              final Widget placeholderWidget =
+                  _imageUrl != null && _imageUrl!.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: _imageUrl!,
                       fit: BoxFit.cover,
@@ -188,7 +219,12 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                           Opacity(
                             opacity: 0.3,
                             child: Center(
-                              child: Image.asset(widget.tool.imagePath, width: sw * 0.4, height: sw * 0.4, fit: BoxFit.contain),
+                              child: Image.asset(
+                                widget.tool.imagePath,
+                                width: sw * 0.4,
+                                height: sw * 0.4,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                           const CircularProgressIndicator(color: Colors.white),
@@ -200,7 +236,12 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                           Opacity(
                             opacity: 0.3,
                             child: Center(
-                              child: Image.asset(widget.tool.imagePath, width: sw * 0.4, height: sw * 0.4, fit: BoxFit.contain),
+                              child: Image.asset(
+                                widget.tool.imagePath,
+                                width: sw * 0.4,
+                                height: sw * 0.4,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ],
@@ -212,25 +253,29 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                         Opacity(
                           opacity: 0.3,
                           child: Center(
-                            child: Image.asset(widget.tool.imagePath, width: sw * 0.4, height: sw * 0.4, fit: BoxFit.contain),
+                            child: Image.asset(
+                              widget.tool.imagePath,
+                              width: sw * 0.4,
+                              height: sw * 0.4,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                         const CircularProgressIndicator(color: Colors.white),
                       ],
                     );
 
-              if (snapshot.connectionState == ConnectionState.done && _videoUrl != null && _videoUrl!.isNotEmpty) {
+              if (snapshot.connectionState == ConnectionState.done &&
+                  _videoUrl != null &&
+                  _videoUrl!.isNotEmpty) {
                 return ReelVideoPlayer(
-                  videoUrl: _videoUrl!, 
+                  videoUrl: _videoUrl!,
                   placeholder: placeholderWidget,
                   seamlessLoop: true,
                 );
               }
-              
-              return Container(
-                color: Colors.black,
-                child: placeholderWidget,
-              );
+
+              return Container(color: Colors.black, child: placeholderWidget);
             },
           ),
 
@@ -246,8 +291,8 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.95),
-                    Colors.black.withOpacity(0.2),
+                    Colors.black.withValues(alpha: 0.95),
+                    Colors.black.withValues(alpha: 0.2),
                     Colors.transparent,
                   ],
                 ),
@@ -322,7 +367,11 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.flash_on, color: Colors.white, size: 20),
+                          const Icon(
+                            Icons.flash_on,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           Text(
                             "$_creditCost",
                             style: TextStyle(

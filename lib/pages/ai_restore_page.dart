@@ -12,6 +12,7 @@ import 'package:trail_ai_app/Services/generation_gate.dart';
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 import 'package:trail_ai_app/Widgets/topbar.dart';
 
 enum _PageState { selection, loading, result }
@@ -77,18 +78,42 @@ class _AiRestorePageState extends State<AiRestorePage>
 
   Future<void> _generateRestore() async {
     if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('choose_image'.i18n())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('choose_image'.i18n())));
       return;
     }
 
-    final model = _replicateService.restoreModel; 
+    final model = _replicateService.restoreModel;
     if (model == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('no_model_selected'.i18n())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('no_model_selected'.i18n())));
       return;
+    }
+
+    // --- Safety Check ---
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkImageFileSafe(_selectedImage!);
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (e is NsfwContentException) {
+        if (mounted) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        }
+        return;
+      }
+      debugPrint('⚠️ [AiRestorePage] Image safety check error: $e');
     }
 
     setState(() => _pageState = _PageState.loading);
@@ -111,14 +136,16 @@ class _AiRestorePageState extends State<AiRestorePage>
         modelConfig: model,
         prompt: 'restore old photo, enhance face, remove scratches',
         referenceImage: _selectedImage,
-        extraVariables: {'strength': _restoreStrength}, // Mock parameter passing
+        extraVariables: {
+          'strength': _restoreStrength,
+        }, // Mock parameter passing
       );
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('credit_deducted'.i18n())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
       }
 
       if (mounted) {
@@ -132,38 +159,15 @@ class _AiRestorePageState extends State<AiRestorePage>
       if (mounted) {
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
-        
+
         if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
         } else if (e.toString().toLowerCase().contains('timeout')) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text(AppStrings.timeoutTitle),
-              content: const Text(AppStrings.timeoutMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
+          ErrorDialogHelper.showTimeoutDialog(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+          ErrorDialogHelper.showErrorDialog(
+            context,
+            message: 'Something went wrong. Please try again.',
           );
         }
       }
@@ -239,7 +243,7 @@ class _AiRestorePageState extends State<AiRestorePage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -343,7 +347,7 @@ class _AiRestorePageState extends State<AiRestorePage>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.file(_selectedImage!, fit: BoxFit.cover),
+                              Image.file(_selectedImage!, fit: BoxFit.contain),
                               Positioned(
                                 top: w * 0.03,
                                 right: w * 0.03,
@@ -380,7 +384,7 @@ class _AiRestorePageState extends State<AiRestorePage>
                               ),
                               SizedBox(height: h * 0.01),
                               Text(
-                                  'tap_to_select_gallery'.i18n(),
+                                'tap_to_select_gallery'.i18n(),
                                 style: TextStyle(
                                   fontSize: w * 0.035,
                                   color: isDark
@@ -421,12 +425,20 @@ class _AiRestorePageState extends State<AiRestorePage>
                       children: [
                         GestureDetector(
                           onTap: _pickImage,
-                          child: _buildSmallCardIcon(context, Icons.find_replace_outlined, isDark),
+                          child: _buildSmallCardIcon(
+                            context,
+                            Icons.find_replace_outlined,
+                            isDark,
+                          ),
                         ),
                         SizedBox(width: w * 0.02),
-                         GestureDetector(
+                        GestureDetector(
                           onTap: () {},
-                          child: _buildSmallCardIcon(context, Icons.view_sidebar_outlined, isDark),
+                          child: _buildSmallCardIcon(
+                            context,
+                            Icons.view_sidebar_outlined,
+                            isDark,
+                          ),
                         ),
                       ],
                     ),
@@ -452,7 +464,7 @@ class _AiRestorePageState extends State<AiRestorePage>
                 children: [
                   Row(
                     children: [
-                       Icon(
+                      Icon(
                         Icons.auto_awesome,
                         color: Colors.deepOrange,
                         size: w * 0.05,
@@ -470,14 +482,20 @@ class _AiRestorePageState extends State<AiRestorePage>
                   ),
                   SizedBox(height: h * 0.01),
                   SliderTheme(
-                     data: SliderThemeData(
-                        activeTrackColor: Colors.deepOrange,
-                        inactiveTrackColor: isDark ? Colors.grey[700] : Colors.grey[300],
-                        thumbColor: Colors.deepOrange,
-                        trackHeight: h * 0.007,
-                        thumbShape: RoundSliderThumbShape(enabledThumbRadius: w * 0.02),
-                        overlayShape: RoundSliderOverlayShape(overlayRadius: w * 0.04),
-                     ),
+                    data: SliderThemeData(
+                      activeTrackColor: Colors.deepOrange,
+                      inactiveTrackColor: isDark
+                          ? Colors.grey[700]
+                          : Colors.grey[300],
+                      thumbColor: Colors.deepOrange,
+                      trackHeight: h * 0.007,
+                      thumbShape: RoundSliderThumbShape(
+                        enabledThumbRadius: w * 0.02,
+                      ),
+                      overlayShape: RoundSliderOverlayShape(
+                        overlayRadius: w * 0.04,
+                      ),
+                    ),
                     child: Slider(
                       value: _restoreStrength,
                       onChanged: (value) {
@@ -487,24 +505,24 @@ class _AiRestorePageState extends State<AiRestorePage>
                       },
                     ),
                   ),
-                   SizedBox(height: h * 0.005),
-                   Center(
-                      child: Text(
-                        'restore_strength_desc'.i18n(),
-                        style: TextStyle(
-                          fontSize: w * 0.03,
-                          color: AppColors.secondaryTextColor(isDark),
-                        ),
+                  SizedBox(height: h * 0.005),
+                  Center(
+                    child: Text(
+                      'restore_strength_desc'.i18n(),
+                      style: TextStyle(
+                        fontSize: w * 0.03,
+                        color: AppColors.secondaryTextColor(isDark),
                       ),
-                   )
+                    ),
+                  ),
                 ],
               ),
             ),
 
-             SizedBox(height: h * 0.02),
+            SizedBox(height: h * 0.02),
 
             // --- AI Suggestion Card ---
-             Container(
+            Container(
               padding: EdgeInsets.all(w * 0.04),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.grey[100],
@@ -518,7 +536,7 @@ class _AiRestorePageState extends State<AiRestorePage>
                 children: [
                   Row(
                     children: [
-                       Icon(
+                      Icon(
                         Icons.lightbulb,
                         color: Colors.brown, // Or similar color from mockup
                         size: w * 0.05,

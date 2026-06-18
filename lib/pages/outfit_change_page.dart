@@ -15,6 +15,8 @@ import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
+import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 
 // ── Page state ─────────────────────────────────────────────────────────────
 enum _PageState { selection, loading, result }
@@ -95,12 +97,32 @@ class _OutfitChangePageState extends State<OutfitChangePage>
             .ref('Outfits/$firstCat')
             .listAll();
         final firstRefs = firstCatResult.items;
-        final firstUrls = await Future.wait(
-          firstRefs.map((ref) => ref.getDownloadURL()),
+        final firstUrls = await _runWithConcurrencyLimit<String, Reference>(
+          items: firstRefs,
+          concurrency: 5,
+          worker: (ref) async {
+            try {
+              return await ref.getDownloadURL().timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => '',
+              );
+            } catch (_) {
+              return '';
+            }
+          },
         );
 
-        refsMap[firstCat] = firstRefs;
-        urlsMap[firstCat] = firstUrls;
+        final List<Reference> validFirstRefs = [];
+        final List<String> validFirstUrls = [];
+        for (int i = 0; i < firstRefs.length; i++) {
+          if (firstUrls[i].isNotEmpty) {
+            validFirstRefs.add(firstRefs[i]);
+            validFirstUrls.add(firstUrls[i]);
+          }
+        }
+
+        refsMap[firstCat] = validFirstRefs;
+        urlsMap[firstCat] = validFirstUrls;
 
         if (mounted) {
           setState(() {
@@ -109,8 +131,8 @@ class _OutfitChangePageState extends State<OutfitChangePage>
             _categoryToUrls = urlsMap;
 
             _selectedCategoryIndex = 0;
-            _outfitRefs = firstRefs;
-            _outfitUrls = firstUrls;
+            _outfitRefs = validFirstRefs;
+            _outfitUrls = validFirstUrls;
 
             _isLoadingCategories = false;
             _isLoadingOutfits = false; // UI is instantly ready!
@@ -122,24 +144,48 @@ class _OutfitChangePageState extends State<OutfitChangePage>
         if (remainingCategories.isNotEmpty) {
           await Future.wait(
             remainingCategories.map((category) async {
-              final catResult = await FirebaseStorage.instance
-                  .ref('Outfits/$category')
-                  .listAll();
-              final refs = catResult.items;
-              final urls = await Future.wait(
-                refs.map((ref) => ref.getDownloadURL()),
-              );
+              try {
+                final catResult = await FirebaseStorage.instance
+                    .ref('Outfits/$category')
+                    .listAll();
+                final refs = catResult.items;
+                final urls = await _runWithConcurrencyLimit<String, Reference>(
+                  items: refs,
+                  concurrency: 5,
+                  worker: (ref) async {
+                    try {
+                      return await ref.getDownloadURL().timeout(
+                        const Duration(seconds: 10),
+                        onTimeout: () => '',
+                      );
+                    } catch (_) {
+                      return '';
+                    }
+                  },
+                );
 
-              if (mounted) {
-                setState(() {
-                  _categoryToRefs[category] = refs;
-                  _categoryToUrls[category] = urls;
-                  // Live-update the UI if the user already clicked this background-loading category
-                  if (categories[_selectedCategoryIndex] == category) {
-                    _outfitRefs = refs;
-                    _outfitUrls = urls;
+                final List<Reference> validRefs = [];
+                final List<String> validUrls = [];
+                for (int i = 0; i < refs.length; i++) {
+                  if (urls[i].isNotEmpty) {
+                    validRefs.add(refs[i]);
+                    validUrls.add(urls[i]);
                   }
-                });
+                }
+
+                if (mounted) {
+                  setState(() {
+                    _categoryToRefs[category] = validRefs;
+                    _categoryToUrls[category] = validUrls;
+                    // Live-update the UI if the user already clicked this background-loading category
+                    if (categories[_selectedCategoryIndex] == category) {
+                      _outfitRefs = validRefs;
+                      _outfitUrls = validUrls;
+                    }
+                  });
+                }
+              } catch (e) {
+                debugPrint('Error fetching background category $category: $e');
               }
             }),
           );
@@ -185,9 +231,9 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       return;
     }
     if (_replicateService.clothModel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('app_config_not_ready'.i18n())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('app_config_not_ready'.i18n())));
       return;
     }
     if (_outfitRefs.isEmpty) {
@@ -195,6 +241,30 @@ class _OutfitChangePageState extends State<OutfitChangePage>
         SnackBar(content: Text('select_category_with_outfits'.i18n())),
       );
       return;
+    }
+
+    // --- Safety Check ---
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkImageFileSafe(_selectedImage!);
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (e is NsfwContentException) {
+        if (mounted) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        }
+        return;
+      }
+      debugPrint('⚠️ [OutfitChangePage] Image safety check error: $e');
     }
 
     // 1. Enter Loading State FIRST
@@ -256,9 +326,13 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       if (mounted) {
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (e is NsfwContentException) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
       }
     }
   }
@@ -325,7 +399,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -425,12 +499,19 @@ class _OutfitChangePageState extends State<OutfitChangePage>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(sw * 0.06),
               child: _selectedImage != null
-                  ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(_selectedImage!, fit: BoxFit.contain),
+                      ],
+                    )
                   : Center(
                       child: Icon(
                         Icons.person_outline,
                         size: sw * 0.25,
-                        color: AppColors.iconColor(isDark).withOpacity(0.3),
+                        color: AppColors.iconColor(
+                          isDark,
+                        ).withValues(alpha: 0.3),
                       ),
                     ),
             ),
@@ -446,7 +527,9 @@ class _OutfitChangePageState extends State<OutfitChangePage>
                 color: AppColors.tileBackgroundColor(isDark),
                 borderRadius: BorderRadius.circular(sw * 0.05),
                 border: Border.all(
-                  color: AppColors.creditsCardBorder(isDark).withOpacity(0.5),
+                  color: AppColors.creditsCardBorder(
+                    isDark,
+                  ).withValues(alpha: 0.5),
                 ),
               ),
               child: Row(
@@ -678,5 +761,35 @@ class _OutfitChangePageState extends State<OutfitChangePage>
         ],
       ),
     );
+  }
+
+  /// Runs a list of async workers with a concurrency limit.
+  Future<List<T>> _runWithConcurrencyLimit<T, Y>({
+    required List<Y> items,
+    required Future<T> Function(Y item) worker,
+    required int concurrency,
+  }) async {
+    if (items.isEmpty) return [];
+
+    final List<T?> results = List<T?>.filled(items.length, null);
+    int nextIndex = 0;
+
+    Future<void> runWorker() async {
+      while (nextIndex < items.length) {
+        final index = nextIndex++;
+        results[index] = await worker(items[index]);
+      }
+    }
+
+    final futures = <Future<void>>[];
+    final activeWorkers = concurrency < items.length
+        ? concurrency
+        : items.length;
+    for (int i = 0; i < activeWorkers; i++) {
+      futures.add(runWorker());
+    }
+
+    await Future.wait(futures);
+    return results.cast<T>();
   }
 }

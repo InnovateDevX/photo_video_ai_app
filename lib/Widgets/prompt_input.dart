@@ -118,7 +118,7 @@ class PromptInput extends StatelessWidget {
                     hintStyle: TextStyle(
                       color: AppColors.secondaryTextColor(
                         isDark,
-                      ).withOpacity(0.5),
+                      ).withValues(alpha: 0.5),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(

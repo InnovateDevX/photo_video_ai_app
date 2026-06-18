@@ -35,10 +35,11 @@ class AuthService {
   /// Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount googleUser = await _googleSignIn
-          .authenticate(); // user canceled
+      final GoogleSignInAccount googleUser =
+          await _googleSignIn.authenticate();
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          googleUser.authentication;
       final authorization = await googleUser.authorizationClient
           .authorizationForScopes(['email', 'profile']);
 

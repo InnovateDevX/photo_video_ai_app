@@ -19,6 +19,7 @@ import 'package:trail_ai_app/pages/ai_logo_page.dart';
 import 'package:trail_ai_app/pages/ai_filter_page.dart';
 import 'package:trail_ai_app/pages/image_editor_page.dart';
 import 'package:trail_ai_app/pages/effect_editor_page.dart';
+import 'package:trail_ai_app/pages/onboarding_page.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String filter = '/filter';
   static const String imageEditor = '/imageEditor';
   static const String effectOverlay = '/effectOverlay';
+  static const String onboarding = '/onboarding';
 }
 
 Map<String, WidgetBuilder> getAppRoutes() {
@@ -62,6 +64,9 @@ Map<String, WidgetBuilder> getAppRoutes() {
     AppRoutes.logo: (context) => const AiLogoPage(),
     AppRoutes.filter: (context) => const AiFilterPage(),
     AppRoutes.imageEditor: (context) => ImageEditorPage(imageFile: File('')),
-    AppRoutes.effectOverlay: (context) => EffectEditorPage(imageFile: ModalRoute.of(context)!.settings.arguments as File),
+    AppRoutes.effectOverlay: (context) => EffectEditorPage(
+      imageFile: ModalRoute.of(context)!.settings.arguments as File,
+    ),
+    AppRoutes.onboarding: (context) => const OnboardingPage(),
   };
 }

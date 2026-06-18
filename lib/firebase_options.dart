@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'imagegen-trail.firebasestorage.app',
     measurementId: 'G-HN75QB64GM',
   );
-
 }

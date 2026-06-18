@@ -156,9 +156,9 @@ class _UpscalePageState extends State<UpscalePage>
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('credit_deducted'.i18n())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
       }
 
       if (mounted) {
@@ -263,7 +263,7 @@ class _UpscalePageState extends State<UpscalePage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -291,12 +291,12 @@ class _UpscalePageState extends State<UpscalePage>
               },
               onBack: switch (_pageState) {
                 _PageState.loading => () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
-                  },
+                  _progressController.stop();
+                  setState(() => _pageState = _PageState.selection);
+                },
                 _PageState.result => () => setState(
-                      () => _pageState = _PageState.selection,
-                    ),
+                  () => _pageState = _PageState.selection,
+                ),
                 _PageState.selection => null,
               },
             ),
@@ -308,7 +308,8 @@ class _UpscalePageState extends State<UpscalePage>
                   progressAnimation: _progressAnimation,
                   aiTips: AppStrings.outfitAiTips.map((e) => e.i18n()).toList(),
                   processingTitle: 'processing_title'.i18n(),
-                  applyingText: 'Processing ...'.i18n(), // Or 'upscaling_photo' if added
+                  applyingText: 'Processing ...'
+                      .i18n(), // Or 'upscaling_photo' if added
                   waitText: 'take_few_seconds'.i18n(),
                   onCancel: () {
                     _progressController.stop();
@@ -369,7 +370,7 @@ class _UpscalePageState extends State<UpscalePage>
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.file(_selectedImage!, fit: BoxFit.cover),
+                              Image.file(_selectedImage!, fit: BoxFit.contain),
                               Positioned(
                                 top: w * 0.03,
                                 right: w * 0.03,
@@ -447,7 +448,11 @@ class _UpscalePageState extends State<UpscalePage>
                       children: [
                         GestureDetector(
                           onTap: _pickImage,
-                          child: _buildSmallCardIcon(context, Icons.grid_view, isDark),
+                          child: _buildSmallCardIcon(
+                            context,
+                            Icons.grid_view,
+                            isDark,
+                          ),
                         ),
                       ],
                     ),
@@ -531,13 +536,13 @@ class _UpscalePageState extends State<UpscalePage>
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Shimmer.fromColors(
                       baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-                      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-                      child: Container(
-                        height: h * 0.22,
-                        color: Colors.white,
-                      ),
+                      highlightColor: isDark
+                          ? Colors.grey[700]!
+                          : Colors.grey[100]!,
+                      child: Container(height: h * 0.22, color: Colors.white),
                     ),
-                    errorWidget: (context, url, error) => _buildPlaceholder(h, w, isDark),
+                    errorWidget: (context, url, error) =>
+                        _buildPlaceholder(h, w, isDark),
                   ),
                 );
               },

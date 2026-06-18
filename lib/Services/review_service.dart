@@ -8,9 +8,6 @@ class ReviewService {
 
   final InAppReview _inAppReview = InAppReview.instance;
 
-  static const String _reviewCounterKey = 'generation_review_counter';
-  static const int _threshold = 1; // Trigger after every 3 "wins"
-
   /// Requests a review immediately when called.
   Future<void> requestReviewIfAppropriate(BuildContext? context) async {
     try {

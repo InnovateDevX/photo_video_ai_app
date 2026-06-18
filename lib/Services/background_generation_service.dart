@@ -7,6 +7,7 @@ import '../Models/generated_asset.dart';
 import 'local_storage_service.dart';
 import 'replicate_service.dart';
 import 'notification_service.dart';
+import 'content_safety_service.dart';
 
 class BackgroundGenerationService {
   static final BackgroundGenerationService _instance =
@@ -100,12 +101,15 @@ class BackgroundGenerationService {
           // Cancel progress notification
           await NotificationService().cancelNotification(notificationId);
 
-          _failureController.add(
-            'Failed to generate $category. Please try again.',
-          );
+          String errorMessage = 'Failed to generate $category. Please try again.';
+          if (error is NsfwContentException || error.toString().contains('generated_content_restricted')) {
+            errorMessage = 'Your generated content was flagged as restricted and could not be saved.';
+          }
+
+          _failureController.add(errorMessage);
           NotificationService().showGenerationCompleteNotification(
             title: 'Trail AI Studio',
-            body: 'Failed to generate $category. Please try again.',
+            body: errorMessage,
           );
         });
   }
@@ -137,8 +141,7 @@ class BackgroundGenerationService {
           modelConfig: imageModel,
           prompt: imagePrompt,
           referenceImage: referenceImage,
-          aspectRatio:
-              imageModel.supportsAspectRatio ? aspectRatio : null,
+          aspectRatio: imageModel.supportsAspectRatio ? aspectRatio : null,
         )
         .then((editedImageUrl) async {
           debugPrint(
@@ -161,8 +164,7 @@ class BackgroundGenerationService {
             modelConfig: videoModel,
             prompt: videoPrompt,
             referenceImage: tempFile,
-            aspectRatio:
-                videoModel.supportsAspectRatio ? aspectRatio : null,
+            aspectRatio: videoModel.supportsAspectRatio ? aspectRatio : null,
           );
         })
         .then((finalVideoUrl) async {
@@ -181,7 +183,17 @@ class BackgroundGenerationService {
         .catchError((error) async {
           debugPrint('❌ [BackgroundTwoStage] Failed: $error');
           await NotificationService().cancelNotification(notificationId);
-          reportFailure('Failed to generate video template. Please try again.');
+          
+          String errorMessage = 'Failed to generate video template. Please try again.';
+          if (error is NsfwContentException || error.toString().contains('generated_content_restricted')) {
+            errorMessage = 'Your generated content was flagged as restricted and could not be saved.';
+          }
+          
+          reportFailure(errorMessage);
+          NotificationService().showGenerationCompleteNotification(
+            title: 'Trail AI Studio',
+            body: errorMessage,
+          );
         });
   }
 

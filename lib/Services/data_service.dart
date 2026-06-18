@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
 import 'package:flutter/foundation.dart';
-import '../Core/directory.dart';
 import '../Models/category_image.dart';
 
 /// Centralized data caching service for Firebase resources.
@@ -15,8 +14,7 @@ class DataService {
   List<String> categories = [];
   List<CategoryData> categoryData =
       []; // New: structured category data with images
-  List<Reference> trendingItems = [];
-  List<Reference> trending2Items = [];
+  List<CategoryImage> trendingItems = [];
   final Map<String, String> _urlCache = {};
 
   // --- Per-category cache ---
@@ -106,19 +104,35 @@ class DataService {
 
   Future<void> _fetchInitialTrending() async {
     try {
-      final results = await Future.wait([
-        FirebaseStorage.instance
-            .ref(AppDirectories.trendingDirectory)
-            .list(const ListOptions(maxResults: 10)),
-        FirebaseStorage.instance
-            .ref(AppDirectories.trendingDirectory2)
-            .list(const ListOptions(maxResults: 10)),
-      ]);
-
-      trendingItems = results[0].items;
-      trending2Items = results[1].items;
-
-      debugPrint('📦 [DataService] Initial trending items cached.');
+      debugPrint('📦 [DataService] Starting _fetchInitialTrending...');
+      final config = RemoteConfigService();
+      final jsonStr = config.trendingDataJson;
+      debugPrint('📦 [DataService] fetched trendingDataJson length: ${jsonStr.length}');
+      debugPrint('📦 [DataService] trendingDataJson preview: ${jsonStr.substring(0, jsonStr.length > 100 ? 100 : jsonStr.length)}');
+      if (jsonStr.isNotEmpty && jsonStr != '{}') {
+        final dynamic parsed = json.decode(jsonStr);
+        debugPrint('📦 [DataService] parsed JSON type: ${parsed.runtimeType}');
+        if (parsed is Map<String, dynamic>) {
+          final data = CategoryData.fromJson(parsed);
+          debugPrint('📦 [DataService] data.images length: ${data.images.length}');
+          if (data.shuffle) {
+            data.images.shuffle();
+          }
+          trendingItems = data.images;
+        } else if (parsed is List) {
+          debugPrint('📦 [DataService] Parsed JSON is a List. Parsing directly.');
+          final items = parsed.map((img) => CategoryImage.fromJson(img as Map<String, dynamic>)).toList();
+          trendingItems = items;
+        } else {
+          debugPrint('📦 [DataService] ERROR: parsed JSON is neither Map nor List');
+        }
+        
+        debugPrint(
+          '📦 [DataService] Remote config trending items cached: ${trendingItems.length}',
+        );
+      } else {
+        debugPrint('📦 [DataService] JSON is empty or "{}"');
+      }
     } catch (e) {
       debugPrint('❌ [DataService] Failed to fetch initial trending: $e');
     }
@@ -196,14 +210,5 @@ class DataService {
     }
   }
 
-  void updateTrendingCache(
-    List<Reference> newItems, {
-    bool isGallery2 = false,
-  }) {
-    if (isGallery2) {
-      trending2Items = newItems;
-    } else {
-      trendingItems = newItems;
-    }
-  }
+
 }

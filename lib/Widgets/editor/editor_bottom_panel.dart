@@ -9,6 +9,8 @@ class EditorBottomPanel extends StatefulWidget {
   final bool isDark;
   final AnimationController panelController;
   final bool panelExpanded;
+  final double? collapsedHeight;
+  final double? expandedHeight;
 
   const EditorBottomPanel({
     super.key,
@@ -16,7 +18,12 @@ class EditorBottomPanel extends StatefulWidget {
     required this.isDark,
     required this.panelController,
     required this.panelExpanded,
+    this.collapsedHeight,
+    this.expandedHeight,
+    this.usePositioned = true,
   });
+
+  final bool usePositioned;
 
   @override
   State<EditorBottomPanel> createState() => _EditorBottomPanelState();
@@ -26,62 +33,74 @@ class _EditorBottomPanelState extends State<EditorBottomPanel> {
   @override
   Widget build(BuildContext context) {
     final screenH = MediaQuery.of(context).size.height;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return AnimatedBuilder(
-      animation: widget.panelController,
-      builder: (context, child) {
-        final frac =
-            AppEditorConstants.collapsedFrac +
-            (AppEditorConstants.expandedFrac -
-                    AppEditorConstants.collapsedFrac) *
-                widget.panelController.value;
-        final bottomPadding = MediaQuery.of(context).padding.bottom;
-        final panelH = screenH * frac + bottomPadding;
-
-        return Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: panelH,
-          child: child!,
-        );
-      },
-      child: GestureDetector(
-        onVerticalDragUpdate: (d) {
-          final delta = -d.primaryDelta! / screenH;
-          widget.panelController.value = (widget.panelController.value + delta)
-              .clamp(0.0, 1.0);
-        },
-        onVerticalDragEnd: (d) {
-          if (d.primaryVelocity! < -300) {
-            widget.panelController.animateTo(1.0, curve: Curves.easeOut);
-          } else if (d.primaryVelocity! > 300) {
-            widget.panelController.animateTo(0.0, curve: Curves.easeOut);
-          } else if (widget.panelController.value > 0.5) {
-            widget.panelController.animateTo(1.0, curve: Curves.easeOut);
-          } else {
-            widget.panelController.animateTo(0.0, curve: Curves.easeOut);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.only(top: 2),
-          decoration: const BoxDecoration(
-            gradient: AppGradients.proGradient,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppEditorConstants.panelRadius),
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppEditorConstants.panelBg(widget.isDark),
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(AppEditorConstants.panelRadius),
-              ),
-            ),
-            child: widget.child,
-          ),
+    final staticContent = Container(
+      decoration: BoxDecoration(
+        color: AppEditorConstants.panelBg(widget.isDark),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppEditorConstants.panelRadius),
         ),
       ),
+      padding: EdgeInsets.only(
+        bottom: (bottomPadding > 0) ? bottomPadding : 12.0,
+      ),
+      child: widget.child,
+    );
+
+    final targetBaseH =
+        widget.collapsedHeight ?? (screenH * AppEditorConstants.collapsedFrac);
+    final targetMaxH =
+        widget.expandedHeight ?? (screenH * AppEditorConstants.expandedFrac);
+
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.fastOutSlowIn,
+      tween: Tween<double>(begin: targetBaseH, end: targetBaseH),
+      builder: (context, animatedBaseH, _) {
+        return TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.fastOutSlowIn,
+          tween: Tween<double>(begin: targetMaxH, end: targetMaxH),
+          builder: (context, animatedMaxH, _) {
+            return AnimatedBuilder(
+              animation: widget.panelController,
+              child: staticContent,
+              builder: (context, child) {
+                final panelH =
+                    animatedBaseH +
+                    (animatedMaxH - animatedBaseH) *
+                        widget.panelController.value +
+                    bottomPadding;
+
+                final panelWidget = Container(
+                  clipBehavior: Clip.hardEdge,
+                  padding: const EdgeInsets.only(top: 2),
+                  decoration: const BoxDecoration(
+                    gradient: AppGradients.proGradient,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppEditorConstants.panelRadius),
+                    ),
+                  ),
+                  child: child,
+                );
+
+                if (widget.usePositioned) {
+                  return Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: panelH,
+                    child: panelWidget,
+                  );
+                } else {
+                  return SizedBox(height: panelH, child: panelWidget);
+                }
+              },
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -105,7 +124,10 @@ class EditorPanelHandle extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.only(top: 16),
+        padding: const EdgeInsets.only(
+          top: 12,
+          bottom: 8,
+        ),
         child: Container(
           width: AppEditorConstants.panelHandleWidth,
           height: AppEditorConstants.panelHandleHeight,
@@ -140,7 +162,10 @@ class EditorPanelHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 16, top: 16),
+          padding: const EdgeInsets.only(
+            left: 20,
+            top: 12,
+          ),
           child: EditorActionBtn(
             icon: Icons.check,
             onTap: onConfirm,
@@ -148,7 +173,10 @@ class EditorPanelHeader extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 16, top: 16),
+          padding: const EdgeInsets.only(
+            right: 20,
+            top: 12,
+          ),
           child: EditorActionBtn(
             icon: Icons.close,
             onTap: onCancel,

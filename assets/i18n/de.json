@@ -207,5 +207,9 @@
     "liked_tab": "Gefällt mir",
     "nothing_here": "Hier ist noch nichts.",
     "no_generated_assets": "Noch keine Assets generiert.",
-    "result_appbar_title": "Ergebnis"
+    "result_appbar_title": "Ergebnis",
+    "restricted_text_title": "Eingeschränkter Text",
+    "restricted_text_message": "Ihr Prompt enthält Text, der gegen unsere Sicherheitsrichtlinien verstößt. Bitte passen Sie Ihren Prompt an und versuchen Sie es erneut.",
+    "restricted_image_title": "Eingeschränktes Bild",
+    "restricted_image_message": "Das ausgewählte Bild enthält Inhalte, die gegen unsere Sicherheitsrichtlinien verstoßen. Bitte wählen Sie ein anderes Bild."
 }

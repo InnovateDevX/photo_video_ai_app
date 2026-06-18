@@ -37,7 +37,8 @@ class Reel {
   /// Returns the best available preview URL:
   /// – For images, the video/image URL itself works fine.
   /// – For videos, prefers [thumbnailUrl] when available; falls back to [videoUrl].
-  String get previewUrl => thumbnailUrl?.isNotEmpty == true ? thumbnailUrl! : videoUrl;
+  String get previewUrl =>
+      thumbnailUrl?.isNotEmpty == true ? thumbnailUrl! : videoUrl;
 
   factory Reel.fromFirestore(String id, Map<String, dynamic> data) {
     return Reel(
@@ -55,6 +56,22 @@ class Reel {
     );
   }
 
+  /// Create a Reel from JSON (used for Remote Config)
+  factory Reel.fromJson(Map<String, dynamic> json) {
+    return Reel(
+      id: json['id'] ?? '',
+      videoUrl: json['videoUrl'] ?? '',
+      thumbnailUrl: json['thumbnailUrl'],
+      videoPrompt: json['videoPrompt'] ?? json['prompt'] ?? '',
+      imagePrompt: json['imagePrompt'] ?? '',
+      imageEdit: json['imageEdit'] ?? false,
+      type: json['type'] ?? 'video',
+      isEditable: json['isEditable'] ?? false,
+      likesCount: json['likesCount'] ?? 0,
+      savedCount: json['savedCount'] ?? 0,
+    );
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'id': id,
@@ -69,4 +86,21 @@ class Reel {
       'savedCount': savedCount,
     };
   }
+
+  /// Serialize to JSON map (mirrors fromJson) — used for local storage.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'videoUrl': videoUrl,
+      if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
+      'videoPrompt': videoPrompt,
+      'imagePrompt': imagePrompt,
+      'imageEdit': imageEdit,
+      'type': type,
+      'isEditable': isEditable,
+      'likesCount': likesCount,
+      'savedCount': savedCount,
+    };
+  }
 }
+

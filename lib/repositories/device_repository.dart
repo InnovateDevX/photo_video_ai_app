@@ -11,7 +11,7 @@ class DeviceRepository {
   final FirebaseFirestore _firestore;
 
   DeviceRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // ── Read ───────────────────────────────────────────────────────────────────
 
@@ -21,8 +21,10 @@ class DeviceRepository {
   Future<Map<String, dynamic>?> getDeviceData(String deviceId) async {
     debugPrint('🔍 [DeviceRepository] getDeviceData($deviceId)');
     try {
-      final snap =
-          await _firestore.collection('device_map').doc(deviceId).get();
+      final snap = await _firestore
+          .collection('device_map')
+          .doc(deviceId)
+          .get();
       if (snap.exists) {
         debugPrint('🔍 [DeviceRepository] found: ${snap.data()}');
         return snap.data();
@@ -49,16 +51,15 @@ class DeviceRepository {
     required String uid,
     required int credits,
   }) {
-    debugPrint('💾 [DeviceRepository] createMapping($deviceId → $uid, credits=$credits)');
-    batch.set(
-      _firestore.collection('device_map').doc(deviceId),
-      {
-        'uid': uid,
-        'credits': credits,
-        'created_at': FieldValue.serverTimestamp(),
-        'updated_at': FieldValue.serverTimestamp(),
-      },
+    debugPrint(
+      '💾 [DeviceRepository] createMapping($deviceId → $uid, credits=$credits)',
     );
+    batch.set(_firestore.collection('device_map').doc(deviceId), {
+      'uid': uid,
+      'credits': credits,
+      'created_at': FieldValue.serverTimestamp(),
+      'updated_at': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Updates device_map when a user reinstalls (uid changes to new anon uid).
@@ -67,7 +68,9 @@ class DeviceRepository {
     required String newUid,
     required int credits,
   }) async {
-    debugPrint('♻️  [DeviceRepository] migrateMapping($deviceId → $newUid, credits=$credits)');
+    debugPrint(
+      '♻️  [DeviceRepository] migrateMapping($deviceId → $newUid, credits=$credits)',
+    );
     try {
       await _firestore.collection('device_map').doc(deviceId).update({
         'uid': newUid,
@@ -86,7 +89,9 @@ class DeviceRepository {
     required String deviceId,
     required int credits,
   }) async {
-    debugPrint('💾 [DeviceRepository] syncCredits($deviceId, credits=$credits)');
+    debugPrint(
+      '💾 [DeviceRepository] syncCredits($deviceId, credits=$credits)',
+    );
     try {
       await _firestore.collection('device_map').doc(deviceId).update({
         'credits': credits,

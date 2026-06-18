@@ -106,25 +106,33 @@ class ThumbnailService {
   /// Process a public Reel: Generate thumbnail, upload to Storage, and update Firestore.
   /// Returns the generated download URL if successful.
   Future<String?> processReelThumbnail(Reel reel, String? uid) async {
-    debugPrint('🎥 [ThumbnailService] Entering processReelThumbnail for ${reel.id} (type: ${reel.type}, hasThumb: ${reel.thumbnailUrl != null})');
+    debugPrint(
+      '🎥 [ThumbnailService] Entering processReelThumbnail for ${reel.id} (type: ${reel.type}, hasThumb: ${reel.thumbnailUrl != null})',
+    );
     if (reel.type != 'video' || reel.thumbnailUrl != null) {
       return reel.thumbnailUrl;
     }
-    
+
     // Prevent duplicate processing
     if (_processingReelIds.contains(reel.id)) {
-      debugPrint('🎥 [ThumbnailService] Already processing thumbnail for ${reel.id}. Returning null.');
+      debugPrint(
+        '🎥 [ThumbnailService] Already processing thumbnail for ${reel.id}. Returning null.',
+      );
       return null;
     }
     _processingReelIds.add(reel.id);
 
     if (reel.videoUrl.isEmpty) {
-      debugPrint('❌ [ThumbnailService] Cannot generate thumbnail: videoUrl is empty.');
+      debugPrint(
+        '❌ [ThumbnailService] Cannot generate thumbnail: videoUrl is empty.',
+      );
       _processingReelIds.remove(reel.id);
       return null;
     }
 
-    debugPrint('🎥 [ThumbnailService] Generating thumbnail for Reel ${reel.id}');
+    debugPrint(
+      '🎥 [ThumbnailService] Generating thumbnail for Reel ${reel.id}',
+    );
     debugPrint('🎥 [ThumbnailService] Video URL: ${reel.videoUrl}');
     final thumbFile = await _extractFrame(reel.videoUrl);
     if (thumbFile != null) {
@@ -140,31 +148,51 @@ class ThumbnailService {
         await _firestore.collection('reels').doc(reel.id).update({
           'thumbnailUrl': downloadUrl,
         });
-        
-        debugPrint('✅ [ThumbnailService] Reel thumbnail synced to public storage.');
+
+        debugPrint(
+          '✅ [ThumbnailService] Reel thumbnail synced to public storage.',
+        );
         return downloadUrl;
       } catch (e) {
         final errorStr = e.toString().toLowerCase();
-        if ((errorStr.contains('unauthorized') || errorStr.contains('permission-denied')) && uid != null) {
-          debugPrint('⚠️ [ThumbnailService] Public access denied, saving to private folder...');
+        if ((errorStr.contains('unauthorized') ||
+                errorStr.contains('permission-denied')) &&
+            uid != null) {
+          debugPrint(
+            '⚠️ [ThumbnailService] Public access denied, saving to private folder...',
+          );
           try {
             // Fallback: save to private storage if public upload fails
-            final privateRef = _storage.ref().child('users/$uid/thumbnails/${reel.id}.jpg');
+            final privateRef = _storage.ref().child(
+              'users/$uid/thumbnails/${reel.id}.jpg',
+            );
             await privateRef.putFile(thumbFile);
             final downloadUrl = await privateRef.getDownloadURL();
 
             // Backfill the user's mirrored copies safely using merge
             final batch = _firestore.batch();
             final userRef = _firestore.collection('users').doc(uid);
-            
-            batch.set(userRef.collection('liked_reels').doc(reel.id), {'thumbnailUrl': downloadUrl}, SetOptions(merge: true));
-            batch.set(userRef.collection('saved_reels').doc(reel.id), {'thumbnailUrl': downloadUrl}, SetOptions(merge: true));
-            
+
+            batch.set(
+              userRef.collection('liked_reels').doc(reel.id),
+              {'thumbnailUrl': downloadUrl},
+              SetOptions(merge: true),
+            );
+            batch.set(
+              userRef.collection('saved_reels').doc(reel.id),
+              {'thumbnailUrl': downloadUrl},
+              SetOptions(merge: true),
+            );
+
             await batch.commit();
-            debugPrint('✅ [ThumbnailService] Private thumbnail synced and mirrored.');
+            debugPrint(
+              '✅ [ThumbnailService] Private thumbnail synced and mirrored.',
+            );
             return downloadUrl;
           } catch (privateError) {
-            debugPrint('❌ [ThumbnailService] Private sync failed: $privateError');
+            debugPrint(
+              '❌ [ThumbnailService] Private sync failed: $privateError',
+            );
           }
         } else {
           debugPrint('❌ [ThumbnailService] Reel sync failed: $e');

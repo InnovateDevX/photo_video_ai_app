@@ -49,7 +49,9 @@ class CreditService {
     // Falls back to null if AppInitializer hasn't run yet.
     final uid = UserSession.instance.uid;
     if (uid == null) {
-      debugPrint('⚠️ [CreditService] UserSession.uid not set — cannot initialize.');
+      debugPrint(
+        '⚠️ [CreditService] UserSession.uid not set — cannot initialize.',
+      );
       return;
     }
 
@@ -61,7 +63,9 @@ class CreditService {
     if (remoteCredits == null) {
       // User doc doesn't have credits yet — seed with initial value
       final initial = _readInitialCreditsFromRemoteConfig();
-      debugPrint('💳 [CreditService] No credits field found — seeding with $initial');
+      debugPrint(
+        '💳 [CreditService] No credits field found — seeding with $initial',
+      );
       await _userRepository.setCredits(uid, initial);
       _credits = initial;
     } else {
@@ -78,7 +82,9 @@ class CreditService {
       if (value != null && value != _credits) {
         _credits = value;
         _creditStreamController.add(_credits);
-        debugPrint('💳 [CreditService] Live update from Firestore — balance: $_credits');
+        debugPrint(
+          '💳 [CreditService] Live update from Firestore — balance: $_credits',
+        );
       }
     });
   }
@@ -121,19 +127,26 @@ class CreditService {
   Future<void> _persistToFirestore() async {
     final uid = UserSession.instance.uid;
     if (uid == null) {
-      debugPrint('⚠️ [CreditService] Cannot persist — UserSession.uid not set.');
+      debugPrint(
+        '⚠️ [CreditService] Cannot persist — UserSession.uid not set.',
+      );
       return;
     }
     try {
       await _userRepository.setCredits(uid, _credits);
     } catch (e) {
-      debugPrint('❌ [CreditService] Failed to persist credits to Firestore: $e');
+      debugPrint(
+        '❌ [CreditService] Failed to persist credits to Firestore: $e',
+      );
     }
 
     // Keep device_map.credits in sync so future reinstalls restore correctly.
     final deviceId = UserSession.instance.deviceId;
     if (deviceId != null) {
-      await _deviceRepository.syncCredits(deviceId: deviceId, credits: _credits);
+      await _deviceRepository.syncCredits(
+        deviceId: deviceId,
+        credits: _credits,
+      );
     }
   }
 

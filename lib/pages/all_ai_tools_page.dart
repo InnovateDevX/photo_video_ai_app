@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../Core/colors.dart';
 import '../Core/directory.dart';
 import '../Core/routes.dart';
-import '../Core/strings.dart'; // non-translatable
 import 'package:localization/localization.dart';
 
 import 'settings_page.dart';
@@ -29,8 +28,10 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final w = MediaQuery.of(context).size.width;
-    final h = MediaQuery.of(context).size.height;
+    final screenW = MediaQuery.of(context).size.width;
+    final w = screenW > 0 ? screenW : 375.0;
+    final screenH = MediaQuery.of(context).size.height;
+    final h = screenH > 0 ? screenH : 812.0;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
@@ -116,52 +117,6 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: h * 0.02),
-                    // Search Bar
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white : Colors.grey[200],
-                        borderRadius: BorderRadius.circular(w * 0.06),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: w * 0.04,
-                        vertical: h * 0.013,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.search,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
-                            size: w * 0.06,
-                          ),
-                          SizedBox(width: w * 0.02),
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: AppStrings.searchToolsHint,
-                                hintStyle: TextStyle(
-                                  color: isDark
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
-                                  fontSize: w * 0.035,
-                                ),
-                                border: InputBorder.none,
-                                isDense: true,
-                              ),
-                              style: TextStyle(
-                                color: AppColors.textColor(isDark),
-                                fontSize: w * 0.035,
-                              ),
-                            ),
-                          ),
-                          Icon(
-                            Icons.mic_none_outlined,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
-                            size: w * 0.06,
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: h * 0.03),
 
                     // Video Category
                     Container(
@@ -183,13 +138,18 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
                       ),
                     ),
                     SizedBox(height: h * 0.02),
-                    AiToolsGrid(isDark: isDark, tools: [
-                      AiTool(
-                        'ai_video_tool'.i18n(),
-                        AppDirectories.iconAiVideo,
-                        initialCategory: 'video',
-                      ),
-                    ]),
+                    AiToolsGrid(
+                      showBadges: true,
+                      isDark: isDark,
+                      tools: [
+                        AiTool(
+                          id: 'video',
+                          label: 'ai_video_tool'.i18n(),
+                          imagePath: AppDirectories.iconAiVideo,
+                          initialCategory: 'video',
+                        ),
+                      ],
+                    ),
 
                     SizedBox(height: h * 0.03),
 
@@ -213,49 +173,71 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
                       ),
                     ),
                     SizedBox(height: h * 0.02),
-                    AiToolsGrid(isDark: isDark, tools: [
-                      AiTool(
-                        'tool_ai_image'.i18n(),
-                        AppDirectories.iconAiImage,
-                      ),
-                      AiTool(
-                        'tool_upscale'.i18n(),
-                        AppDirectories.iconUpscale,
-                        route: AppRoutes.upscale,
-                      ),
-                      AiTool(
-                        'clothswap'.i18n(),
-                        AppDirectories.iconCloth,
-                        route: AppRoutes.outfitChange,
-                      ),
-                      AiTool(
-                        'background_ai'.i18n(),
-                        AppDirectories.iconBgAi,
-                        route: AppRoutes.background,
-                      ),
-                      AiTool(
-                        'ai_filter_style'.i18n(),
-                        AppDirectories.iconFilterStyle,
-                        route: AppRoutes.filter,
-                      ),
-                      AiTool('ai_restore'.i18n(), AppDirectories.iconRestore, route: AppRoutes.restore),
-                      AiTool('ai_sticker'.i18n(), AppDirectories.iconSticker, route: AppRoutes.sticker),
-                      AiTool(
-                        'ai_headshot'.i18n(),
-                        AppDirectories.iconHeadshot,
-                        route: AppRoutes.headshot,
-                      ),
-                      AiTool(
-                        'pic_collage'.i18n(),
-                        AppDirectories.iconPicCollage,
-                        route: AppRoutes.collage,
-                      ),
-                      AiTool(
-                        'ai_logo'.i18n(),
-                        AppDirectories.iconLogo,
-                        route: AppRoutes.logo,
-                      ),
-                    ]),
+                    AiToolsGrid(
+                      showBadges: true,
+                      isDark: isDark,
+                      tools: [
+                        AiTool(
+                          id: 'image',
+                          label: 'tool_ai_image'.i18n(),
+                          imagePath: AppDirectories.iconAiImage,
+                        ),
+                        AiTool(
+                          id: 'upscale',
+                          label: 'tool_upscale'.i18n(),
+                          imagePath: AppDirectories.iconUpscale,
+                          route: AppRoutes.upscale,
+                        ),
+                        AiTool(
+                          id: 'cloth',
+                          label: 'clothswap'.i18n(),
+                          imagePath: AppDirectories.iconCloth,
+                          route: AppRoutes.outfitChange,
+                        ),
+                        AiTool(
+                          id: 'background',
+                          label: 'background_ai'.i18n(),
+                          imagePath: AppDirectories.iconBgAi,
+                          route: AppRoutes.background,
+                        ),
+                        AiTool(
+                          id: 'filter',
+                          label: 'ai_filter_style'.i18n(),
+                          imagePath: AppDirectories.iconFilterStyle,
+                          route: AppRoutes.filter,
+                        ),
+                        AiTool(
+                          id: 'restore',
+                          label: 'ai_restore'.i18n(),
+                          imagePath: AppDirectories.iconRestore,
+                          route: AppRoutes.restore,
+                        ),
+                        AiTool(
+                          id: 'sticker',
+                          label: 'ai_sticker'.i18n(),
+                          imagePath: AppDirectories.iconSticker,
+                          route: AppRoutes.sticker,
+                        ),
+                        AiTool(
+                          id: 'headshot',
+                          label: 'ai_headshot'.i18n(),
+                          imagePath: AppDirectories.iconHeadshot,
+                          route: AppRoutes.headshot,
+                        ),
+                        AiTool(
+                          id: 'collage',
+                          label: 'pic_collage'.i18n(),
+                          imagePath: AppDirectories.iconPicCollage,
+                          route: AppRoutes.collage,
+                        ),
+                        AiTool(
+                          id: 'logo',
+                          label: 'ai_logo'.i18n(),
+                          imagePath: AppDirectories.iconLogo,
+                          route: AppRoutes.logo,
+                        ),
+                      ],
+                    ),
 
                     SizedBox(height: h * 0.04),
                   ],
@@ -267,5 +249,4 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
       ),
     );
   }
-
 }

@@ -64,7 +64,7 @@ class AILoadingScreen extends StatelessWidget {
                               size: sw * 0.2,
                               color: AppColors.iconColor(
                                 isDark,
-                              ).withOpacity(0.3),
+                              ).withValues(alpha: 0.3),
                             ),
                     ),
             ),
@@ -83,7 +83,9 @@ class AILoadingScreen extends StatelessWidget {
               color: AppColors.tileBackgroundColor(isDark),
               borderRadius: BorderRadius.circular(sw * 0.05),
               border: Border.all(
-                color: AppColors.creditsCardBorder(isDark).withOpacity(0.5),
+                color: AppColors.creditsCardBorder(
+                  isDark,
+                ).withValues(alpha: 0.5),
               ),
             ),
             child: Column(
@@ -152,7 +154,9 @@ class AILoadingScreen extends StatelessWidget {
               color: AppColors.tileBackgroundColor(isDark),
               borderRadius: BorderRadius.circular(sw * 0.05),
               border: Border.all(
-                color: AppColors.creditsCardBorder(isDark).withOpacity(0.5),
+                color: AppColors.creditsCardBorder(
+                  isDark,
+                ).withValues(alpha: 0.5),
               ),
             ),
             child: Column(

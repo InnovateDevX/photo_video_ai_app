@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:trail_ai_app/Core/colors.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:io';
 
@@ -8,11 +7,16 @@ class ReelVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final Widget? placeholder;
   final bool seamlessLoop;
+  final bool enablePlayPauseGesture;
+  final BorderRadiusGeometry? borderRadius;
+
   const ReelVideoPlayer({
-    super.key, 
-    required this.videoUrl, 
+    super.key,
+    required this.videoUrl,
     this.placeholder,
     this.seamlessLoop = false,
+    this.enablePlayPauseGesture = true,
+    this.borderRadius,
   });
 
   @override
@@ -22,6 +26,7 @@ class ReelVideoPlayer extends StatefulWidget {
 class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
+  bool _hasError = false;
   bool _isPlaying = false;
   bool _isLooping = false;
   bool _isBuffering = false;
@@ -40,7 +45,9 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
     }
 
     // Seamless loop logic: restart slightly before the end to avoid pause
-    if (widget.seamlessLoop && value.isInitialized && value.duration > Duration.zero) {
+    if (widget.seamlessLoop &&
+        value.isInitialized &&
+        value.duration > Duration.zero) {
       // 40ms buffer (~1-2 frames) ensures we play till the end without hitting native pause
       if (value.position >= value.duration - const Duration(milliseconds: 40)) {
         if (!_isLooping) {
@@ -63,21 +70,27 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
   Future<void> _initializePlayer() async {
     try {
       // 1. Try to get the file from cache first
-      final fileInfo = await DefaultCacheManager().getFileFromCache(widget.videoUrl);
-      
+      final fileInfo = await DefaultCacheManager().getFileFromCache(
+        widget.videoUrl,
+      );
+
       File? videoFile;
       if (fileInfo != null) {
         debugPrint("📦 [VideoPlayer] Playing from CACHE: ${widget.videoUrl}");
         videoFile = fileInfo.file;
       } else {
         debugPrint("🌐 [VideoPlayer] Downloading to CACHE: ${widget.videoUrl}");
-        // We don't await the full download here to avoid blocking UI, 
+        // We don't await the full download here to avoid blocking UI,
         // but we can use the stream to get the file as soon as it's available.
         // For simplicity, we'll just download it once.
         try {
-          videoFile = await DefaultCacheManager().getSingleFile(widget.videoUrl);
+          videoFile = await DefaultCacheManager().getSingleFile(
+            widget.videoUrl,
+          );
         } catch (e) {
-          debugPrint("❌ [VideoPlayer] Cache download failed, falling back to network: $e");
+          debugPrint(
+            "❌ [VideoPlayer] Cache download failed, falling back to network: $e",
+          );
         }
       }
 
@@ -98,22 +111,25 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
 
       // 3. Initialize and play
       await _controller!.initialize();
-      
+
       if (mounted) {
         setState(() {
           _isInitialized = true;
         });
-        
+
         _controller!.setLooping(!widget.seamlessLoop);
         _controller!.setVolume(0.0);
         _controller!.addListener(_videoListener);
-        
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _controller!.play();
         });
       }
     } catch (e) {
       debugPrint("❌ [VideoPlayer] Initialization error: $e");
+      if (mounted) {
+        setState(() => _hasError = true);
+      }
     }
   }
 
@@ -135,35 +151,47 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return Container(
-        color: AppColors.backgroundColor(
-          Theme.of(context).brightness == Brightness.dark,
-        ),
-        child: widget.placeholder ?? const Center(child: CircularProgressIndicator(color: Colors.white)),
-      );
+    // On error, show the placeholder (shimmer) or just shrink away cleanly
+    if (_hasError) {
+      return widget.placeholder ?? const SizedBox.expand();
     }
 
-    return GestureDetector(
-      onTap: _togglePlayPause,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: _controller!.value.size.width,
-              height: _controller!.value.size.height,
-              child: VideoPlayer(_controller!),
-            ),
+    if (!_isInitialized) {
+      return widget.placeholder ??
+          const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+
+    final videoWidget = LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth == double.infinity
+            ? null
+            : constraints.maxWidth;
+        final h = constraints.maxHeight == double.infinity
+            ? null
+            : constraints.maxHeight;
+
+        Widget content = FittedBox(
+          fit: BoxFit.cover,
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(
+            width: _controller!.value.size.width,
+            height: _controller!.value.size.height,
+            child: VideoPlayer(_controller!),
           ),
-          if (_isBuffering)
-            const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          if (!_isPlaying && !_isBuffering)
-            Center(
-              child: Container(
+        );
+
+        if (w != null && h != null) {
+          content = SizedBox(width: w, height: h, child: content);
+        }
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            content,
+            if (_isBuffering)
+              const CircularProgressIndicator(color: Colors.white),
+            if (!_isPlaying && !_isBuffering)
+              Container(
                 padding: const EdgeInsets.all(16),
                 decoration: const BoxDecoration(
                   color: Colors.black45,
@@ -175,9 +203,27 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
                   color: Colors.white,
                 ),
               ),
-            ),
-        ],
-      ),
+          ],
+        );
+      },
     );
+
+    Widget finalWidget = videoWidget;
+    if (widget.enablePlayPauseGesture) {
+      finalWidget = GestureDetector(
+        onTap: _togglePlayPause,
+        child: videoWidget,
+      );
+    } else {
+      // Use IgnorePointer instead of AbsorbPointer to allow gestures to pass through
+      // This is important for PageView swipe gestures in ReelsPage
+      finalWidget = IgnorePointer(child: videoWidget);
+    }
+
+    if (widget.borderRadius != null) {
+      return ClipRRect(borderRadius: widget.borderRadius!, child: finalWidget);
+    }
+
+    return finalWidget;
   }
 }

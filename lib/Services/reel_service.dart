@@ -1,391 +1,198 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import '../Models/reel.dart';
-import '../Core/user_session.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../Models/reel.dart';
+import 'remote_config_service.dart';
 
 class ReelService {
-  final FirebaseFirestore _firestore;
+  static final ReelService _instance = ReelService._internal();
+  factory ReelService({RemoteConfigService? remoteConfig}) => _instance;
+  ReelService._internal();
 
-  // Static caches to ensure we don't recreate streams or re-fetch legacy reels
-  static final Map<String, Stream<List<Reel>>> _likedStreamCache = {};
-  static final Map<String, Stream<List<Reel>>> _savedStreamCache = {};
+  final RemoteConfigService _remoteConfig = RemoteConfigService();
 
-  ReelService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  // ── Persisted liked/saved reel IDs ───────────────────────────────────────
+  static const _likedKey = 'local_liked_reel_ids';
+  static const _savedKey = 'local_saved_reel_ids';
+  static const _likedReelsKey = 'local_liked_reels_data';
+  static const _savedReelsKey = 'local_saved_reels_data';
 
-  /// Get a stream of all reels
-  Stream<List<Reel>> getReelsStream() {
-    return _firestore.collection('reels').snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Reel.fromFirestore(doc.id, doc.data()))
-          .toList();
-    });
+  // In-memory state
+  final Set<String> _likedReels = {};
+  final Set<String> _savedReels = {};
+  final Map<String, Reel> _likedReelData = {};
+  final Map<String, Reel> _savedReelData = {};
+
+  // Track temporary increments (for display)
+  final Map<String, int> _likeIncrements = {};
+  final Map<String, int> _saveIncrements = {};
+
+  // Notifiers for reactive UI (replaces Firestore streams)
+  final ValueNotifier<List<Reel>> likedReelsNotifier = ValueNotifier([]);
+  final ValueNotifier<List<Reel>> savedReelsNotifier = ValueNotifier([]);
+
+  bool _initialized = false;
+
+  /// Call this once at app start. Loads persisted liked/saved data from disk.
+  Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load liked IDs
+    final likedIds = prefs.getStringList(_likedKey) ?? [];
+    _likedReels.addAll(likedIds);
+
+    // Load liked reel data
+    final likedData = prefs.getStringList(_likedReelsKey) ?? [];
+    for (final jsonStr in likedData) {
+      try {
+        final reel = Reel.fromJson(jsonDecode(jsonStr));
+        _likedReelData[reel.id] = reel;
+      } catch (_) {}
+    }
+
+    // Load saved IDs
+    final savedIds = prefs.getStringList(_savedKey) ?? [];
+    _savedReels.addAll(savedIds);
+
+    // Load saved reel data
+    final savedData = prefs.getStringList(_savedReelsKey) ?? [];
+    for (final jsonStr in savedData) {
+      try {
+        final reel = Reel.fromJson(jsonDecode(jsonStr));
+        _savedReelData[reel.id] = reel;
+      } catch (_) {}
+    }
+
+    _refreshNotifiers();
+    debugPrint('✅ [ReelService] Loaded ${_likedReels.length} liked, ${_savedReels.length} saved reels from local storage.');
   }
 
-  /// Get a chunk of reels for pagination (optional, using stream for simplicity now)
-  Future<List<Reel>> getReels() async {
-    final querySnapshot = await _firestore.collection('reels').get();
-    return querySnapshot.docs
-        .map((doc) => Reel.fromFirestore(doc.id, doc.data()))
+  // ── Internal helpers ──────────────────────────────────────────────────────
+
+  Future<void> _persistLiked() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_likedKey, _likedReels.toList());
+    await prefs.setStringList(
+      _likedReelsKey,
+      _likedReelData.values.map((r) => jsonEncode(r.toJson())).toList(),
+    );
+    _refreshNotifiers();
+  }
+
+  Future<void> _persistSaved() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_savedKey, _savedReels.toList());
+    await prefs.setStringList(
+      _savedReelsKey,
+      _savedReelData.values.map((r) => jsonEncode(r.toJson())).toList(),
+    );
+    _refreshNotifiers();
+  }
+
+  void _refreshNotifiers() {
+    likedReelsNotifier.value = _likedReels
+        .map((id) => _likedReelData[id])
+        .whereType<Reel>()
+        .toList();
+    savedReelsNotifier.value = _savedReels
+        .map((id) => _savedReelData[id])
+        .whereType<Reel>()
         .toList();
   }
 
-  /// User likes a reel — also writes a snapshot of the reel data so the
-  /// profile page can read liked_reels in ONE query without a secondary fetch.
+  // ── Reels from Remote Config ──────────────────────────────────────────────
+
+  List<Reel> _getReelsFromConfig() {
+    try {
+      final jsonStr = _remoteConfig.reelsJson;
+      if (jsonStr.isEmpty) return [];
+
+      final List<dynamic> jsonList = json.decode(jsonStr);
+
+      return jsonList.asMap().entries.map((entry) {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(entry.value);
+        final String id = data['id'] ?? 'reel_${entry.key}';
+
+        final likeIncrement = _likeIncrements[id] ?? 0;
+        final saveIncrement = _saveIncrements[id] ?? 0;
+        data['likesCount'] = (data['likesCount'] ?? 0) + likeIncrement;
+        data['savedCount'] = (data['savedCount'] ?? 0) + saveIncrement;
+
+        return Reel.fromJson(data);
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ [ReelService] Error parsing reels from remote config: $e');
+      return [];
+    }
+  }
+
+  Stream<List<Reel>> getReelsStream() => Stream.value(_getReelsFromConfig());
+  Future<List<Reel>> getReels() async => _getReelsFromConfig();
+
+  // ── LIKES ─────────────────────────────────────────────────────────────────
+
   Future<void> likeReel(String reelId, Reel reel) async {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return;
-
-    final userLikeRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('liked_reels')
-        .doc(reelId);
-    final reelRef = _firestore.collection('reels').doc(reelId);
-
-    final batch = _firestore.batch();
-
-    final snapshotData = {
-      ...reel.toFirestore(),
-      'timestamp': FieldValue.serverTimestamp(),
-    };
-
-    // Write ONLY to Liked subcollection
-    batch.set(userLikeRef, snapshotData);
-
-    // Increment ONLY likesCount
-    batch.update(reelRef, {
-      'likesCount': FieldValue.increment(1),
-    });
-
-    await batch.commit();
-    debugPrint(
-      '✅ [ReelService] likeReel: Atomic commit successful',
-    );
-    debugPrint(
-      '📍 [ReelService] User Like Path: users/$uid/liked_reels/$reelId',
-    );
-    debugPrint('📍 [ReelService] Global Reel Path: reels/$reelId');
+    if (!_likedReels.contains(reelId)) {
+      _likedReels.add(reelId);
+      _likedReelData[reelId] = reel;
+      _likeIncrements[reelId] = (_likeIncrements[reelId] ?? 0) + 1;
+      await _persistLiked();
+      debugPrint('✅ [ReelService] likeReel: Liked $reelId (persisted)');
+    }
   }
 
-  /// User unlikes a reel
   Future<void> unlikeReel(String reelId) async {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return;
-
-    final userLikeRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('liked_reels')
-        .doc(reelId);
-    final reelRef = _firestore.collection('reels').doc(reelId);
-
-    final batch = _firestore.batch();
-    batch.delete(userLikeRef);
-    batch.update(reelRef, {
-      'likesCount': FieldValue.increment(-1),
-    });
-
-    await batch.commit();
-    debugPrint(
-      '✅ [ReelService] unlikeReel: Optimistic batch commit successful',
-    );
+    if (_likedReels.contains(reelId)) {
+      _likedReels.remove(reelId);
+      _likedReelData.remove(reelId);
+      final current = _likeIncrements[reelId] ?? 0;
+      if (current > 0) _likeIncrements[reelId] = current - 1;
+      await _persistLiked();
+      debugPrint('✅ [ReelService] unlikeReel: Unliked $reelId (persisted)');
+    }
   }
 
-  /// Check if user liked a reel
-  Stream<bool> isReelLiked(String reelId) {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return Stream.value(false);
+  bool isReelLikedSync(String reelId) => _likedReels.contains(reelId);
+  Stream<bool> isReelLiked(String reelId) => Stream.value(isReelLikedSync(reelId));
 
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('liked_reels')
-        .doc(reelId)
-        .snapshots()
-        .map((doc) => doc.exists);
-  }
+  Stream<List<Reel>> getLikedReelsStream() => Stream.value(likedReelsNotifier.value);
+  Future<List<Reel>> fetchLikedReelsOnce() async => likedReelsNotifier.value;
 
-  /// User saves a reel — also writes a snapshot of the reel data so the
-  /// profile page can read saved_reels in ONE query without a secondary fetch.
+  // ── SAVES ─────────────────────────────────────────────────────────────────
+
   Future<void> saveReel(String reelId, Reel reel) async {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return;
-
-    final userSaveRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('saved_reels')
-        .doc(reelId);
-    final reelRef = _firestore.collection('reels').doc(reelId);
-
-    final batch = _firestore.batch();
-
-    // Always write the saved_reels doc — this is the critical write.
-    batch.set(userSaveRef, {
-      ...reel.toFirestore(),
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    // Increment counter
-    batch.update(reelRef, {'savedCount': FieldValue.increment(1)});
-
-    await batch.commit();
-    debugPrint('✅ [ReelService] saveReel: Atomic commit successful');
-    debugPrint(
-      '📍 [ReelService] User Save Path: users/$uid/saved_reels/$reelId',
-    );
-    debugPrint('📍 [ReelService] Global Reel Path: reels/$reelId');
+    if (!_savedReels.contains(reelId)) {
+      _savedReels.add(reelId);
+      _savedReelData[reelId] = reel;
+      _saveIncrements[reelId] = (_saveIncrements[reelId] ?? 0) + 1;
+      await _persistSaved();
+      debugPrint('✅ [ReelService] saveReel: Saved $reelId (persisted)');
+    }
   }
 
-  /// Check if user saved a reel
-  Stream<bool> isReelSaved(String reelId) {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return Stream.value(false);
-
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('saved_reels')
-        .doc(reelId)
-        .snapshots()
-        .map((doc) => doc.exists);
-  }
-
-  /// User unsaves a reel
   Future<void> unsaveReel(String reelId) async {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return;
-
-    final userSaveRef = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('saved_reels')
-        .doc(reelId);
-    final reelRef = _firestore.collection('reels').doc(reelId);
-
-    final batch = _firestore.batch();
-    batch.delete(userSaveRef);
-    batch.update(reelRef, {
-      'savedCount': FieldValue.increment(-1),
-    });
-
-    await batch.commit();
-    debugPrint(
-      '✅ [ReelService] unsaveReel: Optimistic batch commit successful',
-    );
-  }
-
-  /// Get a stream of the user's liked reels.
-  Stream<List<Reel>> getLikedReelsStream() {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return Stream.value([]);
-
-    debugPrint(
-      '🔄 [ReelService] getLikedReelsStream: Creating new stream for uid: $uid',
-    );
-
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('liked_reels')
-        .snapshots(includeMetadataChanges: true)
-        .map((snapshot) {
-          debugPrint(
-            '📥 [ReelService] getLikedReelsStream: Snapshot received with ${snapshot.docs.length} docs, fromCache: ${snapshot.metadata.isFromCache}',
-          );
-          final reels = <Reel>[];
-
-          for (final doc in snapshot.docs) {
-            final data = doc.data();
-
-            // 1. Check if denormalized data is present and valid
-            final videoUrl = data['videoUrl'] as String?;
-            if (videoUrl != null && videoUrl.isNotEmpty) {
-              final reel = Reel.fromFirestore(doc.id, data);
-              reels.add(reel);
-              continue;
-            }
-
-            // 2. Fallback: create a placeholder reel
-            final fallbackReel = Reel(
-              id: doc.id,
-              videoUrl: '',
-              videoPrompt: data['videoPrompt'] ?? data['prompt'] ?? '',
-              thumbnailUrl: data['thumbnailUrl'],
-              imagePrompt: data['imagePrompt'] ?? '',
-              imageEdit: data['imageEdit'] ?? false,
-              type: data['type'] ?? 'video',
-              isEditable: data['isEditable'] ?? false,
-              likesCount: data['likesCount'] ?? 0,
-              savedCount: data['savedCount'] ?? 0,
-            );
-            reels.add(fallbackReel);
-          }
-
-          return reels;
-        })
-        .handleError((error) {
-          debugPrint('❌ [ReelService] getLikedReelsStream error: $error');
-          return <Reel>[];
-        });
-  }
-
-  /// Get a stream of the user's saved reels.
-  Stream<List<Reel>> getSavedReelsStream() {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return Stream.value([]);
-
-    debugPrint(
-      '🔄 [ReelService] getSavedReelsStream: Creating new stream for uid: $uid',
-    );
-
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('saved_reels')
-        .snapshots(includeMetadataChanges: true)
-        .map((snapshot) {
-          debugPrint(
-            '📥 [ReelService] getSavedReelsStream: Snapshot received with ${snapshot.docs.length} docs, fromCache: ${snapshot.metadata.isFromCache}',
-          );
-          final reels = <Reel>[];
-
-          for (final doc in snapshot.docs) {
-            final data = doc.data();
-
-            final videoUrl = data['videoUrl'] as String?;
-            if (videoUrl != null && videoUrl.isNotEmpty) {
-              final reel = Reel.fromFirestore(doc.id, data);
-              reels.add(reel);
-              continue;
-            }
-
-            final fallbackReel = Reel(
-              id: doc.id,
-              videoUrl: '',
-              videoPrompt: data['videoPrompt'] ?? data['prompt'] ?? '',
-              thumbnailUrl: data['thumbnailUrl'],
-              imagePrompt: data['imagePrompt'] ?? '',
-              imageEdit: data['imageEdit'] ?? false,
-              type: data['type'] ?? 'video',
-              isEditable: data['isEditable'] ?? false,
-              likesCount: data['likesCount'] ?? 0,
-              savedCount: data['savedCount'] ?? 0,
-            );
-            reels.add(fallbackReel);
-          }
-
-          return reels;
-        })
-        .handleError((error) {
-          debugPrint('❌ [ReelService] getSavedReelsStream error: $error');
-          return <Reel>[];
-        });
-  }
-
-  /// Force an immediate fetch of saved reels and return the data
-  Future<List<Reel>> fetchSavedReelsOnce() async {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return [];
-
-    debugPrint(
-      '🔄 [ReelService] fetchSavedReelsOnce: Fetching immediately for uid: $uid',
-    );
-
-    try {
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('saved_reels')
-          .get();
-
-      debugPrint(
-        '📥 [ReelService] fetchSavedReelsOnce: Got ${snapshot.docs.length} docs',
-      );
-
-      final reels = <Reel>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final videoUrl = data['videoUrl'] as String?;
-        if (videoUrl != null && videoUrl.isNotEmpty) {
-          reels.add(Reel.fromFirestore(doc.id, data));
-        } else {
-          reels.add(
-            Reel(
-              id: doc.id,
-              videoUrl: '',
-              videoPrompt: data['videoPrompt'] ?? data['prompt'] ?? '',
-              thumbnailUrl: data['thumbnailUrl'],
-              imagePrompt: data['imagePrompt'] ?? '',
-              imageEdit: data['imageEdit'] ?? false,
-              type: data['type'] ?? 'video',
-              isEditable: data['isEditable'] ?? false,
-              likesCount: data['likesCount'] ?? 0,
-              savedCount: data['savedCount'] ?? 0,
-            ),
-          );
-        }
-      }
-      return reels;
-    } catch (e) {
-      debugPrint('❌ [ReelService] fetchSavedReelsOnce error: $e');
-      return [];
+    if (_savedReels.contains(reelId)) {
+      _savedReels.remove(reelId);
+      _savedReelData.remove(reelId);
+      final current = _saveIncrements[reelId] ?? 0;
+      if (current > 0) _saveIncrements[reelId] = current - 1;
+      await _persistSaved();
+      debugPrint('✅ [ReelService] unsaveReel: Unsaved $reelId (persisted)');
     }
   }
 
-  /// Force an immediate fetch of liked reels and return the data
-  Future<List<Reel>> fetchLikedReelsOnce() async {
-    final uid = UserSession.instance.uid;
-    if (uid == null) return [];
+  bool isReelSavedSync(String reelId) => _savedReels.contains(reelId);
+  Stream<bool> isReelSaved(String reelId) => Stream.value(isReelSavedSync(reelId));
 
-    debugPrint(
-      '🔄 [ReelService] fetchLikedReelsOnce: Fetching immediately for uid: $uid',
-    );
+  Stream<List<Reel>> getSavedReelsStream() => Stream.value(savedReelsNotifier.value);
+  Future<List<Reel>> fetchSavedReelsOnce() async => savedReelsNotifier.value;
 
-    try {
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('liked_reels')
-          .get();
+  // ── Utility ───────────────────────────────────────────────────────────────
 
-      debugPrint(
-        '📥 [ReelService] fetchLikedReelsOnce: Got ${snapshot.docs.length} docs',
-      );
-
-      final reels = <Reel>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final videoUrl = data['videoUrl'] as String?;
-        if (videoUrl != null && videoUrl.isNotEmpty) {
-          reels.add(Reel.fromFirestore(doc.id, data));
-        } else {
-          reels.add(
-            Reel(
-              id: doc.id,
-              videoUrl: '',
-              videoPrompt: data['videoPrompt'] ?? data['prompt'] ?? '',
-              thumbnailUrl: data['thumbnailUrl'],
-              imagePrompt: data['imagePrompt'] ?? '',
-              imageEdit: data['imageEdit'] ?? false,
-              type: data['type'] ?? 'video',
-              isEditable: data['isEditable'] ?? false,
-              likesCount: data['likesCount'] ?? 0,
-              savedCount: data['savedCount'] ?? 0,
-            ),
-          );
-        }
-      }
-      return reels;
-    } catch (e) {
-      debugPrint('❌ [ReelService] fetchLikedReelsOnce error: $e');
-      return [];
-    }
-  }
-
-  /// Add a new reel (Admin/Utility)
   Future<void> addReel({
     required String videoUrl,
     required String videoPrompt,
@@ -394,15 +201,6 @@ class ReelService {
     String type = 'video',
     bool isEditable = false,
   }) async {
-    await _firestore.collection('reels').add({
-      'videoUrl': videoUrl,
-      'videoPrompt': videoPrompt,
-      'imagePrompt': imagePrompt,
-      'imageEdit': imageEdit,
-      'type': type,
-      'isEditable': isEditable,
-      'likesCount': 0,
-      'savedCount': 0,
-    });
+    debugPrint('⚠️ [ReelService] addReel is not supported with Remote Config');
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/Core/colors.dart';
@@ -9,6 +10,7 @@ import 'package:trail_ai_app/Services/ad_service.dart';
 import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/generation_gate.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 import 'package:trail_ai_app/Widgets/topbar.dart';
 import 'package:trail_ai_app/pages/upscale_page.dart';
 
@@ -31,9 +33,12 @@ class _AiLogoPageState extends State<AiLogoPage>
   final CreditService _creditService = CreditService();
 
   _PageState _pageState = _PageState.selection;
-  final List<String> _generatedLogos = []; 
+  final List<String> _generatedLogos = [];
   int _selectedLogoIndex = 0;
+  final bool _isDownloading = false;
+  bool _isNsfw = false;
 
+  final ScrollController _scrollController = ScrollController();
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
 
@@ -55,6 +60,7 @@ class _AiLogoPageState extends State<AiLogoPage>
   void dispose() {
     _progressController.dispose();
     _promptController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -82,7 +88,37 @@ class _AiLogoPageState extends State<AiLogoPage>
       return;
     }
 
-    setState(() => _pageState = _PageState.loading);
+    // --- Safety Check ---
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkTextSafe(_promptController.text.trim());
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (e is NsfwContentException) {
+        if (mounted) {
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
+        }
+        return;
+      }
+      debugPrint('⚠️ [AiLogoPage] Text safety check error: $e');
+    }
+
+    setState(() {
+      _pageState = _PageState.loading;
+      _isNsfw = false;
+    });
     _progressController.forward(from: 0);
 
     final canProceed = await GenerationGate.check(
@@ -106,9 +142,9 @@ class _AiLogoPageState extends State<AiLogoPage>
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('credit_deducted'.i18n())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
       }
 
       if (mounted) {
@@ -122,23 +158,24 @@ class _AiLogoPageState extends State<AiLogoPage>
     } catch (e) {
       if (mounted) {
         _progressController.stop();
-        setState(() => _pageState = _PageState.selection);
-        
+
         if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
+          if (e.url != null) {
+            setState(() {
+              _generatedLogos.clear();
+              _generatedLogos.addAll([e.url!, e.url!, e.url!, e.url!]);
+              _isNsfw = true;
+              _pageState = _PageState.result;
+            });
+          } else {
+            setState(() => _pageState = _PageState.selection);
+          }
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
           );
         } else {
+          setState(() => _pageState = _PageState.selection);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${AppStrings.error}${e.toString()}')),
           );
@@ -214,7 +251,7 @@ class _AiLogoPageState extends State<AiLogoPage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -243,12 +280,12 @@ class _AiLogoPageState extends State<AiLogoPage>
               },
               onBack: switch (_pageState) {
                 _PageState.loading => () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
-                  },
+                  _progressController.stop();
+                  setState(() => _pageState = _PageState.selection);
+                },
                 _PageState.result => () => setState(
-                      () => _pageState = _PageState.selection,
-                    ),
+                  () => _pageState = _PageState.selection,
+                ),
                 _PageState.selection => null,
               },
             ),
@@ -291,7 +328,6 @@ class _AiLogoPageState extends State<AiLogoPage>
           ),
         ),
         SizedBox(height: sh * 0.05),
-        // Mock skeleton/loading grid
         GridView.builder(
           shrinkWrap: true,
           padding: EdgeInsets.symmetric(horizontal: sw * 0.1),
@@ -362,7 +398,10 @@ class _AiLogoPageState extends State<AiLogoPage>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(sw * 0.08),
               ),
-              side: BorderSide(color: isDark ? Colors.white : Colors.black, width: sw * 0.003),
+              side: BorderSide(
+                color: isDark ? Colors.white : Colors.black,
+                width: sw * 0.003,
+              ),
             ),
             child: Text(
               'cancel'.i18n(),
@@ -385,15 +424,13 @@ class _AiLogoPageState extends State<AiLogoPage>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(height: sh * 0.025),
-
-            // --- Text Input Area ---
             Container(
               padding: EdgeInsets.all(sw * 0.04),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.grey[50],
                 borderRadius: BorderRadius.circular(sw * 0.06),
                 border: Border.all(
-                  color: Colors.orange.withOpacity(0.3),
+                  color: Colors.orange.withValues(alpha: 0.3),
                   width: sw * 0.003,
                 ),
               ),
@@ -408,10 +445,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 style: TextStyle(color: AppColors.textColor(isDark)),
               ),
             ),
-
             SizedBox(height: sh * 0.03),
-
-            // --- Style Selection ---
             Text(
               'logo_style'.i18n(),
               style: TextStyle(
@@ -429,10 +463,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 _styleChip('minimal_logo'.i18n(), 'Minimal', isDark),
               ],
             ),
-
             SizedBox(height: sh * 0.03),
-
-            // --- AI Suggestion Card ---
             Container(
               padding: EdgeInsets.all(sw * 0.04),
               decoration: BoxDecoration(
@@ -445,7 +476,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                     ? null
                     : [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                         ),
                       ],
@@ -508,7 +539,8 @@ class _AiLogoPageState extends State<AiLogoPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Generate ⚡ ${(_replicateService.logoModel?.creditUsed ?? 0)}'.i18n(),
+                        'Generate ⚡ ${(_replicateService.logoModel?.creditUsed ?? 0)}'
+                            .i18n(),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -537,7 +569,7 @@ class _AiLogoPageState extends State<AiLogoPage>
         padding: EdgeInsets.symmetric(horizontal: sw * 0.04, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.orange.withOpacity(0.1)
+              ? Colors.orange.withValues(alpha: 0.1)
               : (isDark ? Colors.grey[900] : Colors.grey[100]),
           border: Border.all(
             color: isSelected ? Colors.orange : Colors.grey[300]!,
@@ -586,24 +618,53 @@ class _AiLogoPageState extends State<AiLogoPage>
                       borderRadius: BorderRadius.circular(sw * 0.06),
                       border: isSelected
                           ? Border.all(color: Colors.orange, width: sw * 0.008)
-                          : Border.all(color: Colors.grey[200]!, width: sw * 0.005),
+                          : Border.all(
+                              color: Colors.grey[200]!,
+                              width: sw * 0.005,
+                            ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                         ),
                       ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(sw * 0.06),
-                      child: CachedNetworkImage(
-                        imageUrl: _generatedLogos[index],
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(strokeWidth: sw * 0.005),
-                        ),
-                        errorWidget: (c, e, s) =>
-                            const Icon(Icons.logo_dev_outlined),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: _generatedLogos[index],
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: sw * 0.005,
+                              ),
+                            ),
+                            errorWidget: (c, e, s) =>
+                                const Icon(Icons.logo_dev_outlined),
+                          ),
+                          if (_isNsfw)
+                            Positioned.fill(
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Container(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.visibility_off,
+                                      color: Colors.white,
+                                      size: 32,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -616,20 +677,23 @@ class _AiLogoPageState extends State<AiLogoPage>
           // Standard Actions
           Row(
             children: [
-               Expanded(
+              Expanded(
                 child: _actionButton(
                   context,
                   Icons.auto_fix_high,
                   'enhance'.i18n(),
                   isDark,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UpscalePage(
-                        initialImageUrl: _generatedLogos[_selectedLogoIndex],
-                      ),
-                    ),
-                  ),
+                  _isNsfw
+                      ? () {}
+                      : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UpscalePage(
+                              initialImageUrl:
+                                  _generatedLogos[_selectedLogoIndex],
+                            ),
+                          ),
+                        ),
                 ),
               ),
               SizedBox(width: sw * 0.02),
@@ -667,18 +731,28 @@ class _AiLogoPageState extends State<AiLogoPage>
 
           SizedBox(height: sh * 0.03),
           GestureDetector(
-            onTap: () {},
+            onTap: _isNsfw ? null : () {}, // Implement real download later
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: sh * 0.02),
-              decoration: ProGradientDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(sw * 0.08)),
-              ),
+              decoration: _isNsfw
+                  ? BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(sw * 0.08),
+                    )
+                  : ProGradientDecoration(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(sw * 0.08),
+                      ),
+                    ),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.file_download_outlined, color: Colors.white),
+                    const Icon(
+                      Icons.file_download_outlined,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: sw * 0.02),
                     Text(
                       'download'.i18n(),
@@ -695,7 +769,7 @@ class _AiLogoPageState extends State<AiLogoPage>
 
           SizedBox(height: sh * 0.02),
           OutlinedButton(
-            onPressed: () {},
+            onPressed: _isNsfw ? null : () {}, // Implement real share later
             style: OutlinedButton.styleFrom(
               minimumSize: Size(double.infinity, sh * 0.07),
               shape: RoundedRectangleBorder(

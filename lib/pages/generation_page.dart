@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:localization/localization.dart';
+import '../Helpers/feedback_helper.dart';
 import '../Services/replicate_service.dart';
 import '../Services/ad_service.dart';
 import '../Services/credit_service.dart';
@@ -16,8 +17,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
+import 'dart:ui';
 import '../Services/background_generation_service.dart';
 import '../Helpers/image_picker_helper.dart';
+import '../Services/content_safety_service.dart';
+import '../Helpers/error_dialog_helper.dart';
 
 class GenerationPage extends StatefulWidget {
   final String initialCategory;
@@ -36,6 +40,9 @@ class GenerationPage extends StatefulWidget {
   /// Initial model ID to pre-select (e.g., from category image click)
   final String? initialModelId;
 
+  /// Whether to automatically trigger the image picker upon entering the page
+  final bool autoTriggerImagePicker;
+
   const GenerationPage({
     super.key,
     this.initialCategory = 'image',
@@ -45,6 +52,7 @@ class GenerationPage extends StatefulWidget {
     this.imagePrompt = '',
     this.videoPrompt = '',
     this.initialModelId,
+    this.autoTriggerImagePicker = false,
   });
 
   @override
@@ -68,6 +76,8 @@ class _GenerationPageState extends State<GenerationPage> {
   String? _generatedImageUrl;
   String? _generatedVideoUrl;
   bool _showMenu = false;
+  bool _isNsfw = false;
+  bool? _isLiked;
 
   // Reference image picked via + button
   File? _selectedImage;
@@ -104,7 +114,10 @@ class _GenerationPageState extends State<GenerationPage> {
 
     _initializeService();
 
-    if (widget.imageEditMode || widget.initialIsEditable) {
+    // Auto-trigger image picker if requested by tool or imageEditMode
+    if (widget.imageEditMode ||
+        widget.initialIsEditable ||
+        widget.autoTriggerImagePicker) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _triggerAutoImagePicker();
       });
@@ -244,6 +257,41 @@ class _GenerationPageState extends State<GenerationPage> {
       return;
     }
 
+    // --- Safety Check ---
+    try {
+      // Show checking overlay
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      await ContentSafetyService().checkTextSafe(prompt);
+
+      if (mounted) Navigator.pop(context); // Remove loading
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        setState(() => _isGenerating = false);
+        if (e is NsfwContentException) {
+          if (e.url != null) {
+            setState(() {
+              _generatedImageUrl = e.url;
+              _isNsfw = true;
+            });
+          }
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Generation failed: $e')));
+        }
+      }
+      return;
+    }
+
     debugPrint('🔥 [GenerationPage] _generateContent called');
 
     // Dismiss keyboard to show progress clearly
@@ -252,6 +300,8 @@ class _GenerationPageState extends State<GenerationPage> {
     // ── 1. Progress state (immediate feedback) ───────────────────────────────
     setState(() {
       _isGenerating = true;
+      _isNsfw = false;
+      _isLiked = null;
       if (_selectedCategory == 'image') {
         _generatedImageUrl = null;
       } else {
@@ -274,11 +324,12 @@ class _GenerationPageState extends State<GenerationPage> {
       return;
     }
 
+    if (!mounted) return;
+
     // ── 3. Background Activity Prompt (Video only) ──────────────────────────
     bool runInBackground = false;
     if (_selectedCategory == 'video') {
       final bool isDark = Theme.of(context).brightness == Brightness.dark;
-      final sw = MediaQuery.of(context).size.width;
 
       runInBackground =
           await showDialog<bool>(
@@ -301,7 +352,7 @@ class _GenerationPageState extends State<GenerationPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -314,7 +365,7 @@ class _GenerationPageState extends State<GenerationPage> {
                       Container(
                         padding: EdgeInsets.all(sw * 0.04),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF9800).withOpacity(0.1),
+                          color: const Color(0xFFFF9800).withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -516,9 +567,19 @@ class _GenerationPageState extends State<GenerationPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
-        );
+        if (e is NsfwContentException) {
+          if (e.url != null && _selectedCategory == 'image') {
+            setState(() {
+              _generatedImageUrl = e.url;
+              _isNsfw = true;
+            });
+          }
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -555,6 +616,39 @@ class _GenerationPageState extends State<GenerationPage> {
       return;
     }
 
+    // --- Safety Check ---
+    try {
+      // Show checking overlay
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      if (widget.imagePrompt.trim().isNotEmpty) {
+        await ContentSafetyService().checkTextSafe(widget.imagePrompt);
+      }
+      if (widget.videoPrompt.trim().isNotEmpty) {
+        await ContentSafetyService().checkTextSafe(widget.videoPrompt);
+      }
+      if (_selectedImage != null) {
+        await ContentSafetyService().checkImageFileSafe(_selectedImage!);
+      }
+
+      if (mounted) Navigator.pop(context); // Remove loading
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Remove loading
+      if (e is NsfwContentException) {
+        if (mounted) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        }
+        return;
+      }
+      debugPrint('⚠️ [GenerationPage] Two-stage safety check error: $e');
+    }
+
     // Credit gate — charge cost of both models
     final totalCost = (imageModel.creditUsed) + (videoModel.creditUsed);
 
@@ -564,6 +658,7 @@ class _GenerationPageState extends State<GenerationPage> {
     // ── 1. Progress state ───────────────────────────────────────────────────
     setState(() {
       _isGenerating = true;
+      _isNsfw = false;
       _generatedImageUrl = null;
       _generatedVideoUrl = null;
     });
@@ -586,7 +681,6 @@ class _GenerationPageState extends State<GenerationPage> {
     // ── 3. Background Activity Prompt ──────────────────────────────────────────
     bool runInBackground = false;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final sw = MediaQuery.of(context).size.width;
 
     runInBackground =
         await showDialog<bool>(
@@ -609,7 +703,7 @@ class _GenerationPageState extends State<GenerationPage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -622,7 +716,7 @@ class _GenerationPageState extends State<GenerationPage> {
                     Container(
                       padding: EdgeInsets.all(sw * 0.04),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800).withOpacity(0.1),
+                        color: const Color(0xFFFF9800).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -787,9 +881,19 @@ class _GenerationPageState extends State<GenerationPage> {
       } catch (_) {}
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Two-stage error: ${e.toString()}')),
-        );
+        if (e is NsfwContentException) {
+          if (e.url != null && _selectedCategory == 'image') {
+            setState(() {
+              _generatedImageUrl = e.url;
+              _isNsfw = true;
+            });
+          }
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Two-stage error: ${e.toString()}')),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -929,6 +1033,16 @@ class _GenerationPageState extends State<GenerationPage> {
                   ],
                 ),
 
+                // Menu Overlay Background
+                if (_showMenu)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showMenu = false),
+                      behavior: HitTestBehavior.opaque,
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+
                 // Menu Overlay
                 if (_showMenu)
                   MenuOverlay(
@@ -952,6 +1066,7 @@ class _GenerationPageState extends State<GenerationPage> {
                         _showMenu = false;
                         _generatedImageUrl = null;
                         _generatedVideoUrl = null;
+                        _isLiked = null;
                       });
                     },
                   ),
@@ -1040,32 +1155,119 @@ class _GenerationPageState extends State<GenerationPage> {
     return (_selectedCategory == 'image'
             ? _generatedImageUrl != null
             : _generatedVideoUrl != null)
-        ? _buildResultView(screenWidth)
+        ? _buildResultView(screenWidth, screenHeight, isDark)
         : _buildPlaceholder(screenWidth, screenHeight, isDark);
   }
 
-  Widget _buildResultView(double screenWidth) {
+  Widget _buildResultView(double screenWidth, double screenHeight, bool isDark) {
+    Widget resultWidget;
     if (_selectedCategory == 'image') {
-      return Center(
+      Widget imageWidget = CachedNetworkImage(
+        imageUrl: _generatedImageUrl!,
+        width: double.infinity,
+        fit: BoxFit.contain,
+        placeholder: (context, url) =>
+            const Center(child: CircularProgressIndicator()),
+        errorWidget: (context, url, error) => const Icon(Icons.error_outline),
+      );
+
+      if (_isNsfw) {
+        imageWidget = ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: imageWidget,
+        );
+      }
+
+      resultWidget = Center(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(screenWidth * 0.06),
-          child: CachedNetworkImage(
-            imageUrl: _generatedImageUrl!,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            placeholder: (context, url) =>
-                const Center(child: CircularProgressIndicator()),
-            errorWidget: (context, url, error) =>
-                const Icon(Icons.error_outline),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              imageWidget,
+              if (_isNsfw)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: const Center(
+                    child: Icon(
+                      Icons.visibility_off,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       );
     } else {
-      return VideoResultView(
+      resultWidget = VideoResultView(
         videoUrl: _generatedVideoUrl!,
         borderRadius: screenWidth * 0.06,
       );
     }
+
+    return Column(
+      children: [
+        Expanded(child: resultWidget),
+        SizedBox(height: screenHeight * 0.015),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Was this generation helpful?',
+              style: TextStyle(
+                color: AppColors.secondaryTextColor(isDark),
+                fontSize: screenWidth * 0.038,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.03),
+            GestureDetector(
+              onTap: () {
+                setState(() => _isLiked = true);
+                FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _isLiked == true
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : (isDark ? Colors.white12 : Colors.grey.shade200),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isLiked == true ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                  color: _isLiked == true ? Colors.green : AppColors.textColor(isDark),
+                  size: 20,
+                ),
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.03),
+            GestureDetector(
+              onTap: () {
+                setState(() => _isLiked = false);
+                FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _isLiked == false
+                      ? Colors.red.withValues(alpha: 0.2)
+                      : (isDark ? Colors.white12 : Colors.grey.shade200),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isLiked == false ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
+                  color: _isLiked == false ? Colors.red : AppColors.textColor(isDark),
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: screenHeight * 0.01),
+      ],
+    );
   }
 
   Widget _buildPlaceholder(
@@ -1081,7 +1283,7 @@ class _GenerationPageState extends State<GenerationPage> {
             _selectedCategory == 'image'
                 ? Icons.image_outlined
                 : Icons.videocam_outlined,
-            color: AppColors.iconColor(isDark).withOpacity(0.5),
+            color: AppColors.iconColor(isDark).withValues(alpha: 0.5),
             size: screenWidth * 0.2,
           ),
           SizedBox(height: screenHeight * 0.02),

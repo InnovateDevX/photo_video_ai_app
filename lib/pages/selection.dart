@@ -43,9 +43,7 @@ class _SelectionState extends State<Selection> {
           Container(
             height: h * 0.055,
             width: double.infinity,
-            margin: EdgeInsets.symmetric(
-              horizontal: w * 0.05,
-            ),
+            margin: EdgeInsets.symmetric(horizontal: w * 0.05),
 
             decoration: BoxDecoration(
               color: AppColors.tileBackgroundColor(isDark),
@@ -132,7 +130,9 @@ class _SelectionState extends State<Selection> {
                         },
                         child: Container(
                           decoration: ProGradientDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(w * 0.08)),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(w * 0.08),
+                            ),
                           ),
                           child: Padding(
                             padding: EdgeInsets.symmetric(

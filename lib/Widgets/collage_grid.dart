@@ -19,9 +19,6 @@ class CollageGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Validate image count matches template
-    final expectedCount = template.imageCount;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final double canvasWidth = constraints.maxWidth;
@@ -98,15 +95,15 @@ class _CollageSlot extends StatelessWidget {
                 onTap: onTap,
                 child: Center(
                   child: image == null
-                        ? LayoutBuilder(
-                            builder: (context, slotConstraints) {
-                              return Icon(
-                                Icons.add_a_photo_outlined,
-                                size: slotConstraints.maxWidth * 0.15,
-                                color: Colors.white,
-                              );
-                            },
-                          )
+                      ? LayoutBuilder(
+                          builder: (context, slotConstraints) {
+                            return Icon(
+                              Icons.add_a_photo_outlined,
+                              size: slotConstraints.maxWidth * 0.15,
+                              color: Colors.white,
+                            );
+                          },
+                        )
                       : const SizedBox.shrink(),
                 ),
               ),

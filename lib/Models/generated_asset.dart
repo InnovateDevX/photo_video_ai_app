@@ -41,5 +41,6 @@ class GeneratedAsset {
 
   String toJson() => json.encode(toMap());
 
-  factory GeneratedAsset.fromJson(String source) => GeneratedAsset.fromMap(json.decode(source));
+  factory GeneratedAsset.fromJson(String source) =>
+      GeneratedAsset.fromMap(json.decode(source));
 }

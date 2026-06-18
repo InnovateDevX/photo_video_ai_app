@@ -37,7 +37,7 @@ class MenuOverlay extends StatelessWidget {
           boxShadow: [
             if (!isDark)
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: screenWidth * 0.025,
                 offset: Offset(0, screenHeight * 0.005),
               ),
@@ -55,27 +55,10 @@ class MenuOverlay extends StatelessWidget {
             ),
             SizedBox(height: screenHeight * 0.015),
             _buildMenuItem(
-              Icons.settings,
-              'use_setting'.i18n(),
-              screenWidth,
-              onTap: onUseSettings,
-              isDark: isDark,
-            ),
-            SizedBox(height: screenHeight * 0.015),
-            _buildMenuItem(
               Icons.download,
-              'download_batch'.i18n(),
+              'download'.i18n(),
               screenWidth,
               onTap: onDownload,
-              isDark: isDark,
-            ),
-            SizedBox(height: screenHeight * 0.015),
-            _buildMenuItem(
-              Icons.delete,
-              'delete'.i18n(),
-              screenWidth,
-              onTap: onDelete,
-              isRed: true,
               isDark: isDark,
             ),
           ],

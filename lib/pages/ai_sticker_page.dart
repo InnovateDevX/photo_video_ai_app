@@ -7,13 +7,14 @@ import 'dart:io';
 import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
 import 'package:trail_ai_app/Services/replicate_service.dart';
 import 'package:trail_ai_app/Services/ad_service.dart';
+import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/generation_gate.dart';
 import 'package:trail_ai_app/Widgets/topbar.dart';
 import 'package:trail_ai_app/pages/ai_background_page.dart';
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -39,6 +40,7 @@ class _AiStickerPageState extends State<AiStickerPage>
 
   _PageState _pageState = _PageState.selection;
   String? _generatedImageUrl;
+  bool _isNsfw = false;
 
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
@@ -89,9 +91,9 @@ class _AiStickerPageState extends State<AiStickerPage>
       return;
     }
     if (!_isTextMode && _selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('choose_image'.i18n())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('choose_image'.i18n())));
       return;
     }
 
@@ -106,7 +108,55 @@ class _AiStickerPageState extends State<AiStickerPage>
       return;
     }
 
-    setState(() => _pageState = _PageState.loading);
+    final userText = _promptController.text.trim();
+
+    // --- Safety Check ---
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD66031)),
+        ),
+      );
+
+      if (_isTextMode) {
+        if (userText.isNotEmpty) {
+          await ContentSafetyService().checkTextSafe(userText);
+        }
+      } else {
+        if (_selectedImage != null) {
+          await ContentSafetyService().checkImageFileSafe(_selectedImage!);
+        }
+      }
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        if (e is NsfwContentException) {
+          if (e.url != null) {
+            setState(() {
+              _generatedImageUrl = e.url;
+              _isNsfw = true;
+              _pageState = _PageState.result;
+            });
+          }
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
+        } else {
+          debugPrint('⚠️ [AiStickerPage] Safety check error: $e');
+        }
+      }
+      return;
+    }
+
+    setState(() {
+      _pageState = _PageState.loading;
+      _isNsfw = false;
+    });
     _progressController.forward(from: 0);
 
     final canProceed = await GenerationGate.check(
@@ -141,9 +191,9 @@ class _AiStickerPageState extends State<AiStickerPage>
         await _creditService.deductCredits(model.creditUsed);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('credit_deducted'.i18n())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
 
           _progressController.stop();
           setState(() {
@@ -157,39 +207,29 @@ class _AiStickerPageState extends State<AiStickerPage>
     } catch (e) {
       if (mounted) {
         _progressController.stop();
-        setState(() => _pageState = _PageState.selection);
-        
+
         if (e is NsfwContentException) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('restricted_content_detected'.i18n()),
-              content: Text('restricted_content_detected'.i18n()),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
+          if (e.url != null) {
+            setState(() {
+              _generatedImageUrl = e.url;
+              _isNsfw = true;
+              _pageState = _PageState.result;
+            });
+          } else {
+            setState(() => _pageState = _PageState.selection);
+          }
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
           );
         } else if (e.toString().toLowerCase().contains('timeout')) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text(AppStrings.timeoutTitle),
-              content: const Text(AppStrings.timeoutMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
-                ),
-              ],
-            ),
-          );
+          setState(() => _pageState = _PageState.selection);
+          ErrorDialogHelper.showTimeoutDialog(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+          setState(() => _pageState = _PageState.selection);
+          ErrorDialogHelper.showErrorDialog(
+            context,
+            message: 'Something went wrong. Please try again.',
           );
         }
       }
@@ -265,7 +305,7 @@ class _AiStickerPageState extends State<AiStickerPage>
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.creditsCardBorder(isDark).withOpacity(0.4),
+            color: AppColors.creditsCardBorder(isDark).withValues(alpha: 0.4),
           ),
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
@@ -282,8 +322,7 @@ class _AiStickerPageState extends State<AiStickerPage>
       body: SafeArea(
         child: Column(
           children: [
-            if (_pageState == _PageState.selection)
-              const TopBar(),
+            if (_pageState == _PageState.selection) const TopBar(),
             _buildTopBar(
               isDark: isDark,
               title: switch (_pageState) {
@@ -315,11 +354,13 @@ class _AiStickerPageState extends State<AiStickerPage>
                 _PageState.loading => AILoadingScreen(
                   selectedImage: _isTextMode ? null : _selectedImage,
                   progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.stickerAiTips.map((e) => e.i18n()).toList(),
+                  aiTips: AppStrings.stickerAiTips
+                      .map((e) => e.i18n())
+                      .toList(),
                   processingTitle: 'processing_title'.i18n(),
                   applyingText: 'generating_sticker'.i18n(),
                   waitText: 'take_few_seconds'.i18n(),
-                  customLogoAsset: 'assets/images/Sticker_logo.png',
+                  customLogoAsset: 'assets/images/Sticker_logo.webp',
                   onCancel: () {
                     _progressController.stop();
                     setState(() => _pageState = _PageState.selection);
@@ -328,6 +369,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                 _PageState.result => AIResultScreen(
                   originalImage: _isTextMode ? null : _selectedImage,
                   resultImageUrl: _generatedImageUrl!,
+                  isNsfw: _isNsfw,
                   fit: BoxFit.contain,
                   customActionLabel: 'background_ai'.i18n(),
                   customActionIcon: Icons.layers_clear,
@@ -484,7 +526,10 @@ class _AiStickerPageState extends State<AiStickerPage>
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                Image.file(_selectedImage!, fit: BoxFit.cover),
+                                Image.file(
+                                  _selectedImage!,
+                                  fit: BoxFit.contain,
+                                ),
                                 Positioned(
                                   top: w * 0.03,
                                   right: w * 0.03,

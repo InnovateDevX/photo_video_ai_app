@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
+import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
 import 'package:trail_ai_app/Services/profile_service.dart';
 import 'package:trail_ai_app/Services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/nsfw_dialog_helper.dart';
+import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? initialProfile;
@@ -21,7 +22,7 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final ProfileService _profileService = ProfileService();
   final AuthService _authService = AuthService();
-  
+
   late TextEditingController _nameController;
   late TextEditingController _usernameController;
   late TextEditingController _bioController;
@@ -39,7 +40,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final user = FirebaseAuth.instance.currentUser;
 
     _currentUsername = profile?['username'] ?? '';
-    _nameController = TextEditingController(text: profile?['displayName'] ?? user?.displayName ?? '');
+    _nameController = TextEditingController(
+      text: profile?['displayName'] ?? user?.displayName ?? '',
+    );
     _usernameController = TextEditingController(text: _currentUsername);
     _bioController = TextEditingController(text: profile?['bio'] ?? '');
 
@@ -57,11 +60,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   void _onUsernameChanged() async {
     final newUsername = _usernameController.text.trim().toLowerCase();
-    
+
     // Replace slashes handling
     if (_usernameController.text.contains('/')) {
       _usernameController.text = _usernameController.text.replaceAll('/', '');
-      _usernameController.selection = TextSelection.fromPosition(TextPosition(offset: _usernameController.text.length));
+      _usernameController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _usernameController.text.length),
+      );
     }
 
     if (newUsername == _currentUsername.toLowerCase()) {
@@ -85,7 +90,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     final isAvailable = await _profileService.isUsernameAvailable(newUsername);
-    
+
     if (mounted) {
       setState(() {
         _isUsernameAvailable = isAvailable;
@@ -95,47 +100,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final File? file = await ImagePickerHelper.pickImage(
+      context: context,
+      crop: false,
+      source: ImageSource.gallery,
+    );
 
-    if (image == null) return;
+    if (file == null) return;
 
-    final file = File(image.path);
-
-    try {
-      // Show checking overlay
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(
-            child: CircularProgressIndicator(color: Color(0xFFD66031)),
-          ),
-        );
-      }
-
-      await ContentSafetyService().checkImageFileSafe(file);
-
-      if (mounted) Navigator.pop(context); // Remove loading
-
+    if (mounted) {
       setState(() {
         _imageFile = file;
       });
-    } catch (e) {
-      if (mounted) Navigator.pop(context); // Remove loading
-
-      if (e is NsfwContentException) {
-        if (mounted) {
-          NsfwDialogHelper.showRestrictedContentDialog(context);
-        }
-      } else {
-        debugPrint('⚠️ [EditProfilePage] Safety check error: $e');
-        // Still set the image if it's not a safety violation but some other error
-        setState(() {
-          _imageFile = file;
-        });
-      }
     }
   }
 
@@ -146,7 +122,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (name.isEmpty || username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Display Name and Username are required.')),
+        const SnackBar(
+          content: Text('Display Name and Username are required.'),
+        ),
       );
       return;
     }
@@ -166,7 +144,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       String? photoUrl;
       if (_imageFile != null) {
-        photoUrl = await _profileService.uploadProfilePicture(user.uid, _imageFile!);
+        photoUrl = await _profileService.uploadProfilePicture(
+          user.uid,
+          _imageFile!,
+        );
       } else {
         photoUrl = widget.initialProfile?['photoUrl'];
       }
@@ -188,9 +169,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        if (e is NsfwContentException) {
+          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+        } else if (e.toString().toLowerCase().contains('timeout')) {
+          ErrorDialogHelper.showTimeoutDialog(context);
+        } else {
+          ErrorDialogHelper.showErrorDialog(
+            context,
+            message: e.toString(),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -202,12 +190,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
-    final existingPhotoUrl = widget.initialProfile?['photoUrl'] ?? FirebaseAuth.instance.currentUser?.photoURL;
+    final existingPhotoUrl =
+        widget.initialProfile?['photoUrl'] ??
+        FirebaseAuth.instance.currentUser?.photoURL;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       appBar: AppBar(
-        title: Text('Edit Profile', style: TextStyle(color: AppColors.textColor(isDark))),
+        title: Text(
+          'Edit Profile',
+          style: TextStyle(color: AppColors.textColor(isDark)),
+        ),
         backgroundColor: AppColors.backgroundColor(isDark),
         iconTheme: IconThemeData(color: AppColors.textColor(isDark)),
         elevation: 0,
@@ -216,7 +209,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: w * 0.05, vertical: h * 0.02),
+                padding: EdgeInsets.symmetric(
+                  horizontal: w * 0.05,
+                  vertical: h * 0.02,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -234,14 +230,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                               child: CircleAvatar(
                                 radius: w * 0.15,
-                                backgroundColor: AppColors.profileAvatarBackground(isDark),
+                                backgroundColor:
+                                    AppColors.profileAvatarBackground(isDark),
                                 backgroundImage: _imageFile != null
                                     ? FileImage(_imageFile!) as ImageProvider
-                                    : (existingPhotoUrl != null 
-                                            ? NetworkImage(existingPhotoUrl) 
-                                            : const AssetImage('assets/iconamoon_profile-light.png')) as ImageProvider,
-                                child: (_imageFile == null && existingPhotoUrl == null)
-                                    ? Icon(Icons.person, size: w * 0.15, color: Colors.white)
+                                    : (existingPhotoUrl != null
+                                              ? NetworkImage(existingPhotoUrl)
+                                              : const AssetImage(
+                                                  'assets/iconamoon_profile-light.png',
+                                                ))
+                                          as ImageProvider,
+                                child:
+                                    (_imageFile == null &&
+                                        existingPhotoUrl == null)
+                                    ? Icon(
+                                        Icons.person,
+                                        size: w * 0.15,
+                                        color: Colors.white,
+                                      )
                                     : null,
                               ),
                             ),
@@ -254,7 +260,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   color: Color(0xFFD66031),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(Icons.camera_alt, color: Colors.white, size: w * 0.04),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: w * 0.04,
+                                ),
                               ),
                             ),
                           ],
@@ -280,7 +290,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       children: [
                         Text(
                           "Username",
-                          style: TextStyle(color: AppColors.secondaryTextColor(isDark), fontSize: w * 0.03),
+                          style: TextStyle(
+                            color: AppColors.secondaryTextColor(isDark),
+                            fontSize: w * 0.03,
+                          ),
                         ),
                         SizedBox(height: h * 0.005),
                         TextField(
@@ -289,7 +302,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           decoration: InputDecoration(
                             hintText: "unique_handle",
                             prefixText: "@",
-                            hintStyle: TextStyle(color: AppColors.secondaryTextColor(isDark).withOpacity(0.5)),
+                            hintStyle: TextStyle(
+                              color: AppColors.secondaryTextColor(
+                                isDark,
+                              ).withValues(alpha: 0.5),
+                            ),
                             filled: true,
                             fillColor: AppColors.tileBackgroundColor(isDark),
                             border: OutlineInputBorder(
@@ -300,26 +317,47 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ? Padding(
                                     padding: EdgeInsets.all(w * 0.03),
                                     child: SizedBox(
-                                      width: w * 0.05, height: w * 0.05,
-                                      child: CircularProgressIndicator(strokeWidth: w * 0.005),
+                                      width: w * 0.05,
+                                      height: w * 0.05,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: w * 0.005,
+                                      ),
                                     ),
                                   )
-                                : (_usernameController.text.isNotEmpty && _usernameController.text.trim().toLowerCase() != _currentUsername.toLowerCase())
-                                    ? Icon(
-                                        _isUsernameAvailable ? Icons.check_circle : Icons.cancel,
-                                        color: _isUsernameAvailable ? Colors.green : Colors.red,
-                                      )
-                                    : null,
+                                : (_usernameController.text.isNotEmpty &&
+                                      _usernameController.text
+                                              .trim()
+                                              .toLowerCase() !=
+                                          _currentUsername.toLowerCase())
+                                ? Icon(
+                                    _isUsernameAvailable
+                                        ? Icons.check_circle
+                                        : Icons.cancel,
+                                    color: _isUsernameAvailable
+                                        ? Colors.green
+                                        : Colors.red,
+                                  )
+                                : null,
                           ),
                         ),
-                        if (!_isUsernameAvailable && _usernameController.text.isNotEmpty && _usernameController.text.trim().toLowerCase() != _currentUsername.toLowerCase() && !_isCheckingUsername)
+                        if (!_isUsernameAvailable &&
+                            _usernameController.text.isNotEmpty &&
+                            _usernameController.text.trim().toLowerCase() !=
+                                _currentUsername.toLowerCase() &&
+                            !_isCheckingUsername)
                           Padding(
-                            padding: EdgeInsets.only(top: h * 0.005, left: w * 0.01),
+                            padding: EdgeInsets.only(
+                              top: h * 0.005,
+                              left: w * 0.01,
+                            ),
                             child: Text(
                               "Username is already taken.",
-                              style: TextStyle(color: Colors.red, fontSize: w * 0.03),
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: w * 0.03,
+                              ),
                             ),
-                          )
+                          ),
                       ],
                     ),
                     SizedBox(height: h * 0.02),
@@ -342,7 +380,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: h * 0.02),
                         decoration: ProGradientDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(w * 0.08)),
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(w * 0.08),
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -377,7 +417,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
       children: [
         Text(
           label,
-          style: TextStyle(color: AppColors.secondaryTextColor(isDark), fontSize: w * 0.03),
+          style: TextStyle(
+            color: AppColors.secondaryTextColor(isDark),
+            fontSize: w * 0.03,
+          ),
         ),
         SizedBox(height: h * 0.005),
         TextField(
@@ -386,7 +429,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
           style: TextStyle(color: AppColors.textColor(isDark)),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: AppColors.secondaryTextColor(isDark).withOpacity(0.5)),
+            hintStyle: TextStyle(
+              color: AppColors.secondaryTextColor(
+                isDark,
+              ).withValues(alpha: 0.5),
+            ),
             filled: true,
             fillColor: AppColors.tileBackgroundColor(isDark),
             border: OutlineInputBorder(

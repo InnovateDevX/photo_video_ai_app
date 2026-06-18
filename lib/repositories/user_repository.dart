@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
+import '../Services/remote_config_service.dart';
 
 /// Repository handling user document creation and retrieval.
 class UserRepository {
@@ -17,16 +18,17 @@ class UserRepository {
     String uid, {
     Transaction? transaction,
     WriteBatch? batch,
-    int initialCredits = 100,
+    int? initialCredits,
   }) async {
+    final creditsToAssign = initialCredits ?? RemoteConfigService().initialCredits;
     debugPrint(
-      '💾 [UserRepository] createUserIfMissing(uid=$uid, initialCredits=$initialCredits)',
+      '💾 [UserRepository] createUserIfMissing(uid=$uid, initialCredits=$creditsToAssign)',
     );
     final docRef = _firestore.collection('users').doc(uid);
     // Only write the two fields the Firestore rules permit on create
     final data = {
       'created_at': FieldValue.serverTimestamp(),
-      'credits': initialCredits,
+      'credits': creditsToAssign,
     };
 
     try {
@@ -34,7 +36,9 @@ class UserRepository {
         // merge:true → if the doc already exists, fields already present
         // (e.g. credits) are LEFT UNTOUCHED. Missing fields are added.
         batch.set(docRef, data, SetOptions(merge: true));
-        debugPrint('💾 [UserRepository] batch.set(merge) queued for users/$uid ✅');
+        debugPrint(
+          '💾 [UserRepository] batch.set(merge) queued for users/$uid ✅',
+        );
       } else if (transaction != null) {
         transaction.set(docRef, data);
         debugPrint(
@@ -52,15 +56,16 @@ class UserRepository {
               );
               if (!snapshot.exists) {
                 tx.set(docRef, data);
-                debugPrint(
-                    '💾 [UserRepository] Standalone tx: set() called ✅');
+                debugPrint('💾 [UserRepository] Standalone tx: set() called ✅');
               }
             });
             debugPrint(
-                '💾 [UserRepository] Standalone transaction committed ✅');
+              '💾 [UserRepository] Standalone transaction committed ✅',
+            );
             break; // success — stop retrying
           } catch (txError) {
-            final isTransient = txError.toString().contains('unavailable') ||
+            final isTransient =
+                txError.toString().contains('unavailable') ||
                 txError.toString().contains('UNAVAILABLE');
             if (isTransient && attempt < maxAttempts) {
               final delay = Duration(seconds: attempt * 2); // 2s, 4s
@@ -160,7 +165,9 @@ class UserRepository {
       });
       debugPrint('💾 [UserRepository] FCM Token updated successfully ✅');
     } catch (e) {
-      debugPrint('⚠️ [UserRepository] Failed to update FCM token (doc might not exist yet): $e');
+      debugPrint(
+        '⚠️ [UserRepository] Failed to update FCM token (doc might not exist yet): $e',
+      );
       // If doc doesn't exist, we don't want to crash — tokens are secondary to credit initialization.
     }
   }

@@ -32,30 +32,66 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
     super.dispose();
   }
 
-  final List<EffectOverlay> _effects = [
+  final List<EffectOverlay> _effects = const [
+    // ── Butterfly ──────────────────────────────────────────────
     EffectOverlay(
-      id: 'Light Leak 01',
-      category: 'lens',
-      assetPath: 'assets/effects/lens/L01.png',
-      thumbnailPath: 'assets/effects/lens/L01.png',
-      defaultOpacity: 0.8,
-      blendMode: ui.BlendMode.plus,
-    ),
-    EffectOverlay(
-      id: 'Golden Hour',
-      category: 'lens',
-      assetPath: 'assets/effects/lens/L02.png',
-      thumbnailPath: 'assets/effects/lens/L02.png',
-      defaultOpacity: 0.5,
+      id: 'Butterfly 1',
+      category: 'Butterfly',
+      assetPath: 'assets/effects/potrait/Butterfly/1.png',
+      portraitPath: 'assets/effects/potrait/Butterfly/1.png',
+      squarePath: 'assets/effects/square/Butterfly/1.png',
+      thumbnailPath: 'assets/effects/potrait/Butterfly/1.png',
       blendMode: ui.BlendMode.screen,
     ),
     EffectOverlay(
-      id: 'Prism Prism',
-      category: 'prism',
-      assetPath: 'assets/effects/prism/P01.png',
-      thumbnailPath: 'assets/effects/prism/P01.png',
-      defaultOpacity: 0.7,
-      blendMode: ui.BlendMode.overlay,
+      id: 'Butterfly 2',
+      category: 'Butterfly',
+      assetPath: 'assets/effects/potrait/Butterfly/2.png',
+      portraitPath: 'assets/effects/potrait/Butterfly/2.png',
+      squarePath: 'assets/effects/square/Butterfly/2.png',
+      thumbnailPath: 'assets/effects/potrait/Butterfly/2.png',
+      blendMode: ui.BlendMode.screen,
+    ),
+    // ── Flower ─────────────────────────────────────────────────
+    EffectOverlay(
+      id: 'Flower 1',
+      category: 'Flower',
+      assetPath: 'assets/effects/potrait/Flower/1.png',
+      portraitPath: 'assets/effects/potrait/Flower/1.png',
+      squarePath: 'assets/effects/square/Flowers/1.png',
+      thumbnailPath: 'assets/effects/potrait/Flower/1.png',
+      blendMode: ui.BlendMode.screen,
+    ),
+    // ── Heart ──────────────────────────────────────────────────
+    EffectOverlay(
+      id: 'Heart 1',
+      category: 'Heart',
+      assetPath: 'assets/effects/potrait/Heart/1.png',
+      portraitPath: 'assets/effects/potrait/Heart/1.png',
+      squarePath: 'assets/effects/square/Heart/1.png',
+      thumbnailPath: 'assets/effects/potrait/Heart/1.png',
+      blendMode: ui.BlendMode.screen,
+    ),
+    // ── Neon Light ──────────────────────────────────────────────
+    EffectOverlay(
+      id: 'Neon 1',
+      category: 'Neon Light',
+      assetPath: 'assets/effects/potrait/Neon Light/1.png',
+      portraitPath: 'assets/effects/potrait/Neon Light/1.png',
+      squarePath:
+          'assets/effects/potrait/Neon Light/1.png',
+      thumbnailPath: 'assets/effects/potrait/Neon Light/1.png',
+      blendMode: ui.BlendMode.plus,
+    ),
+    // ── Star ───────────────────────────────────────────────────
+    EffectOverlay(
+      id: 'Star 1',
+      category: 'Star',
+      assetPath: 'assets/effects/potrait/Star/1.png',
+      portraitPath: 'assets/effects/potrait/Star/1.png',
+      squarePath: 'assets/effects/square/Star/1.png',
+      thumbnailPath: 'assets/effects/potrait/Star/1.png',
+      blendMode: ui.BlendMode.plus,
     ),
   ];
 
@@ -82,8 +118,8 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
               child: const Text(
                 'SAVE',
                 style: TextStyle(
-                  color: Colors.blueAccent, 
-                  fontWeight: FontWeight.bold
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -99,7 +135,9 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
                     baseImage: provider.baseImage,
                     overlayImage: provider.overlayImage,
                     opacity: provider.opacity,
-                    blendMode: provider.selectedEffect?.blendMode ?? ui.BlendMode.screen,
+                    blendMode:
+                        provider.selectedEffect?.blendMode ??
+                        ui.BlendMode.screen,
                   );
                 },
               ),
@@ -109,8 +147,10 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                color: Colors.black.withValues(alpha: 0.8),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -118,14 +158,28 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
                   // Opacity Slider
                   Consumer<EffectEditorProvider>(
                     builder: (context, provider, child) {
-                      if (provider.selectedEffect == null) return const SizedBox.shrink();
+                      if (provider.selectedEffect == null) {
+                        return const SizedBox.shrink();
+                      }
                       return Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Intensity', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              Text('${(provider.opacity * 100).toInt()}%', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                              const Text(
+                                'Intensity',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                '${(provider.opacity * 100).toInt()}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                           Slider(
@@ -148,7 +202,8 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
                       return EffectSelectorBar(
                         effects: _effects,
                         selectedEffect: provider.selectedEffect,
-                        onEffectSelected: (effect) => provider.selectEffect(effect),
+                        onEffectSelected: (effect) =>
+                            provider.selectEffect(effect),
                         onClear: () => provider.clearEffect(),
                       );
                     },
@@ -171,7 +226,7 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
       );
 
       final exportedFile = await _provider.exportFinalImage();
-      
+
       if (mounted) {
         Navigator.pop(context); // Close loading
         // For now, just show a success snackbar. In a real app, you'd navigate to a share screen.
@@ -182,9 +237,9 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     }
   }

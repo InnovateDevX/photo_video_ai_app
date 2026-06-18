@@ -1,19 +1,25 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../Core/colors.dart';
+import '../Services/remote_config_service.dart';
 import '../pages/generation_page.dart';
 import '../pages/ai_tool_demo_page.dart';
 
 class AiTool {
+  final String id;
   final String label;
   final String imagePath;
   final String? route;
   final String? initialCategory;
+  final bool autoTriggerImagePicker;
 
-  const AiTool(
-    this.label,
-    this.imagePath, {
+  const AiTool({
+    required this.id,
+    required this.label,
+    required this.imagePath,
     this.route,
     this.initialCategory,
+    this.autoTriggerImagePicker = false,
   });
 }
 
@@ -23,6 +29,7 @@ class AiToolsGrid extends StatelessWidget {
   final int crossAxisCount;
   final double childAspectRatio;
   final double? mainAxisSpacing;
+  final bool showBadges;
 
   const AiToolsGrid({
     super.key,
@@ -31,6 +38,7 @@ class AiToolsGrid extends StatelessWidget {
     this.crossAxisCount = 2,
     this.childAspectRatio = 3.3,
     this.mainAxisSpacing,
+    this.showBadges = false,
   });
 
   @override
@@ -50,6 +58,49 @@ class AiToolsGrid extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final tool = tools[index];
+
+        List<Widget> badgeWidgets = [];
+        if (showBadges) {
+          try {
+            final String badgesStr = RemoteConfigService().toolBadgesJson;
+            if (badgesStr.isNotEmpty) {
+              final toolBadges = jsonDecode(badgesStr) as Map<String, dynamic>;
+              final toolSpecificBadges = toolBadges[tool.id];
+              
+              if (toolSpecificBadges is List) {
+                for (var badge in toolSpecificBadges) {
+                  String text = '';
+                  if (badge is String) {
+                    text = badge;
+                  } else if (badge is Map) {
+                    text = badge['text']?.toString() ?? '';
+                  }
+                  
+                  if (text.isNotEmpty) {
+                    badgeWidgets.add(
+                      Padding(
+                        padding: EdgeInsets.only(bottom: w * 0.005),
+                        child: Text(
+                          text,
+                          style: TextStyle(
+                            fontSize: w * 0.022,
+                            color: AppColors.secondaryTextColor(isDark),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    );
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('Error parsing tool_badges: $e');
+          }
+        }
+
         return GestureDetector(
           onTap: () {
             if (tool.route != null && AiToolDemoPage.hasDemo(tool)) {
@@ -67,6 +118,7 @@ class AiToolsGrid extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (context) => GenerationPage(
                     initialCategory: tool.initialCategory ?? 'image',
+                    autoTriggerImagePicker: tool.autoTriggerImagePicker,
                   ),
                 ),
               );
@@ -107,6 +159,17 @@ class AiToolsGrid extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (badgeWidgets.isNotEmpty) ...[
+                    SizedBox(width: w * 0.01),
+                    Container(
+                      padding: EdgeInsets.only(left: w * 0.01),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: badgeWidgets,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

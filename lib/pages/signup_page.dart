@@ -24,7 +24,9 @@ class _SignupPageState extends State<SignupPage> {
   bool _isLoading = false;
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _handlePostLogin() async {
@@ -32,12 +34,16 @@ class _SignupPageState extends State<SignupPage> {
     if (user != null && mounted) {
       // ✅ Update Global Session
       UserSession.instance.uid = user.uid;
-      
+
       // ✅ Sync services with the new identity
       unawaited(SubscriptionService().logIn(user.uid));
       unawaited(NotificationService().syncTokenNow());
 
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (!mounted) return;
       if (!doc.exists || doc.data()?['profile']?['username'] == null) {
         // Needs profile setup
         Navigator.pushReplacement(
@@ -104,10 +110,13 @@ class _SignupPageState extends State<SignupPage> {
         iconTheme: IconThemeData(color: AppColors.textColor(isDark)),
       ),
       body: SafeArea(
-        child: _isLoading 
+        child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: w * 0.06, vertical: h * 0.02),
+                padding: EdgeInsets.symmetric(
+                  horizontal: w * 0.06,
+                  vertical: h * 0.02,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -134,7 +143,9 @@ class _SignupPageState extends State<SignupPage> {
                       controller: _emailController,
                       decoration: InputDecoration(
                         labelText: "Email",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(w * 0.03)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(w * 0.03),
+                        ),
                         filled: true,
                         fillColor: AppColors.tileBackgroundColor(isDark),
                       ),
@@ -145,7 +156,9 @@ class _SignupPageState extends State<SignupPage> {
                       controller: _passwordController,
                       decoration: InputDecoration(
                         labelText: "Password",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(w * 0.03)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(w * 0.03),
+                        ),
                         filled: true,
                         fillColor: AppColors.tileBackgroundColor(isDark),
                       ),
@@ -156,14 +169,16 @@ class _SignupPageState extends State<SignupPage> {
                       controller: _confirmPasswordController,
                       decoration: InputDecoration(
                         labelText: "Confirm Password",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(w * 0.03)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(w * 0.03),
+                        ),
                         filled: true,
                         fillColor: AppColors.tileBackgroundColor(isDark),
                       ),
                       obscureText: true,
                     ),
                     SizedBox(height: h * 0.03),
-                    
+
                     // Sign Up Button
                     GestureDetector(
                       onTap: _handleEmailSignUp,
@@ -175,32 +190,56 @@ class _SignupPageState extends State<SignupPage> {
                         child: Center(
                           child: Text(
                             "Sign Up",
-                            style: TextStyle(fontSize: w * 0.04, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: w * 0.04,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    
+
                     SizedBox(height: h * 0.015),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: Text("Already have an account? Log In", style: TextStyle(color: AppColors.textColor(isDark), fontSize: w * 0.035)),
+                      child: Text(
+                        "Already have an account? Log In",
+                        style: TextStyle(
+                          color: AppColors.textColor(isDark),
+                          fontSize: w * 0.035,
+                        ),
+                      ),
                     ),
                     SizedBox(height: h * 0.03),
                     Row(
                       children: [
-                        Expanded(child: Divider(color: AppColors.secondaryTextColor(isDark))),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.secondaryTextColor(isDark),
+                          ),
+                        ),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: w * 0.04),
-                          child: Text("OR", style: TextStyle(color: AppColors.secondaryTextColor(isDark), fontSize: w * 0.03)),
+                          child: Text(
+                            "OR",
+                            style: TextStyle(
+                              color: AppColors.secondaryTextColor(isDark),
+                              fontSize: w * 0.03,
+                            ),
+                          ),
                         ),
-                        Expanded(child: Divider(color: AppColors.secondaryTextColor(isDark))),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.secondaryTextColor(isDark),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: h * 0.03),
-                    
+
                     // Google Sign In
                     GestureDetector(
                       onTap: _handleGoogleSignIn,
@@ -208,16 +247,28 @@ class _SignupPageState extends State<SignupPage> {
                         padding: EdgeInsets.symmetric(vertical: h * 0.02),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(w * 0.03),
-                          border: Border.all(color: AppColors.secondaryTextColor(isDark).withOpacity(0.3)),
+                          border: Border.all(
+                            color: AppColors.secondaryTextColor(
+                              isDark,
+                            ).withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.g_mobiledata, size: w * 0.08, color: Colors.blue),
+                            Icon(
+                              Icons.g_mobiledata,
+                              size: w * 0.08,
+                              color: Colors.blue,
+                            ),
                             SizedBox(width: w * 0.02),
                             Text(
                               "Continue with Google",
-                              style: TextStyle(fontSize: w * 0.04, color: AppColors.textColor(isDark), fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontSize: w * 0.04,
+                                color: AppColors.textColor(isDark),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),

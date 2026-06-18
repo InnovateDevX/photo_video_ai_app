@@ -106,16 +106,6 @@ class GenerationBottomBar extends StatefulWidget {
 }
 
 class _GenerationBottomBarState extends State<GenerationBottomBar> {
-  // ── Colors that match the bar ─────────────────────────────────────────────
-  static const _sheetBg = Color.fromRGBO(0, 0, 0, 0.45);
-  static Color _cardBg(bool isDark) => isDark
-      ? const Color.fromRGBO(40, 40, 40, 0.95)
-      : const Color.fromRGBO(255, 255, 255, 0.95);
-  static const _pillBg = Color.fromRGBO(255, 255, 255, 0.12);
-  static Color _selectedCell(bool isDark) => isDark
-      ? const Color.fromRGBO(80, 80, 80, 1.0)
-      : const Color.fromRGBO(230, 230, 230, 1.0);
-
   bool _addSelected = false;
 
   /// Shows a small bottom sheet for source selection, then calls the picker.
@@ -166,7 +156,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                           ? (AppGradients.proGradient.colors.isNotEmpty
                                 ? AppGradients.proGradient.colors.first
                                 : Colors.orange)
-                          : Colors.white.withOpacity(0.08),
+                          : Colors.white.withValues(alpha: 0.08),
                       width: isSelected ? w * 0.005 : w * 0.002,
                     ),
                   ),
@@ -193,7 +183,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                       Container(
                         width: w * 0.1,
                         height: w * 0.003,
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         margin: EdgeInsets.symmetric(vertical: w * 0.02),
                       ),
                       if (subLabel != null) ...[
@@ -270,7 +260,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                         child: Container(
                           padding: EdgeInsets.all(w * 0.025),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -296,7 +286,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                         child: Container(
                           padding: EdgeInsets.all(w * 0.025),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -387,7 +377,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                   decoration: BoxDecoration(
                                     color: const Color(
                                       0xFFFF9800,
-                                    ).withOpacity(0.18),
+                                    ).withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(
                                       w * 0.03,
                                     ),
@@ -464,7 +454,9 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                     vertical: w * 0.012,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withOpacity(0.18),
+                                    color: Colors.blueAccent.withValues(
+                                      alpha: 0.18,
+                                    ),
                                     borderRadius: BorderRadius.circular(
                                       w * 0.03,
                                     ),
@@ -628,10 +620,10 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                       vertical: w * 0.04,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
+                      color: Colors.white.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(w * 0.04),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         width: w * 0.002,
                       ),
                     ),
@@ -679,14 +671,14 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
               return Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: w * 0.04,
-                  vertical: w * 0.005,
+                  vertical: w * 0.02,
                 ),
                 margin: EdgeInsets.only(top: w * 0.02),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(w * 0.04),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     width: w * 0.002,
                   ),
                 ),
@@ -704,11 +696,54 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                         ),
                       ),
                     ),
-                    Switch(
-                      value: value,
-                      onChanged: onChanged,
-                      activeThumbColor: Colors.white,
-                      activeTrackColor: AppGradients.proGradient.colors.first,
+                    GestureDetector(
+                      onTap: () => onChanged(!value),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 96,
+                        height: 52,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(26),
+                          gradient: value ? AppGradients.proGradient : null,
+                          color: value ? null : Colors.white.withValues(alpha: 0.12),
+                          border: Border.all(
+                            color: value
+                                ? Colors.orange.withValues(alpha: 0.4)
+                                : Colors.white24,
+                            width: 1.5,
+                          ),
+                          boxShadow: value
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.orange.withValues(alpha: 0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: AnimatedAlign(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -722,13 +757,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   ? widget.selectedVideoModel?.options
                   : widget.modelOptions;
 
-              final List<String> aspectRatioOptions =
-                  currentOptions?.aspectRatios ?? [];
               final showAspectRatio = currentOptions?.hasAspectRatios == true;
-
-              final aspectRatioChoices = aspectRatioOptions.isNotEmpty
-                  ? aspectRatioOptions
-                  : ['9:16', '1:1', '16:9', '4:3', '3:4'];
 
               return Column(
                 children: [
@@ -859,7 +888,9 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   top: Radius.circular(w * 0.1),
                 ),
                 border: Border.all(
-                  color: AppGradients.proGradient.colors.first.withOpacity(0.3),
+                  color: AppGradients.proGradient.colors.first.withValues(
+                    alpha: 0.3,
+                  ),
                   width: w * 0.003,
                 ),
               ),
@@ -927,7 +958,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(screenWidth * 0.06),
                     ),
                     child: Row(
@@ -968,8 +999,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   borderRadius: BorderRadius.circular(screenWidth * 0.06),
                   boxShadow: [
                     BoxShadow(
-                      color: AppGradients.proGradient.colors.first.withOpacity(
-                        0.3,
+                      color: AppGradients.proGradient.colors.first.withValues(
+                        alpha: 0.3,
                       ),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
@@ -1065,9 +1096,6 @@ Widget _buildIcon(
   );
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper widget: image source tile (Gallery / Camera)
 // ─────────────────────────────────────────────────────────────────────────────
-
-

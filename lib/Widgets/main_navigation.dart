@@ -12,6 +12,7 @@ import 'package:trail_ai_app/pages/settings_page.dart';
 import 'package:trail_ai_app/pages/reels_page.dart';
 import 'package:trail_ai_app/pages/profile_page.dart';
 import 'package:trail_ai_app/pages/image_editor_page.dart';
+import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -58,7 +59,6 @@ class MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final h = MediaQuery.of(context).size.height;
-    final w = MediaQuery.of(context).size.width;
 
     final navRow = Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -80,32 +80,41 @@ class MainNavigationState extends State<MainNavigation> {
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            height: (h * 0.09).clamp(60.0, 100.0) +
+            height:
+                (h * 0.09).clamp(60.0, 100.0) +
                 MediaQuery.of(context).padding.bottom,
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.7)
-                  : Colors.white.withValues(alpha: 0.85),
+                  ? Colors.black.withValues(alpha: 0.75)
+                  : Colors.white.withValues(alpha: 0.95),
               border: Border(
                 top: BorderSide(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.black.withValues(alpha: 0.05),
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
               boxShadow: [
                 if (!isDark)
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 15,
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                if (isDark)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
               ],
             ),
             child: Padding(
               padding: EdgeInsets.only(
-                bottom: 8 + MediaQuery.of(context).padding.bottom,
+                bottom: (MediaQuery.of(context).padding.bottom > 0)
+                    ? MediaQuery.of(context).padding.bottom
+                    : h * 0.025,
               ),
               child: navRow,
             ),
@@ -126,12 +135,12 @@ class MainNavigationState extends State<MainNavigation> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
         child: Image.asset(
           assetPath,
           color: isSelected
               ? (isDark ? Colors.white : Colors.black)
-              : Colors.grey.withValues(alpha: 0.5),
+              : (isDark ? Colors.white54 : Colors.black54),
           width: iconSize,
           height: iconSize,
         ),
@@ -159,8 +168,8 @@ class MainNavigationState extends State<MainNavigation> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.black.withValues(alpha: 0.05),
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.08),
               ),
               child: Center(
                 child: Container(
@@ -186,8 +195,9 @@ class MainNavigationState extends State<MainNavigation> {
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final w = MediaQuery.of(ctx).size.width;
+        final h = MediaQuery.of(ctx).size.height;
         return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(w * 0.06)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
@@ -197,36 +207,36 @@ class MainNavigationState extends State<MainNavigation> {
                 w * 0.05,
                 w * 0.06,
               ),
-              decoration: const BoxDecoration(
-                color: Color.fromRGBO(0, 0, 0, 0.5),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              decoration: BoxDecoration(
+                color: const Color.fromRGBO(0, 0, 0, 0.5),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(w * 0.06)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: w * 0.1,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
+                    height: h * 0.005,
+                    margin: EdgeInsets.only(bottom: h * 0.025),
                     decoration: BoxDecoration(
                       color: Colors.white30,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(w * 0.25),
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Create New',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: w * 0.05,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: h * 0.01),
+                  Text(
                     'Choose an image to edit',
-                    style: TextStyle(color: Colors.white60, fontSize: 14),
+                    style: TextStyle(color: Colors.white60, fontSize: w * 0.035),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: h * 0.03),
                   Row(
                     children: [
                       Expanded(
@@ -246,12 +256,12 @@ class MainNavigationState extends State<MainNavigation> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: h * 0.02),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
-                    child: const Text(
+                    child: Text(
                       'Cancel',
-                      style: TextStyle(color: Colors.white54, fontSize: 16),
+                      style: TextStyle(color: Colors.white54, fontSize: w * 0.04),
                     ),
                   ),
                 ],
@@ -264,13 +274,11 @@ class MainNavigationState extends State<MainNavigation> {
 
     if (source == null) return;
 
-    // Pick image
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
+    // Pick image using helper to include safety check
+    final File? pickedFile = await ImagePickerHelper.pickImage(
+      context: context,
+      crop: false,
       source: source,
-      imageQuality: 85,
-      maxWidth: 1024,
-      maxHeight: 1024,
     );
 
     if (pickedFile == null || !mounted) return;
@@ -279,7 +287,7 @@ class MainNavigationState extends State<MainNavigation> {
     final result = await Navigator.push<File?>(
       context,
       MaterialPageRoute(
-        builder: (_) => ImageEditorPage(imageFile: File(pickedFile.path)),
+        builder: (_) => ImageEditorPage(imageFile: pickedFile),
       ),
     );
 
@@ -320,13 +328,13 @@ class _SourceTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Colors.white, size: w * 0.08),
-            const SizedBox(height: 8),
+            SizedBox(height: w * 0.02),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: w * 0.035,
               ),
             ),
           ],

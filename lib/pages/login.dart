@@ -24,7 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _handlePostLogin() async {
@@ -32,12 +34,16 @@ class _LoginPageState extends State<LoginPage> {
     if (user != null && mounted) {
       // ✅ Update Global Session
       UserSession.instance.uid = user.uid;
-      
+
       // ✅ Sync services with the new identity
       unawaited(SubscriptionService().logIn(user.uid));
       unawaited(NotificationService().syncTokenNow());
 
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (!mounted) return;
       if (!doc.exists || doc.data()?['profile']?['username'] == null) {
         // Needs profile setup
         Navigator.pushReplacement(
@@ -88,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
-    
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       appBar: AppBar(
@@ -97,10 +103,13 @@ class _LoginPageState extends State<LoginPage> {
         iconTheme: IconThemeData(color: AppColors.textColor(isDark)),
       ),
       body: SafeArea(
-        child: _isLoading 
+        child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: w * 0.06, vertical: h * 0.02),
+                padding: EdgeInsets.symmetric(
+                  horizontal: w * 0.06,
+                  vertical: h * 0.02,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -127,7 +136,9 @@ class _LoginPageState extends State<LoginPage> {
                       controller: _emailController,
                       decoration: InputDecoration(
                         labelText: "Email",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(w * 0.03)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(w * 0.03),
+                        ),
                         filled: true,
                         fillColor: AppColors.tileBackgroundColor(isDark),
                       ),
@@ -138,14 +149,16 @@ class _LoginPageState extends State<LoginPage> {
                       controller: _passwordController,
                       decoration: InputDecoration(
                         labelText: "Password",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(w * 0.03)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(w * 0.03),
+                        ),
                         filled: true,
                         fillColor: AppColors.tileBackgroundColor(isDark),
                       ),
                       obscureText: true,
                     ),
                     SizedBox(height: h * 0.03),
-                    
+
                     // Log In Button
                     GestureDetector(
                       onTap: _handleEmailSignIn,
@@ -157,35 +170,61 @@ class _LoginPageState extends State<LoginPage> {
                         child: Center(
                           child: Text(
                             "Log In",
-                            style: TextStyle(fontSize: w * 0.04, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: w * 0.04,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    
+
                     SizedBox(height: h * 0.015),
                     TextButton(
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const SignupPage()),
+                          MaterialPageRoute(
+                            builder: (context) => const SignupPage(),
+                          ),
                         );
                       },
-                      child: Text("Don't have an account? Sign Up", style: TextStyle(color: AppColors.textColor(isDark), fontSize: w * 0.035)),
+                      child: Text(
+                        "Don't have an account? Sign Up",
+                        style: TextStyle(
+                          color: AppColors.textColor(isDark),
+                          fontSize: w * 0.035,
+                        ),
+                      ),
                     ),
                     SizedBox(height: h * 0.03),
                     Row(
                       children: [
-                        Expanded(child: Divider(color: AppColors.secondaryTextColor(isDark))),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.secondaryTextColor(isDark),
+                          ),
+                        ),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: w * 0.04),
-                          child: Text("OR", style: TextStyle(color: AppColors.secondaryTextColor(isDark), fontSize: w * 0.03)),
+                          child: Text(
+                            "OR",
+                            style: TextStyle(
+                              color: AppColors.secondaryTextColor(isDark),
+                              fontSize: w * 0.03,
+                            ),
+                          ),
                         ),
-                        Expanded(child: Divider(color: AppColors.secondaryTextColor(isDark))),
+                        Expanded(
+                          child: Divider(
+                            color: AppColors.secondaryTextColor(isDark),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: h * 0.03),
-                    
+
                     // Google Sign In
                     GestureDetector(
                       onTap: _handleGoogleSignIn,
@@ -193,16 +232,28 @@ class _LoginPageState extends State<LoginPage> {
                         padding: EdgeInsets.symmetric(vertical: h * 0.02),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(w * 0.03),
-                          border: Border.all(color: AppColors.secondaryTextColor(isDark).withOpacity(0.3)),
+                          border: Border.all(
+                            color: AppColors.secondaryTextColor(
+                              isDark,
+                            ).withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.g_mobiledata, size: w * 0.08, color: Colors.blue),
+                            Icon(
+                              Icons.g_mobiledata,
+                              size: w * 0.08,
+                              color: Colors.blue,
+                            ),
                             SizedBox(width: w * 0.02),
                             Text(
                               "Continue with Google",
-                              style: TextStyle(fontSize: w * 0.04, color: AppColors.textColor(isDark), fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontSize: w * 0.04,
+                                color: AppColors.textColor(isDark),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),

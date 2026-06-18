@@ -207,5 +207,9 @@
     "liked_tab": "已赞",
     "nothing_here": "目前这里什么都没有。",
     "no_generated_assets": "暂无生成的作品。",
-    "result_appbar_title": "结果"
+    "result_appbar_title": "结果",
+    "restricted_text_title": "受限文本",
+    "restricted_text_message": "您的提示词包含违反我们安全准则的文本。请修改您的提示词并重试。",
+    "restricted_image_title": "受限图像",
+    "restricted_image_message": "所选图像包含违反我们安全准则的内容。请选择其他图像。"
 }

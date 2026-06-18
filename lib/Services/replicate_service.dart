@@ -131,8 +131,6 @@ class AIModelConfig {
 }
 
 class ReplicateService {
-  static const bool kUploadBase64ToFirebase = true;
-
   static final ReplicateService _instance = ReplicateService._internal();
   factory ReplicateService() => _instance;
   ReplicateService._internal();
@@ -152,6 +150,7 @@ class ReplicateService {
   AIModelConfig? _collageModel;
   AIModelConfig? _logoModel;
   AIModelConfig? _filterModel;
+  AIModelConfig? _retouchModel;
   bool _isInitialized = false;
 
   List<AIModelConfig> get imageModels => _imageModels;
@@ -168,6 +167,7 @@ class ReplicateService {
   AIModelConfig? get collageModel => _collageModel;
   AIModelConfig? get logoModel => _logoModel;
   AIModelConfig? get filterModel => _filterModel;
+  AIModelConfig? get retouchModel => _retouchModel;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -199,6 +199,7 @@ class ReplicateService {
       final collageModelJson = config.collageModelJson;
       final logoModelJson = config.logoModelJson;
       final filterModelJson = config.filterModelJson;
+      final retouchModelJson = config.retouchModelJson;
 
       debugPrint(
         '📦 [ReplicateService] replicate_image_models raw (first 200 chars): '
@@ -229,6 +230,7 @@ class ReplicateService {
       _collageModel = _parseSingleModel('Collage', collageModelJson);
       _logoModel = _parseSingleModel('Logo', logoModelJson);
       _filterModel = _parseSingleModel('Filter', filterModelJson);
+      _retouchModel = _parseSingleModel('Retouch', retouchModelJson);
       _clothModel = _parseSingleModel('Cloth', clothModelJson);
 
       debugPrint(
@@ -403,8 +405,9 @@ class ReplicateService {
         variables['reference_images'] = [url];
         debugPrint('✅ [ReplicateService] Image uploaded and mapped: $url');
       } catch (e) {
-        debugPrint('❌ [ReplicateService] Image upload failed: $e');
-        throw Exception('Failed to upload reference image: $e');
+        debugPrint(
+          '❌ [ReplicateService] Image upload failed: $e. Falling back to base64 encoding...',
+        );
       }
     }
 
@@ -419,15 +422,16 @@ class ReplicateService {
         variables['reference_images'] = urls;
         debugPrint('✅ [ReplicateService] ${urls.length} images uploaded.');
       } catch (e) {
-        debugPrint('❌ [ReplicateService] Images upload failed: $e');
-        throw Exception('Failed to upload secondary images: $e');
+        debugPrint(
+          '❌ [ReplicateService] Images upload failed: $e. Falling back to base64...',
+        );
       }
     }
 
     // Re-create body with updated variables (now containing URLs)
     finalBody = modelConfig.createRequestBody(variables);
 
-    // ── Base64 Fallback check (only if no URL was obtained) ──────────────────
+    // ── Base64 Fallback for single reference image ──────────────────────────
     if (modelConfig.iseditable &&
         referenceImage != null &&
         variables['image'] == null) {
@@ -465,47 +469,76 @@ class ReplicateService {
       }
     }
 
+    // ── Base64 Fallback for multiple images ─────────────────────────────────
+    if (images != null && images.isNotEmpty && variables['images'] == null) {
+      debugPrint(
+        '🖼 [ReplicateService] No image URLs available, falling back to base64 for ${images.length} images...',
+      );
+      try {
+        final List<String> encodedImages = [];
+        for (final img in images) {
+          final encoded = await Base64ImageEncoder.encodeFile(img);
+          final rawBase64 = encoded.split(',').last;
+          rawBase64s.add(encoded);
+          encodedImages.add(rawBase64);
+        }
+        finalBody = modelConfig._replaceValues(finalBody, {
+          'images': encodedImages,
+          'image_urls': encodedImages,
+        });
+        debugPrint(
+          '✅ [ReplicateService] ${encodedImages.length} images injected as base64.',
+        );
+      } catch (e) {
+        debugPrint(
+          '❌ [ReplicateService] Base64 fallback for images failed: $e',
+        );
+      }
+    }
+
     // ── Prune Unfulfilled Placeholders ──────────────────────────────────────
     debugPrint(
       '🧹 [ReplicateService] Pruning request body of empty placeholders...',
     );
     finalBody = _pruneBody(finalBody) ?? finalBody;
 
-    if (kUploadBase64ToFirebase && rawBase64s.isNotEmpty) {
-      await _saveBase64ToFirebase(rawBase64s: rawBase64s);
-    }
+    final url = await _createPrediction(modelConfig.url, finalBody, onProgress);
 
-    return _createPrediction(modelConfig.url, finalBody, onProgress);
-  }
+    // --- Safety Check on Generated Image ---
+    if (url.isNotEmpty) {
+      final lowerUrl = url.toLowerCase();
+      // Skip safety check for video files as Cloud Vision expects images
+      if (!lowerUrl.endsWith('.mp4') && !lowerUrl.endsWith('.mov') && !lowerUrl.endsWith('.webm')) {
+        try {
+          // Check Content-Length first to avoid OOM on very large images
+          const int maxSafetyCheckBytes = 10 * 1024 * 1024; // 10 MB cap
+          final headResponse = await http.head(Uri.parse(url));
+          final contentLength = int.tryParse(
+            headResponse.headers['content-length'] ?? '',
+          );
 
-  Future<void> _saveBase64ToFirebase({required List<String> rawBase64s}) async {
-    try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final uid = UserSession.instance.uid ?? 'anon';
-
-      for (int i = 0; i < rawBase64s.length; i++) {
-        final s = rawBase64s[i];
-        debugPrint('📋 [Firebase] String[$i] length=${s.length}');
-        debugPrint(
-          '📋 [Firebase] String[$i] prefix (first 50 chars): ${s.substring(0, s.length.clamp(0, 50))}',
-        );
-        debugPrint(
-          '📋 [Firebase] String[$i] starts with data:image = ${s.startsWith('data:image')}',
-        );
+          if (contentLength != null && contentLength > maxSafetyCheckBytes) {
+            debugPrint(
+              '⚠️ [ReplicateService] Image too large for safety check '
+              '(${(contentLength / 1024 / 1024).toStringAsFixed(1)} MB). Skipping.',
+            );
+          } else {
+            debugPrint('🛡️ [ReplicateService] Safety checking generated image...');
+            final response = await http.get(Uri.parse(url));
+            if (response.statusCode == 200) {
+              await ContentSafetyService().checkImageSafe(response.bodyBytes);
+            }
+          }
+        } catch (e) {
+          if (e is NsfwContentException) {
+            throw NsfwContentException('generated_content_restricted', url: url);
+          }
+          debugPrint('⚠️ [ReplicateService] Generated image safety check error: $e');
+        }
       }
-
-      await Base64FirebaseStorageService.instance.uploadRawBase64s(
-        folderPath: 'base64_logs/$uid/$timestamp',
-        rawBase64s: rawBase64s,
-        filePrefix: 'raw_base64',
-      );
-
-      debugPrint(
-        '✅ [ReplicateService] Uploaded base64 (ts=$timestamp) to Firebase.',
-      );
-    } catch (e) {
-      debugPrint('⚠️ [ReplicateService] Base64 upload failed: $e');
     }
+
+    return url;
   }
 
   Future<String> _createPrediction(
