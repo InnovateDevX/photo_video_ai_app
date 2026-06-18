@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/user_model.dart';
+import '../Models/user_model.dart';
 import '../Services/remote_config_service.dart';
 
 /// Repository handling user document creation and retrieval.

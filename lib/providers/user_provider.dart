@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/user_model.dart';
+import '../Models/user_model.dart';
 import '../repositories/user_repository.dart';
 
 /// Provider responsible for managing user state after initialization.
