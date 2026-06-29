@@ -57,6 +57,7 @@ class RemoteConfigService {
         'tool_badges': '{}',
         'nsfw_text_threshold': 0.65,
         'nsfw_image_unsafe_values': '["VERY_LIKELY"]',
+        'share_app_url': '',
       });
 
       // 2. Configure Settings
@@ -133,6 +134,7 @@ class RemoteConfigService {
   String get customerSupportUrl => getString('customer_support_url');
   String get faqUrl => getString('faq_url');
   String get termsOfUseUrl => getString('terms_of_use_url');
+  String get shareAppUrl => getString('share_app_url');
 
   String get rcAndroidKey => getString('rc_android_key');
   String get rcIosKey => getString('rc_ios_key');

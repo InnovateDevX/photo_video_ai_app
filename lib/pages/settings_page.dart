@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:trail_ai_app/Widgets/main_navigation.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -150,7 +151,14 @@ class _SettingsPageState extends State<SettingsPage> {
                         color: AppColors.iconColor(darkTheme),
                       ),
                       label: 'share_app'.i18n(),
-                      onTap: () => debugPrint('Share App tapped'),
+                      onTap: () {
+                        final url = RemoteConfigService().shareAppUrl;
+                        if (url.isNotEmpty) {
+                          Share.share(url);
+                        } else {
+                          debugPrint('Share App URL is not configured in Remote Config.');
+                        }
+                      },
                     ),
                     _settingsTile(
                       isDark: darkTheme,
