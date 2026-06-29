@@ -3,8 +3,6 @@ import 'package:trail_ai_app/Services/remote_config_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:trail_ai_app/Core/user_session.dart';
-import 'package:trail_ai_app/Services/base64_firebase_storage_service.dart';
 import 'package:trail_ai_app/Services/base64_image_encoder.dart';
 import 'package:trail_ai_app/Services/storage_service.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
@@ -508,7 +506,9 @@ class ReplicateService {
     if (url.isNotEmpty) {
       final lowerUrl = url.toLowerCase();
       // Skip safety check for video files as Cloud Vision expects images
-      if (!lowerUrl.endsWith('.mp4') && !lowerUrl.endsWith('.mov') && !lowerUrl.endsWith('.webm')) {
+      if (!lowerUrl.endsWith('.mp4') &&
+          !lowerUrl.endsWith('.mov') &&
+          !lowerUrl.endsWith('.webm')) {
         try {
           // Check Content-Length first to avoid OOM on very large images
           const int maxSafetyCheckBytes = 10 * 1024 * 1024; // 10 MB cap
@@ -523,7 +523,9 @@ class ReplicateService {
               '(${(contentLength / 1024 / 1024).toStringAsFixed(1)} MB). Skipping.',
             );
           } else {
-            debugPrint('🛡️ [ReplicateService] Safety checking generated image...');
+            debugPrint(
+              '🛡️ [ReplicateService] Safety checking generated image...',
+            );
             final response = await http.get(Uri.parse(url));
             if (response.statusCode == 200) {
               await ContentSafetyService().checkImageSafe(response.bodyBytes);
@@ -531,9 +533,14 @@ class ReplicateService {
           }
         } catch (e) {
           if (e is NsfwContentException) {
-            throw NsfwContentException('generated_content_restricted', url: url);
+            throw NsfwContentException(
+              'generated_content_restricted',
+              url: url,
+            );
           }
-          debugPrint('⚠️ [ReplicateService] Generated image safety check error: $e');
+          debugPrint(
+            '⚠️ [ReplicateService] Generated image safety check error: $e',
+          );
         }
       }
     }

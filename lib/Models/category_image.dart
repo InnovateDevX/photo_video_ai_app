@@ -1,9 +1,12 @@
 /// Model class representing an image within a category
 class CategoryImage {
+  final String title;
   final String imageUrl;
   final String? videoUrl;
   final String modelUsed;
   final String prompt;
+  final String videoModelUsed;
+  final String videoPrompt;
 
   /// Type of content: 'image', 'video', or 'category'
   final String type;
@@ -21,10 +24,13 @@ class CategoryImage {
   final bool isEditable;
 
   CategoryImage({
+    this.title = '',
     this.imageUrl = '',
     this.videoUrl,
     this.modelUsed = '',
     this.prompt = '',
+    this.videoModelUsed = '',
+    this.videoPrompt = '',
     this.type = 'image',
     this.reelId,
     this.thumbnailUrl,
@@ -39,10 +45,13 @@ class CategoryImage {
         ((parsedVideoUrl != null || parsedReelId != null) ? 'video' : 'image');
 
     return CategoryImage(
+      title: json['title'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
       videoUrl: parsedVideoUrl,
       modelUsed: json['modelUsed'] as String? ?? '',
       prompt: json['prompt'] as String? ?? '',
+      videoModelUsed: json['videoModelUsed'] as String? ?? '',
+      videoPrompt: json['videoPrompt'] as String? ?? '',
       type: determinedType,
       reelId: parsedReelId,
       thumbnailUrl: json['thumbnailUrl'] as String?,
@@ -53,10 +62,13 @@ class CategoryImage {
 
   Map<String, dynamic> toJson() {
     return {
+      if (title.isNotEmpty) 'title': title,
       'imageUrl': imageUrl,
       if (videoUrl != null) 'videoUrl': videoUrl,
       'modelUsed': modelUsed,
       'prompt': prompt,
+      if (videoModelUsed.isNotEmpty) 'videoModelUsed': videoModelUsed,
+      if (videoPrompt.isNotEmpty) 'videoPrompt': videoPrompt,
       'type': type,
       if (reelId != null) 'reelId': reelId,
       if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,

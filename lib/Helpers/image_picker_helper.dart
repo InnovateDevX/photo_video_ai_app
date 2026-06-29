@@ -31,9 +31,12 @@ class ImagePickerHelper {
   }) async {
     if (source == null && context != null) {
       source = await _showSourcePicker(context);
+      if (source == null) {
+        return null;
+      }
     }
 
-    // Default to gallery if still null
+    // Default to gallery if still null (e.g. if context was null and source was null)
     source ??= ImageSource.gallery;
 
     final picker = ImagePicker();

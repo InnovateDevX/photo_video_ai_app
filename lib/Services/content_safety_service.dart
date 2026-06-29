@@ -25,6 +25,7 @@ class ContentSafetyService {
   Future<String> _loadAssetString(String path) async {
     return await rootBundle.loadString(path);
   }
+
   /// Cache for the loaded local NSFW word list (loaded once from assets)
   List<String>? _cachedLocalWordlist;
   bool _wordlistLoaded = false;
@@ -51,7 +52,9 @@ class ContentSafetyService {
         '🛡️ [ContentSafetyService] Loaded ${_cachedLocalWordlist!.length} local NSFW words.',
       );
     } catch (e) {
-      debugPrint('❌ [ContentSafetyService] Failed to load nsfw_wordlist.json: $e');
+      debugPrint(
+        '❌ [ContentSafetyService] Failed to load nsfw_wordlist.json: $e',
+      );
       _cachedLocalWordlist = [];
       _wordlistLoaded = true;
     }
@@ -62,14 +65,10 @@ class ContentSafetyService {
   String? _localWordlistMatch(String text, List<String> wordlist) {
     final lowerText = text.toLowerCase();
     for (final word in wordlist) {
-      // Match whole-word or substring (single-character words always substring)
-      if (word.length <= 2) {
-        // Short words: exact word boundary match to avoid false positives
-        final pattern = RegExp(r'\b' + RegExp.escape(word) + r'\b');
-        if (pattern.hasMatch(lowerText)) return word;
-      } else {
-        if (lowerText.contains(word)) return word;
-      }
+      // Always use word boundaries to prevent false positives
+      // e.g. "glass" shouldn't match "ass", "grape" shouldn't match "rape"
+      final pattern = RegExp(r'\b' + RegExp.escape(word) + r'\b');
+      if (pattern.hasMatch(lowerText)) return word;
     }
     return null;
   }
@@ -265,8 +264,8 @@ class ContentSafetyService {
             (kw) => lowerName.contains(kw),
           );
 
-          // Lower threshold to 0.15
-          if (isRestricted && confidence >= 0.15) {
+          // Higher threshold to avoid false positives (0.65)
+          if (isRestricted && confidence >= 0.65) {
             shouldFlag = true;
             flaggedCategory = '$name ($confidence)';
           }

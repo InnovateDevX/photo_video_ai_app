@@ -53,27 +53,27 @@ class FirebaseStickerPickerState extends State<FirebaseStickerPicker> {
   /// Current opacity for stickers (0.0 – 1.0).
   double _opacity = 1.0;
 
-  /// Track the last added sticker layer so we can update its opacity
-  dynamic _lastAddedLayer;
+  /// Track the last added sticker layer by ID so we can replace it even if modified
+  String? _lastAddedLayerId;
 
   /// Updates the opacity of the last added sticker layer in real-time.
   void _updateLastStickerOpacity(double opacity) {
-    if (widget.editorState == null) return;
+    if (widget.editorState == null || _lastAddedLayerId == null) return;
 
     try {
       // Get the active layers from the editor
       final layers = widget.editorState.activeLayers;
       if (layers == null || layers.isEmpty) return;
 
-      // Find the last WidgetLayer (sticker) that was added
+      // Find the last WidgetLayer (sticker) that was added matching the id
       for (int i = layers.length - 1; i >= 0; i--) {
         final layer = layers[i];
-        if (layer is WidgetLayer) {
+        if (layer is WidgetLayer && layer.id == _lastAddedLayerId) {
           // Get the current widget from the layer
           final currentWidget = layer.widget;
           if (currentWidget is Opacity) {
             // Replace the layer with a new one with updated opacity
-            // but preserve the original position, scale, and rotation
+            // but preserve the original position, scale, rotation, and id
             final newWidget = Opacity(
               opacity: opacity,
               child: currentWidget.child,
@@ -81,6 +81,7 @@ class FirebaseStickerPickerState extends State<FirebaseStickerPicker> {
             widget.editorState.replaceLayer(
               index: i,
               layer: WidgetLayer(
+                id: layer.id,
                 widget: newWidget,
                 offset: layer.offset,
                 scale: layer.scale,
@@ -99,8 +100,19 @@ class FirebaseStickerPickerState extends State<FirebaseStickerPicker> {
     }
   }
 
+  /// Cancels the current sticker selection by removing the active sticker layer.
+  void cancelCurrentSticker() {
+    if (widget.editorState != null && _lastAddedLayerId != null) {
+      widget.editorState.activeLayers.removeWhere((l) => l.id == _lastAddedLayerId);
+      // Trigger editor redraw using undo/redo
+      widget.editorState.undoAction();
+      widget.editorState.redoAction();
+    }
+  }
+
   /// Called externally (e.g. by tick mark) to clear the selection highlight.
   void clearSelection() {
+    _lastAddedLayerId = null;
     if (mounted) setState(() => _selectedStickerUrl = null);
   }
 
@@ -416,10 +428,39 @@ class FirebaseStickerPickerState extends State<FirebaseStickerPicker> {
             }
           } else if (widget.editorState != null) {
             debugPrint(
-              '[FirebaseStickerPicker] Calling addLayer on editorState directly',
+              '[FirebaseStickerPicker] Calling addLayer/replaceLayer on editorState directly',
             );
-            final layer = WidgetLayer(widget: stickerWidget);
-            widget.editorState.addLayer(layer);
+            
+            WidgetLayer layer = WidgetLayer(widget: stickerWidget);
+            int existingIndex = -1;
+            
+            if (_lastAddedLayerId != null) {
+              final List layers = widget.editorState.activeLayers;
+              existingIndex = layers.indexWhere((l) => l.id == _lastAddedLayerId);
+            }
+
+            if (existingIndex != -1) {
+              // Preserve the position, scale, and rotation of the previous sticker
+              final oldLayer = widget.editorState.activeLayers[existingIndex];
+              if (oldLayer is WidgetLayer) {
+                layer = WidgetLayer(
+                  id: oldLayer.id,
+                  widget: stickerWidget,
+                  offset: oldLayer.offset,
+                  scale: oldLayer.scale,
+                  rotation: oldLayer.rotation,
+                );
+              }
+              widget.editorState.replaceLayer(
+                index: existingIndex,
+                layer: layer,
+              );
+            } else {
+              widget.editorState.addLayer(layer);
+            }
+            
+            _lastAddedLayerId = layer.id;
+
             if (widget.onStickerAdded != null) {
               widget.onStickerAdded!(layer);
             }

@@ -8,6 +8,7 @@ import 'settings_page.dart';
 import '../Widgets/topbar.dart';
 import '../Widgets/ai_tools_grid.dart';
 import '../Services/credit_service.dart';
+import '../Widgets/main_navigation.dart';
 
 class AllAiToolsPage extends StatefulWidget {
   const AllAiToolsPage({super.key});
@@ -36,6 +37,7 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             // Credits top bar
@@ -59,10 +61,15 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         } else {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.home,
-                          );
+                          final navState = context.findAncestorStateOfType<MainNavigationState>();
+                          if (navState != null) {
+                            navState.switchTab(0);
+                          } else {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.home,
+                            );
+                          }
                         }
                       },
                       child: Padding(
@@ -112,7 +119,11 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
 
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: w * 0.04),
+                padding: EdgeInsets.only(
+                  left: w * 0.04,
+                  right: w * 0.04,
+                  bottom: h * 0.15,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

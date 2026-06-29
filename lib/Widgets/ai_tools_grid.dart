@@ -47,6 +47,7 @@ class AiToolsGrid extends StatelessWidget {
     final spacing = mainAxisSpacing ?? w * 0.03;
 
     return GridView.builder(
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: tools.length,

@@ -92,29 +92,7 @@ class _AiRestorePageState extends State<AiRestorePage>
       return;
     }
 
-    // --- Safety Check ---
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFD66031)),
-        ),
-      );
 
-      await ContentSafetyService().checkImageFileSafe(_selectedImage!);
-
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) Navigator.pop(context);
-      if (e is NsfwContentException) {
-        if (mounted) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
-        }
-        return;
-      }
-      debugPrint('⚠️ [AiRestorePage] Image safety check error: $e');
-    }
 
     setState(() => _pageState = _PageState.loading);
     _progressController.forward(from: 0);

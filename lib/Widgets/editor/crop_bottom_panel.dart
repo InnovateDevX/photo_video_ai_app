@@ -143,64 +143,106 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                 ),
               ),
 
-              // ── ROW 1: ✓ | rotateCCW | rotateCW | flipV | flipH | ✕ ───────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // ✓ Apply
-                  _iconBtn(Icons.check, () => widget.editor.done()),
+              // ── ROW 1: ✓ | undo | redo | reset | rotateCCW | rotateCW | flipV | flipH | ✕ ───────
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // ✓ Apply
+                    _iconBtn(Icons.check, () => widget.editor.done()),
 
-                  // Rotate CCW
-                  _iconBtn(
-                    Icons.rotate_90_degrees_ccw_outlined,
-                    () {
-                      final dynamic ed = widget.editor;
-                      if (ed.cropRotateEditorConfigs.rotateDirection == RotateDirection.left) {
-                        ed.rotate();
-                      } else {
-                        ed.rotationCount -= 2;
-                        ed.rotate();
-                      }
-                    },
-                  ),
+                    const SizedBox(width: 8),
 
-                  // Rotate CW
-                  _iconBtn(
-                    Icons.rotate_90_degrees_cw_outlined,
-                    () {
-                      final dynamic ed = widget.editor;
-                      if (ed.cropRotateEditorConfigs.rotateDirection == RotateDirection.right) {
-                        ed.rotate();
-                      } else {
-                        ed.rotationCount -= 2;
-                        ed.rotate();
-                      }
-                    },
-                  ),
+                    // Undo
+                    _iconBtn(Icons.undo, () {
+                      try {
+                        widget.editor.undoAction();
+                      } catch (_) {}
+                      setState(() {});
+                    }),
 
-                  // Flip Vertical
-                  _iconBtn(Icons.align_vertical_center, () {
-                    widget.editor.flipY = !(widget.editor.flipY as bool);
-                    try {
-                      (widget.editor as dynamic).cropRotateEditorCallbacks
-                          ?.handleFlip(
-                            widget.editor.flipX,
-                            widget.editor.flipY,
-                          );
-                    } catch (_) {}
-                    widget.editor.setState(() {});
-                    setState(() {});
-                  }),
+                    const SizedBox(width: 8),
 
-                  // Flip Horizontal
-                  _iconBtn(
-                    Icons.align_horizontal_center,
-                    () => widget.editor.flip(),
-                  ),
+                    // Redo
+                    _iconBtn(Icons.redo, () {
+                      try {
+                        widget.editor.redoAction();
+                      } catch (_) {}
+                      setState(() {});
+                    }),
 
-                  // ✕ Cancel
-                  _iconBtn(Icons.close, () => widget.editor.close()),
-                ],
+                    const SizedBox(width: 8),
+
+                    // Reset
+                    _iconBtn(Icons.rotate_right, () {
+                      try {
+                        widget.editor.reset();
+                      } catch (_) {}
+                      setState(() {});
+                    }),
+
+                    const SizedBox(width: 8),
+
+                    // Rotate CCW
+                    _iconBtn(
+                      Icons.rotate_90_degrees_ccw_outlined,
+                      () {
+                        final dynamic ed = widget.editor;
+                        if (ed.cropRotateEditorConfigs.rotateDirection == RotateDirection.left) {
+                          ed.rotate();
+                        } else {
+                          ed.rotationCount -= 2;
+                          ed.rotate();
+                        }
+                      },
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Rotate CW
+                    _iconBtn(
+                      Icons.rotate_90_degrees_cw_outlined,
+                      () {
+                        final dynamic ed = widget.editor;
+                        if (ed.cropRotateEditorConfigs.rotateDirection == RotateDirection.right) {
+                          ed.rotate();
+                        } else {
+                          ed.rotationCount -= 2;
+                          ed.rotate();
+                        }
+                      },
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Flip Vertical
+                    _iconBtn(Icons.align_vertical_center, () {
+                      widget.editor.flipY = !(widget.editor.flipY as bool);
+                      try {
+                        (widget.editor as dynamic).cropRotateEditorCallbacks
+                            ?.handleFlip(
+                              widget.editor.flipX,
+                              widget.editor.flipY,
+                            );
+                      } catch (_) {}
+                      widget.editor.setState(() {});
+                      setState(() {});
+                    }),
+
+                    const SizedBox(width: 8),
+
+                    // Flip Horizontal
+                    _iconBtn(
+                      Icons.align_horizontal_center,
+                      () => widget.editor.flip(),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // ✕ Cancel
+                    _iconBtn(Icons.close, () => widget.editor.close()),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 16),

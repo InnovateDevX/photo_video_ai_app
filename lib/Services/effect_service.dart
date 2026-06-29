@@ -50,16 +50,23 @@ class EffectService {
     }
 
     try {
+      // Load PNG from Firebase
       final path = '$_basePath/$folder/$category/$index.png';
+      debugPrint('Attempting to load effect from Firebase: $path');
       final ref = _storage.ref().child(path);
       final data = await ref.getData();
 
       if (data != null) {
         _imageCache[cacheKey] = data;
+        debugPrint(
+          'Successfully loaded effect from Firebase (${data.length} bytes)',
+        );
+      } else {
+        debugPrint('Firebase returned null data for: $path');
       }
       return data;
     } catch (e) {
-      debugPrint('Error loading effect image: $e');
+      debugPrint('Error loading effect image from Firebase: $e');
       return null;
     }
   }

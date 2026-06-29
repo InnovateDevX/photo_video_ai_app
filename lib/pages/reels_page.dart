@@ -22,12 +22,15 @@ class _ReelsPageState extends State<ReelsPage> {
   final AuthService _authService = AuthService();
 
   late PageController _pageController;
+  late Future<List<Reel>> _reelsFuture;
   int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    // Cache the future so it doesn't restart on every rebuild
+    _reelsFuture = _reelService.getReels();
   }
 
   @override
@@ -44,8 +47,8 @@ class _ReelsPageState extends State<ReelsPage> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: StreamBuilder<List<Reel>>(
-        stream: _reelService.getReelsStream(),
+      body: FutureBuilder<List<Reel>>(
+        future: _reelsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -175,8 +178,13 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
       fit: StackFit.expand,
       children: [
         // Only load video player for the active page — prevents resource fight
+        // Disable play/pause gesture to allow PageView swipe gestures to work properly
         if (widget.isActive)
-          ReelVideoPlayer(videoUrl: reel.videoUrl, seamlessLoop: true)
+          ReelVideoPlayer(
+            videoUrl: reel.videoUrl,
+            seamlessLoop: true,
+            enablePlayPauseGesture: false,
+          )
         else
           Container(color: Colors.black),
 

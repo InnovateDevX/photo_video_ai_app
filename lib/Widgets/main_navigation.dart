@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:trail_ai_app/Core/gradient.dart';
+import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/pages/home_page.dart';
 import 'package:trail_ai_app/pages/all_ai_tools_page.dart';
 import 'package:trail_ai_app/pages/selection.dart';
@@ -60,18 +62,37 @@ class MainNavigationState extends State<MainNavigation> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final navRow = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildNavItem('assets/iconoir_home.png', 0, isDark),
-        _buildNavItem('assets/Group 48095579.png', 1, isDark),
-        _buildCentralItem(isDark),
-        _buildNavItem('assets/iconamoon_profile-light.png', 3, isDark),
-        _buildNavItem('assets/weui_setting-outlined.png', 4, isDark),
+        Expanded(
+          child: Center(
+            child: _buildNavItem('assets/iconoir_home.svg', 0, isDark),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: _buildNavItem('assets/Group 48095580.svg', 1, isDark),
+          ),
+        ),
+        Expanded(child: Center(child: _buildCentralItem(isDark))),
+        Expanded(
+          child: Center(
+            child: _buildNavItem(
+              'assets/iconamoon_profile-light.svg',
+              3,
+              isDark,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: _buildNavItem('assets/weui_setting-outlined.svg', 4, isDark),
+          ),
+        ),
       ],
     );
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : Colors.white,
+      backgroundColor: AppColors.backgroundColor(isDark),
       extendBody: true, // Always extend body to allow the blur/glass effect
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Padding(
@@ -105,12 +126,12 @@ class MainNavigationState extends State<MainNavigation> {
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.7),
+                      : Colors.white.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(36),
                   border: Border.all(
                     color: isDark
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : Colors.white.withValues(alpha: 0.8),
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.5),
                     width: 1.2,
                   ),
                 ),
@@ -146,11 +167,14 @@ class MainNavigationState extends State<MainNavigation> {
           scale: isSelected ? 1.1 : 1.0,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutBack,
-          child: Image.asset(
+          child: SvgPicture.asset(
             assetPath,
-            color: isSelected
-                ? (isDark ? Colors.white : Colors.black)
-                : (isDark ? Colors.white54 : Colors.black54),
+            colorFilter: ColorFilter.mode(
+              isSelected
+                  ? (isDark ? Colors.white : Colors.black)
+                  : (isDark ? Colors.white54 : Colors.black54),
+              BlendMode.srcIn,
+            ),
             width: iconSize,
             height: iconSize,
           ),

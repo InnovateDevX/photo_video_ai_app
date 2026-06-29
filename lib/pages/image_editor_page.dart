@@ -22,7 +22,6 @@ import 'package:trail_ai_app/Widgets/editor/editor_controls.dart';
 import 'package:trail_ai_app/Widgets/editor/editor_tools_grid.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:trail_ai_app/Widgets/editor/crop_bottom_panel.dart';
-import 'package:trail_ai_app/Core/routes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/Widgets/editor/firebase_sticker_picker.dart';
 import 'package:trail_ai_app/Widgets/editor/firebase_frame_picker.dart';
@@ -71,6 +70,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
   /// Updated via [WidgetsBindingObserver.didChangeMetrics] for reliability.
   bool _keyboardVisible = false;
 
+  /// Flag to prevent duplicate dialogs when Android back button is pressed
+  final bool _isHandlingBack = false;
+
   final List<EffectOverlay> _effects = const [
     // ── Butterfly ──────────────────────────────────────────────
     EffectOverlay(
@@ -97,7 +99,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       category: 'Flower',
       assetPath: 'assets/effects/potrait/Flower/1.png',
       portraitPath: 'assets/effects/potrait/Flower/1.png',
-      squarePath: 'assets/effects/square/Flowers/1.png',
+      squarePath: 'assets/effects/square/Flower/1.png',
       thumbnailPath: 'assets/effects/potrait/Flower/1.png',
       blendMode: ui.BlendMode.screen,
     ),
@@ -273,6 +275,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         _activeTool == EditorTool.crop ||
         _activeTool == EditorTool.text ||
         _activeTool == EditorTool.doodle ||
+        _activeTool == EditorTool.shape ||
         _activeTool == EditorTool.filters ||
         _activeTool == EditorTool.retouch;
 
@@ -281,6 +284,17 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         subEditor.done();
       } catch (e) {
         debugPrint('Error confirming subEditor: $e');
+      }
+      return;
+    } else if (isPackageTool) {
+      if (_activeTool == EditorTool.shape || _activeTool == EditorTool.doodle) {
+        ed.paintEditor.currentState?.done();
+      } else if (_activeTool == EditorTool.crop) {
+        ed.cropRotateEditor.currentState?.done();
+      } else if (_activeTool == EditorTool.text) {
+        ed.textEditor.currentState?.done();
+      } else if (_activeTool == EditorTool.filters) {
+        ed.filterEditor.currentState?.done();
       }
       return;
     }
@@ -379,11 +393,13 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     if (!mounted) return;
 
     final isPackageTool =
-        _activeTool == EditorTool.crop ||
-        _activeTool == EditorTool.text ||
         _activeTool == EditorTool.doodle ||
+        _activeTool == EditorTool.text ||
+        _activeTool == EditorTool.crop ||
+        _activeTool == EditorTool.shape ||
         _activeTool == EditorTool.sticker ||
-        _activeTool == EditorTool.filters;
+        _activeTool == EditorTool.filters ||
+        _activeTool == EditorTool.retouch;
 
     if (subEditor != null && isPackageTool) {
       try {
@@ -394,15 +410,24 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       return;
     }
 
+    if (_activeTool == EditorTool.shape || _activeTool == EditorTool.doodle) {
+      _editorKey.currentState?.paintEditor.currentState?.close();
+      return;
+    } else if (_activeTool == EditorTool.crop) {
+      _editorKey.currentState?.cropRotateEditor.currentState?.close();
+      return;
+    } else if (_activeTool == EditorTool.text) {
+      _editorKey.currentState?.textEditor.currentState?.close();
+      return;
+    } else if (_activeTool == EditorTool.filters) {
+      _editorKey.currentState?.filterEditor.currentState?.close();
+      return;
+    }
+
     if (_activeTool == EditorTool.sticker) {
       final ed = _editorKey.currentState;
       if (ed != null) {
-        for (final layer in _unconfirmedStickers) {
-          ed.activeLayers.remove(layer);
-        }
-        // Force the editor to redraw by triggering a tiny pan update or just letting it rebuild
-        ed.undoAction();
-        ed.redoAction();
+        _stickerPickerKey.currentState?.cancelCurrentSticker();
       }
       _unconfirmedStickers.clear();
       _stickerPickerKey.currentState?.clearSelection();
@@ -445,6 +470,23 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     for (int i = 0; i < ed.activeLayers.length; i++) {
       final layer = ed.activeLayers[i];
       if (layer is TextLayer) {
+        ed.replaceLayer(
+          index: i,
+          layer: layer..interaction = lockedInteraction,
+        );
+      }
+    }
+  }
+
+  /// Locks every PaintLayer in the editor so doodles/shapes cannot be moved,
+  /// scaled, rotated, selected, or re-edited after placement.
+  void _lockAllPaintLayers() {
+    final ed = _editorKey.currentState;
+    if (ed == null) return;
+    final lockedInteraction = LayerInteraction.fromDefaultValue(false);
+    for (int i = 0; i < ed.activeLayers.length; i++) {
+      final layer = ed.activeLayers[i];
+      if (layer is PaintLayer) {
         ed.replaceLayer(
           index: i,
           layer: layer..interaction = lockedInteraction,
@@ -523,7 +565,12 @@ class _ImageEditorViewState extends State<_ImageEditorView>
   @override
   void didChangeMetrics() {
     final bottom = WidgetsBinding
-        .instance.platformDispatcher.views.first.viewInsets.bottom;
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .viewInsets
+        .bottom;
     final isVisible = bottom > 0;
     if (_keyboardVisible != isVisible) {
       setState(() {
@@ -583,6 +630,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     WidgetsBinding.instance.removeObserver(this);
     _showOriginalTimer?.cancel();
     _panelCtrl.dispose();
+    _panelScrollCtrl.dispose();
     _disposeHslPreview();
     _disposeCurvesPreview();
     _disposeGrainPreview();
@@ -681,11 +729,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          AppRoutes.home,
-                          (route) => false,
-                        );
+                        if (mounted) Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
@@ -761,58 +805,64 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               fit: StackFit.expand,
               children: [
                 _buildEditor(context, state),
-              if (_activeTool == EditorTool.none) ...[
-                EditorTopBar(
-                  isDark: _isDark,
-                  onBack: _showDiscardDialog,
-                  canUndo: state.canUndo,
-                  canRedo: state.canRedo,
-                  isProcessing: state.isProcessing,
-                  onUndo: () {
-                    final ed = _editorKey.currentState;
-                    if (ed != null) {
-                      context.read<ImageEditorBloc>().add(ImageEditorUndo(ed));
-                    }
-                  },
-                  onRedo: () {
-                    final ed = _editorKey.currentState;
-                    if (ed != null) {
-                      context.read<ImageEditorBloc>().add(ImageEditorRedo(ed));
-                    }
-                  },
-                  onReset: () {
-                    final ed = _editorKey.currentState;
-                    if (ed != null) {
-                      context.read<ImageEditorBloc>().add(ImageEditorReset(ed));
-                    }
-                  },
-                  onDone: () => _editorKey.currentState?.doneEditing(),
-                ),
-                EditorCompareButton(
-                  isDark: _isDark,
-                  showOriginal: state.showOriginal,
-                  onCompareChanged: _handleShowOriginal,
-                  panelHeight:
-                      _calcPanelHeight(context) +
-                      MediaQuery.of(context).padding.bottom,
-                ),
-              ],
-              if (!_isPackageEditorActive) _buildBottomPanel(context, state),
-              if (state.isProcessing)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withAlpha(100),
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: AppEditorConstants.accent,
+                if (_activeTool == EditorTool.none) ...[
+                  EditorTopBar(
+                    isDark: _isDark,
+                    onBack: _showDiscardDialog,
+                    canUndo: state.canUndo,
+                    canRedo: state.canRedo,
+                    isProcessing: state.isProcessing,
+                    onUndo: () {
+                      final ed = _editorKey.currentState;
+                      if (ed != null) {
+                        context.read<ImageEditorBloc>().add(
+                          ImageEditorUndo(ed),
+                        );
+                      }
+                    },
+                    onRedo: () {
+                      final ed = _editorKey.currentState;
+                      if (ed != null) {
+                        context.read<ImageEditorBloc>().add(
+                          ImageEditorRedo(ed),
+                        );
+                      }
+                    },
+                    onReset: () {
+                      final ed = _editorKey.currentState;
+                      if (ed != null) {
+                        context.read<ImageEditorBloc>().add(
+                          ImageEditorReset(ed),
+                        );
+                      }
+                    },
+                    onDone: () => _editorKey.currentState?.doneEditing(),
+                  ),
+                  EditorCompareButton(
+                    isDark: _isDark,
+                    showOriginal: state.showOriginal,
+                    onCompareChanged: _handleShowOriginal,
+                    panelHeight:
+                        _calcPanelHeight(context) +
+                        MediaQuery.of(context).padding.bottom,
+                  ),
+                ],
+                if (!_isPackageEditorActive) _buildBottomPanel(context, state),
+                if (state.isProcessing)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withAlpha(100),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: AppEditorConstants.accent,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -825,8 +875,22 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         final collapsedH =
             _calcPanelHeight(animCtx, expanded: false) +
             MediaQuery.of(animCtx).padding.bottom;
-        return Padding(
-          padding: EdgeInsets.only(bottom: collapsedH),
+        // When a tool panel is open we compress the image area from
+        // both sides: the panel already occupies the bottom, and we now add
+        // a top inset so the image fits entirely in the space between the
+        // status bar and the panel.  ProImageEditor uses BoxFit.contain
+        // internally so the image automatically scales down to fill the
+        // smaller container — creating the "zoom out & push up" effect.
+        final isToolActive = _activeTool != EditorTool.none;
+        final statusBarH = MediaQuery.of(animCtx).padding.top;
+        // Add a small extra buffer (8 px) so the image doesn't press right
+        // against the status bar when a tool is open.
+        final topPad = isToolActive ? statusBarH + 8.0 : 0.0;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.only(top: topPad, bottom: collapsedH),
           child: ProImageEditor.file(
             state.imageFile,
             key: _editorKey,
@@ -1333,26 +1397,27 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                       ],
                     );
                   },
-                  bodyItems: (editor, rebuildStream) => [
-                    ReactiveWidget(
-                      stream: rebuildStream,
-                      builder: (context) {
-                        // Hide our custom panel when the keyboard is up so it
-                        // doesn't overlap the keyboard area while typing.
-                        if (_keyboardVisible) return const SizedBox.shrink();
-                        return _buildSubEditorPanelOverlay(
-                          editor,
-                          rebuildStream,
-                          usePositioned: true,
-                        );
-                      },
-                    ),
-                  ],
                   bottomBar: (editor, rebuildStream) => ReactiveWidget(
                     stream: rebuildStream,
                     builder: (context) => Builder(
-                      builder: (innerContext) =>
-                          _buildTextEditorBottomBar(editor, isDark, innerContext),
+                      builder: (innerContext) {
+                        if (_keyboardVisible) return const SizedBox.shrink();
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildSubEditorPanelOverlay(
+                              editor,
+                              rebuildStream,
+                              usePositioned: false,
+                            ),
+                            _buildTextEditorBottomBar(
+                              editor,
+                              isDark,
+                              innerContext,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1382,20 +1447,15 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                       child: SizedBox.shrink(),
                     ),
                   ),
-                  bodyItems: (editor, rebuildStream) => [
-                    ReactiveWidget(
-                      stream: rebuildStream,
-                      builder: (context) =>
-                          CropBottomPanel(editor: editor, isDark: isDark),
-                    ),
-                  ],
                   bottomBar: (editor, rebuildStream) => ReactiveWidget(
                     stream: rebuildStream,
                     builder: (context) {
                       if (MediaQuery.of(context).viewInsets.bottom > 0) {
                         return const SizedBox.shrink();
                       }
-                      return const SizedBox.shrink();
+                      // Use a safe area at the bottom if needed, but CropBottomPanel
+                      // handles its own padding.
+                      return CropBottomPanel(editor: editor, isDark: isDark);
                     },
                   ),
                 ),
@@ -1426,28 +1486,25 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                   bodyItems: (editor, rebuildStream) => [
                     ReactiveWidget(
                       stream: rebuildStream,
-                      builder: (context) => _buildSubEditorPanelOverlay(
-                        editor,
-                        rebuildStream,
-                        usePositioned: true,
-                      ),
+                      builder: (context) {
+                        if (MediaQuery.of(context).viewInsets.bottom > 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return _buildSubEditorPanelOverlay(
+                          editor,
+                          rebuildStream,
+                          usePositioned: true,
+                        );
+                      },
                     ),
                   ],
                   bottomBar: (editor, rebuildStream) => ReactiveWidget(
                     stream: rebuildStream,
-                    builder: (context) {
-                      if (MediaQuery.of(context).viewInsets.bottom > 0) {
-                        return const SizedBox.shrink();
-                      }
-                      return const SizedBox.shrink();
-                    },
+                    builder: (_) => const SizedBox.shrink(),
                   ),
                 ),
                 tools: _activeTool == EditorTool.doodle
-                    ? const [
-                        PaintMode.freeStyle,
-                        PaintMode.eraser,
-                      ]
+                    ? const [PaintMode.freeStyle, PaintMode.eraser]
                     : const [
                         PaintMode.circle,
                         PaintMode.rect,
@@ -1549,44 +1606,44 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     double h = 0;
 
     if (_activeTool == EditorTool.none) {
-      h = screenH * (isExpanded ? 0.275 : 0.175);
+      h = screenH * (isExpanded ? 0.30 : 0.20);
     } else {
       if (_activeTool == EditorTool.adjust) {
         if (_activeSubTool == EditorSubTool.curves) {
-          h = screenH * (isExpanded ? 0.475 : 0.425);
+          h = screenH * (isExpanded ? 0.55 : 0.50);
         } else if (_activeSubTool == EditorSubTool.hsl) {
-          h = screenH * (isExpanded ? 0.4375 : 0.40);
+          h = screenH * (isExpanded ? 0.55 : 0.50);
         } else if (_activeSubTool == EditorSubTool.none) {
-          h = screenH * (isExpanded ? 0.30 : 0.25);
+          h = screenH * (isExpanded ? 0.40 : 0.35);
         } else {
-          h = screenH * (isExpanded ? 0.35 : 0.30);
+          h = screenH * (isExpanded ? 0.45 : 0.40);
         }
       } else if (_activeTool == EditorTool.bg) {
-        h = screenH * 0.25;
+        h = screenH * 0.35;
       } else if (_activeTool == EditorTool.doodle ||
           _activeTool == EditorTool.shape) {
-        h = screenH * (_activeTool == EditorTool.doodle ? 0.275 : 0.3125);
+        h = screenH * (_activeTool == EditorTool.doodle ? 0.42 : 0.48);
       } else if (_activeTool == EditorTool.selective) {
-        h = screenH * 0.35;
+        h = screenH * 0.55;
       } else if (_activeTool == EditorTool.filters) {
-        h = screenH * 0.275;
+        h = screenH * 0.38;
       } else if (_activeTool == EditorTool.effect) {
-        h = screenH * 0.375;
+        h = screenH * 0.50;
       } else if (_activeTool == EditorTool.crop) {
-        h = screenH * 0.23;
+        h = screenH * 0.35;
       } else if (_activeTool == EditorTool.text) {
-        h = screenH * (isExpanded ? 0.50 : 0.35);
+        h = screenH * (isExpanded ? 0.55 : 0.40);
       } else if (_activeTool == EditorTool.sticker) {
-        h = screenH * (isExpanded ? 0.4375 : 0.225);
+        h = screenH * (isExpanded ? 0.48 : 0.30);
       } else {
-        h = screenH * 0.25;
+        h = screenH * 0.35;
       }
 
       if (isExpanded &&
           _activeTool != EditorTool.adjust &&
           _activeTool != EditorTool.text &&
           _activeTool != EditorTool.sticker) {
-        h = h * 1.25;
+        h = h * 1.2;
       }
     }
 
@@ -1639,8 +1696,14 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                 ),
               ],
             ),
+            // Show undo/redo/reset row for all active tools EXCEPT:
+            //  - text  → manages its own done/cancel flow
+            //  - crop  → has its own undo/redo/reset inside CropBottomPanel
+            //  - filters → applied immediately; no in-panel undo needed
             if (_activeTool != EditorTool.none &&
-                _activeTool != EditorTool.text) ...[
+                _activeTool != EditorTool.text &&
+                _activeTool != EditorTool.crop &&
+                _activeTool != EditorTool.filters) ...[
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1648,11 +1711,19 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                   EditorActionBtn(
                     icon: Icons.undo,
                     onTap: () {
+                      // Sub-editors (doodle/shape) have their own history —
+                      // use it directly. Custom tools (adjust, bg, effect,
+                      // selective) use the BLoC image history.
                       try {
                         if (subEditor != null) {
                           (subEditor as dynamic).undoAction();
                         } else {
-                          _editorKey.currentState?.undoAction();
+                          final ed = _editorKey.currentState;
+                          if (ed != null) {
+                            context.read<ImageEditorBloc>().add(
+                              ImageEditorUndo(ed),
+                            );
+                          }
                         }
                       } catch (_) {
                         // Action not supported by this sub-editor
@@ -1668,7 +1739,12 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                         if (subEditor != null) {
                           (subEditor as dynamic).redoAction();
                         } else {
-                          _editorKey.currentState?.redoAction();
+                          final ed = _editorKey.currentState;
+                          if (ed != null) {
+                            context.read<ImageEditorBloc>().add(
+                              ImageEditorRedo(ed),
+                            );
+                          }
                         }
                       } catch (_) {
                         // Action not supported by this sub-editor
@@ -1682,12 +1758,41 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                     onTap: () {
                       setState(() {
                         if (subEditor == null) {
-                          // Reset local state variables
+                          // Reset local UI state for custom tool panels
                           _activeSubTool = EditorSubTool.none;
                           _adjustValue = AppEditorConstants.defaultSliderValue;
                           _curvesData = CurvesData();
+                          _disposeHslPreview();
                           _disposeCurvesPreview();
-                          // Trigger bloc reset to restore original image
+                          _disposeGrainPreview();
+
+                          // Reset all panel state variables to default
+                          _sizeValue = AppEditorConstants.defaultSizeValue;
+                          _strokeValue = AppEditorConstants.defaultStrokeValue;
+                          _opacityValue =
+                              AppEditorConstants.defaultOpacityValue;
+                          _paintColor = Colors.white;
+                          _selectedEffectTab = 'Butterfly';
+                          _selectedFrameUrl = null;
+                          _selectedFilterMatrix = null;
+                          _selectedFilterIndex = 0;
+                          _selectedFontFamily = 'Roboto';
+                          _textColor = Colors.white;
+                          _textOpacity = 1.0;
+                          _textAlign = TextAlign.center;
+                          _isBold = false;
+                          _isItalic = false;
+                          _isUnderlined = false;
+                          _selectedHslColorIndex = 0;
+                          for (var adj in _hslAdjustments) {
+                            adj['hue'] = AppEditorConstants.defaultSliderValue;
+                            adj['saturation'] =
+                                AppEditorConstants.defaultSliderValue;
+                            adj['luminance'] =
+                                AppEditorConstants.defaultSliderValue;
+                          }
+
+                          // Restore original background image via BLoC
                           final ed = _editorKey.currentState;
                           if (ed != null) {
                             context.read<ImageEditorBloc>().add(
@@ -1695,7 +1800,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                             );
                           }
                         } else {
-                          // For sub-editors, try to call their reset method
+                          // For sub-editors (doodle/shape), call their reset
                           try {
                             (subEditor as dynamic).reset();
                           } catch (_) {
@@ -1976,6 +2081,8 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _editorKey.currentState?.openPaintEditor().then((_) {
+              // Lock all paint layers so doodles cannot be moved/resized after closing
+              _lockAllPaintLayers();
               _resetStateAfterToolClosed();
             });
           });
@@ -1992,6 +2099,8 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _editorKey.currentState?.openPaintEditor().then((_) {
+              // Lock all paint layers so shapes cannot be moved/resized after closing
+              _lockAllPaintLayers();
               _resetStateAfterToolClosed();
             });
           });
@@ -2123,15 +2232,27 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                       child: FutureBuilder<String?>(
                         future: EffectService().getEffectThumbnailUrl(
                           category: e.category,
-                          index: int.tryParse(e.assetPath.split('/').last.split('.').first.replaceAll(RegExp(r'\D'), '')) ?? 1,
+                          index:
+                              int.tryParse(
+                                e.assetPath
+                                    .split('/')
+                                    .last
+                                    .split('.')
+                                    .first
+                                    .replaceAll(RegExp(r'\D'), ''),
+                              ) ??
+                              1,
                         ),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return const Center(
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             );
                           }
@@ -2152,7 +2273,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Center(
@@ -2227,7 +2350,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             onChanged: (mode) {
               if (subEditor != null) {
                 final isEraser = mode == 'eraser';
-                subEditor.setFill(!isEraser); // Shape is filled, eraser is outline/not filled
+                subEditor.setFill(
+                  !isEraser,
+                ); // Shape is filled, eraser is outline/not filled
                 subEditor.setMode(
                   PaintMode.values.firstWhere(
                     (e) => e.toString().split('.').last == mode,
@@ -2329,6 +2454,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       editorState: _editorKey.currentState,
       onStickerAdded: (layer) {
         if (layer != null) {
+          _unconfirmedStickers.clear();
           _unconfirmedStickers.add(layer);
         }
       },
@@ -3039,7 +3165,10 @@ class _ImageEditorViewState extends State<_ImageEditorView>
 
   /// Builds the bottom bar for the text editor with done and cancel buttons.
   Widget _buildTextEditorBottomBar(
-      dynamic editor, bool isDark, BuildContext context) {
+    dynamic editor,
+    bool isDark,
+    BuildContext context,
+  ) {
     // Use _keyboardVisible (from WidgetsBindingObserver.didChangeMetrics) instead
     // of MediaQuery.viewInsets which gets consumed by the package's Scaffold.
     if (_keyboardVisible) {

@@ -16,7 +16,6 @@ import 'package:trail_ai_app/Core/locale_notifier.dart';
 import 'package:trail_ai_app/Core/app_initializer.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
-import 'package:trail_ai_app/Services/reel_service.dart';
 import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
 import 'package:trail_ai_app/pages/onboarding_page.dart';
 import 'firebase_options.dart';
@@ -25,11 +24,12 @@ void main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(
         SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarDividerColor: Colors.transparent,
           statusBarIconBrightness: Brightness.dark,
           systemNavigationBarIconBrightness: Brightness.dark,
           systemNavigationBarContrastEnforced: false,
@@ -52,7 +52,6 @@ void main() async {
       await GoogleSignIn.instance.initialize();
       await MobileAds.instance.initialize();
       await LocalStorageService().initialize();
-      await ReelService().initialize();
 
       FlutterError.onError =
           FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -103,6 +102,7 @@ class MyApp extends StatelessWidget {
                     ? Brightness.light
                     : Brightness.dark,
                 systemNavigationBarColor: Colors.transparent,
+                systemNavigationBarDividerColor: Colors.transparent,
                 systemNavigationBarIconBrightness: isDark
                     ? Brightness.light
                     : Brightness.dark,

@@ -46,19 +46,44 @@ class AIResultScreen extends StatefulWidget {
 
 class _AIResultScreenState extends State<AIResultScreen> {
   bool _isDownloading = false;
+  bool _isSharing = false;
   bool _showOriginal = false;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
+  bool _isImageLoaded = false;
   bool? _isLiked;
 
   @override
   void initState() {
     super.initState();
     _checkAndInitVideo();
+    _checkAndInitImage();
     // Trigger in-app review check after a short delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ReviewService().requestReviewIfAppropriate(context);
     });
+  }
+
+  void _checkAndInitImage() {
+    final isVideo = widget.resultImageUrl.toLowerCase().endsWith('.mp4');
+    if (isVideo) return;
+    
+    if (!widget.resultImageUrl.startsWith('http')) {
+      _isImageLoaded = true;
+      return;
+    }
+
+    final imageProvider = CachedNetworkImageProvider(widget.resultImageUrl);
+    final imageStream = imageProvider.resolve(const ImageConfiguration());
+    final listener = ImageStreamListener(
+      (info, synchronousCall) {
+        if (mounted && !_isImageLoaded) setState(() => _isImageLoaded = true);
+      },
+      onError: (error, stackTrace) {
+        if (mounted && !_isImageLoaded) setState(() => _isImageLoaded = true); // allow interaction even on error
+      },
+    );
+    imageStream.addListener(listener);
   }
 
   void _checkAndInitVideo() {
@@ -116,18 +141,23 @@ class _AIResultScreenState extends State<AIResultScreen> {
   }
 
   Future<void> _shareImage() async {
-    if (widget.resultImageUrl.toLowerCase().endsWith('.mp4')) {
-      await MediaService.shareVideo(
-        context,
-        widget.resultImageUrl,
-        isLocal: !widget.resultImageUrl.startsWith('http'),
-      );
-    } else {
-      await MediaService.shareImage(
-        context,
-        widget.resultImageUrl,
-        isLocal: !widget.resultImageUrl.startsWith('http'),
-      );
+    setState(() => _isSharing = true);
+    try {
+      if (widget.resultImageUrl.toLowerCase().endsWith('.mp4')) {
+        await MediaService.shareVideo(
+          context,
+          widget.resultImageUrl,
+          isLocal: !widget.resultImageUrl.startsWith('http'),
+        );
+      } else {
+        await MediaService.shareImage(
+          context,
+          widget.resultImageUrl,
+          isLocal: !widget.resultImageUrl.startsWith('http'),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
     }
   }
 
@@ -139,6 +169,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
     final bool isVideo = widget.resultImageUrl.toLowerCase().endsWith('.mp4');
+    final bool canInteract = isVideo ? _isVideoInitialized : _isImageLoaded;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
@@ -197,76 +228,78 @@ class _AIResultScreenState extends State<AIResultScreen> {
 
                     SizedBox(height: sh * 0.02),
 
-                    // Feedback row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Was this generation helpful?',
-                          style: TextStyle(
-                            color: AppColors.secondaryTextColor(isDark),
-                            fontSize: sw * 0.038,
-                          ),
-                        ),
-                        SizedBox(width: sw * 0.03),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => _isLiked = true);
-                            FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _isLiked == true
-                                  ? Colors.green.withValues(alpha: 0.2)
-                                  : (isDark ? Colors.white12 : Colors.grey.shade200),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _isLiked == true ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
-                              color: _isLiked == true ? Colors.green : AppColors.textColor(isDark),
-                              size: 20,
+                    if (canInteract) ...[
+                      // Feedback row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Was this generation helpful?',
+                            style: TextStyle(
+                              color: AppColors.secondaryTextColor(isDark),
+                              fontSize: sw * 0.038,
                             ),
                           ),
-                        ),
-                        SizedBox(width: sw * 0.03),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => _isLiked = false);
-                            FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _isLiked == false
-                                  ? Colors.red.withValues(alpha: 0.2)
-                                  : (isDark ? Colors.white12 : Colors.grey.shade200),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _isLiked == false ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
-                              color: _isLiked == false ? Colors.red : AppColors.textColor(isDark),
-                              size: 20,
+                          SizedBox(width: sw * 0.03),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _isLiked = true);
+                              FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _isLiked == true
+                                    ? Colors.green.withValues(alpha: 0.2)
+                                    : (isDark ? Colors.white12 : Colors.grey.shade200),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _isLiked == true ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                                color: _isLiked == true ? Colors.green : AppColors.textColor(isDark),
+                                size: 20,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                          SizedBox(width: sw * 0.03),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _isLiked = false);
+                              FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _isLiked == false
+                                    ? Colors.red.withValues(alpha: 0.2)
+                                    : (isDark ? Colors.white12 : Colors.grey.shade200),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _isLiked == false ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
+                                color: _isLiked == false ? Colors.red : AppColors.textColor(isDark),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
-                    SizedBox(height: sh * 0.02),
+                      SizedBox(height: sh * 0.02),
 
-                    // Action Pills (Enhance/Try Again)
-                    if (widget.onReEdit != null || widget.onTryAgain != null)
-                      _buildActionPills(sw, sh, isDark, isVideo),
+                      // Action Pills (Enhance/Try Again)
+                      if (widget.onReEdit != null || widget.onTryAgain != null)
+                        _buildActionPills(sw, sh, isDark, isVideo),
 
-                    SizedBox(height: sh * 0.04),
+                      SizedBox(height: sh * 0.04),
+                    ],
                   ],
                 ),
               ),
             ),
 
             // 3. Persistent Bottom Buttons
-            _buildBottomButtons(sw, sh, isDark),
+            if (canInteract) _buildBottomButtons(sw, sh, isDark),
           ],
         ),
       ),
@@ -519,7 +552,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
           // Share Button
           Expanded(
             child: GestureDetector(
-              onTap: widget.isNsfw ? null : _shareImage,
+              onTap: (widget.isNsfw || _isSharing) ? null : _shareImage,
               child: Container(
                 height: sh * 0.07,
                 decoration: BoxDecoration(
@@ -535,25 +568,34 @@ class _AIResultScreenState extends State<AIResultScreen> {
                   ),
                 ),
                 child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.share_rounded,
-                        color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
-                        size: sw * 0.055,
-                      ),
-                      SizedBox(width: sw * 0.02),
-                      Text(
-                        'share'.i18n(),
-                        style: TextStyle(
-                          color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
-                          fontWeight: FontWeight.bold,
-                          fontSize: sw * 0.04,
+                  child: _isSharing
+                      ? SizedBox(
+                          width: sw * 0.05,
+                          height: sw * 0.05,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textColor(isDark),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.share_rounded,
+                              color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
+                              size: sw * 0.055,
+                            ),
+                            SizedBox(width: sw * 0.02),
+                            Text(
+                              'share'.i18n(),
+                              style: TextStyle(
+                                color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
+                                fontWeight: FontWeight.bold,
+                                fontSize: sw * 0.04,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),

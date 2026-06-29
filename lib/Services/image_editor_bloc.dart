@@ -751,14 +751,12 @@ class ImageEditorBloc extends Bloc<ImageEditorEvent, ImageEditorState> {
           final codec = await ui.instantiateImageCodec(bytes);
           final frame = await codec.getNextFrame();
           newImage = frame.image;
+        } else {
+          debugPrint('No bytes received from Firebase Storage for effect: ${event.effect!.id}');
         }
       } catch (e) {
-        debugPrint(
-          'Failed to load overlay from Firebase, falling back to local asset: $e',
-        );
+        debugPrint('Failed to load overlay from Firebase: $e');
       }
-
-      newImage ??= await EffectEngine().decodeImageFromAsset(path);
 
       emit(state.copyWith(overlayUiImage: newImage, isOverlayLoading: false));
       _disposeImage(oldImage);
@@ -2078,7 +2076,19 @@ class ImageEditorBloc extends Bloc<ImageEditorEvent, ImageEditorState> {
         newImage: EditorImage.memory(originalBytes),
       );
 
-      // Clear history stacks after reset (optional - keeps only the reset point)
+      // Rewind the package-editor's layer history to the initial state so
+      // all text / sticker / doodle layers placed on top of the background
+      // are also cleared — otherwise layers remain after a background reset.
+      try {
+        final sm = editor.stateManager;
+        while (sm.canUndo) {
+          sm.undo();
+        }
+      } catch (_) {
+        // If history rewind fails we still complete the reset below
+      }
+
+      // Clear BLoC history stacks after reset (keeps only the reset point)
       for (final e in _undoStack) {
         unawaited(e.deleteFile());
       }

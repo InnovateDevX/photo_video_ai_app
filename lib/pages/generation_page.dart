@@ -242,7 +242,11 @@ class _GenerationPageState extends State<GenerationPage> {
       return;
     }
 
-    final prompt = _promptController.text.trim();
+    String prompt = _promptController.text.trim();
+    if (_enhancePrompt && prompt.isNotEmpty) {
+      prompt = '$prompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
+    }
+
     if (prompt.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -473,7 +477,7 @@ class _GenerationPageState extends State<GenerationPage> {
       }
 
       // Deduct credits immediately
-      await _creditService.deductCredits(_selectedModel?.creditUsed ?? 0);
+      _creditService.deductCredits(_selectedModel?.creditUsed ?? 0);
 
       if (mounted) {
         setState(() => _isGenerating = false);
@@ -590,6 +594,16 @@ class _GenerationPageState extends State<GenerationPage> {
   // Stage 1: image model + imagePrompt + uploaded photo  → edited image URL
   // Stage 2: first video model + videoPrompt + temp file  → final video URL
   Future<void> _generateTwoStage() async {
+    String actualImagePrompt = widget.imagePrompt;
+    String actualVideoPrompt = widget.videoPrompt;
+    if (_enhancePrompt) {
+      if (actualImagePrompt.isNotEmpty) {
+        actualImagePrompt = '$actualImagePrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
+      }
+      if (actualVideoPrompt.isNotEmpty) {
+        actualVideoPrompt = '$actualVideoPrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
+      }
+    }
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -617,37 +631,7 @@ class _GenerationPageState extends State<GenerationPage> {
     }
 
     // --- Safety Check ---
-    try {
-      // Show checking overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFD66031)),
-        ),
-      );
 
-      if (widget.imagePrompt.trim().isNotEmpty) {
-        await ContentSafetyService().checkTextSafe(widget.imagePrompt);
-      }
-      if (widget.videoPrompt.trim().isNotEmpty) {
-        await ContentSafetyService().checkTextSafe(widget.videoPrompt);
-      }
-      if (_selectedImage != null) {
-        await ContentSafetyService().checkImageFileSafe(_selectedImage!);
-      }
-
-      if (mounted) Navigator.pop(context); // Remove loading
-    } catch (e) {
-      if (mounted) Navigator.pop(context); // Remove loading
-      if (e is NsfwContentException) {
-        if (mounted) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
-        }
-        return;
-      }
-      debugPrint('⚠️ [GenerationPage] Two-stage safety check error: $e');
-    }
 
     // Credit gate — charge cost of both models
     final totalCost = (imageModel.creditUsed) + (videoModel.creditUsed);
@@ -805,7 +789,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
     if (runInBackground) {
       // Deduct credits immediately
-      await _creditService.deductCredits(totalCost);
+      _creditService.deductCredits(totalCost);
 
       if (mounted) {
         setState(() => _isGenerating = false);
@@ -822,8 +806,8 @@ class _GenerationPageState extends State<GenerationPage> {
       BackgroundGenerationService().startTwoStageBackgroundGeneration(
         imageModel: imageModel,
         videoModel: videoModel,
-        imagePrompt: widget.imagePrompt,
-        videoPrompt: widget.videoPrompt,
+        imagePrompt: actualImagePrompt,
+        videoPrompt: actualVideoPrompt,
         referenceImage: _selectedImage,
         aspectRatio: _selectedAspectRatio,
       );
@@ -835,7 +819,7 @@ class _GenerationPageState extends State<GenerationPage> {
       // Stage 1: Image Edit
       final editedImageUrl = await _replicateService.generateContent(
         modelConfig: imageModel,
-        prompt: widget.imagePrompt,
+        prompt: actualImagePrompt,
         referenceImage: _selectedImage,
         aspectRatio: imageModel.supportsAspectRatio
             ? _selectedAspectRatio
@@ -847,7 +831,7 @@ class _GenerationPageState extends State<GenerationPage> {
       // Stage 2: Video Generation
       final videoUrl = await _replicateService.generateContent(
         modelConfig: videoModel,
-        prompt: widget.videoPrompt,
+        prompt: actualVideoPrompt,
         referenceImage: tempFile,
         aspectRatio: videoModel.supportsAspectRatio
             ? _selectedAspectRatio

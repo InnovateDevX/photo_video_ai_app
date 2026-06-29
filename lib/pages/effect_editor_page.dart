@@ -58,7 +58,7 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
       category: 'Flower',
       assetPath: 'assets/effects/potrait/Flower/1.png',
       portraitPath: 'assets/effects/potrait/Flower/1.png',
-      squarePath: 'assets/effects/square/Flowers/1.png',
+      squarePath: 'assets/effects/square/Flower/1.png',
       thumbnailPath: 'assets/effects/potrait/Flower/1.png',
       blendMode: ui.BlendMode.screen,
     ),

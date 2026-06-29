@@ -125,6 +125,13 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
     String activePage = 'main';
+    AIModelConfig? currentModel = widget.selectedModel;
+    AIModelConfig? currentImageModel = widget.selectedImageModel;
+    AIModelConfig? currentVideoModel = widget.selectedVideoModel;
+    String currentAspectRatio = widget.selectedAspectRatio;
+    String currentDuration = widget.selectedDuration;
+    String currentResolution = widget.selectedResolution;
+    bool currentEnhancePrompt = widget.enhancePrompt;
 
     showModalBottomSheet(
       context: context,
@@ -315,7 +322,12 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   buildHeader(title, () => setSheet(() => activePage = 'main')),
                   Expanded(
                     child: GridView.builder(
-                      padding: EdgeInsets.all(w * 0.01),
+                      padding: EdgeInsets.only(
+                        left: w * 0.01,
+                        right: w * 0.01,
+                        top: w * 0.01,
+                        bottom: MediaQuery.of(context).padding.bottom + w * 0.04,
+                      ),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: w * 0.03,
@@ -359,7 +371,9 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                     ),
                     Expanded(
                       child: ListView(
-                        padding: EdgeInsets.zero,
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).padding.bottom + w * 0.04,
+                        ),
                         children: [
                           // Stage 1 label
                           Padding(
@@ -409,7 +423,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             itemBuilder: (_, i) {
                               final m = widget.imageModels[i];
                               final isSel =
-                                  widget.selectedImageModel?.id == m.id;
+                                  currentImageModel?.id == m.id;
                               return buildThemedGridCard(
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
@@ -438,7 +452,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                       ),
                                 onTap: () {
                                   widget.onImageModelSelected?.call(m);
-                                  setSheet(() => activePage = 'main');
+                                  setSheet(() { currentImageModel = m; activePage = 'main'; });
                                 },
                               );
                             },
@@ -488,7 +502,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             itemBuilder: (_, i) {
                               final m = widget.videoModels[i];
                               final isSel =
-                                  widget.selectedVideoModel?.id == m.id;
+                                  currentVideoModel?.id == m.id;
                               return buildThemedGridCard(
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
@@ -517,7 +531,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                       ),
                                 onTap: () {
                                   widget.onVideoModelSelected?.call(m);
-                                  setSheet(() => activePage = 'main');
+                                  setSheet(() { currentVideoModel = m; activePage = 'main'; });
                                 },
                               );
                             },
@@ -553,7 +567,12 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             ),
                           )
                         : GridView.builder(
-                            padding: EdgeInsets.all(w * 0.01),
+                            padding: EdgeInsets.only(
+                              left: w * 0.01,
+                              right: w * 0.01,
+                              top: w * 0.01,
+                              bottom: MediaQuery.of(context).padding.bottom + w * 0.04,
+                            ),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 3,
@@ -564,7 +583,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             itemCount: models.length,
                             itemBuilder: (_, i) {
                               final m = models[i];
-                              final isSel = widget.selectedModel?.id == m.id;
+                              final isSel = currentModel?.id == m.id;
                               return buildThemedGridCard(
                                 label: m.name,
                                 subLabel: '${m.creditUsed} Credits',
@@ -593,7 +612,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                                       ),
                                 onTap: () {
                                   widget.onModelSelected(m);
-                                  setSheet(() => activePage = 'main');
+                                  setSheet(() { currentModel = m; activePage = 'main'; });
                                 },
                               );
                             },
@@ -700,11 +719,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                       onTap: () => onChanged(!value),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: 96,
-                        height: 52,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        width: 52,
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(16),
                           gradient: value ? AppGradients.proGradient : null,
                           color: value ? null : Colors.white.withValues(alpha: 0.12),
                           border: Border.all(
@@ -728,8 +747,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                           curve: Curves.easeInOut,
                           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
                           child: Container(
-                            width: 34,
-                            height: 34,
+                            width: 26,
+                            height: 26,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.white,
@@ -754,10 +773,12 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
             Widget buildMainPanel() {
               // Gating logic: in imageEditMode, we base capabilities on the relevant stage model
               final currentOptions = widget.imageEditMode
-                  ? widget.selectedVideoModel?.options
-                  : widget.modelOptions;
+                  ? currentVideoModel?.options
+                  : currentModel?.options;
 
-              final showAspectRatio = currentOptions?.hasAspectRatios == true;
+              final showAspectRatio = widget.imageEditMode
+                  ? (currentVideoModel?.supportsAspectRatio == true)
+                  : (currentModel?.supportsAspectRatio == true);
 
               return Column(
                 children: [
@@ -774,7 +795,9 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   ),
                   Expanded(
                     child: ListView(
-                      padding: EdgeInsets.zero,
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).padding.bottom + w * 0.04,
+                      ),
                       children: [
                         buildSettingsNavigationTile(
                           icon: Icons.view_in_ar_outlined,
@@ -782,22 +805,22 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                               ? 'Stage 1 — Image Model'
                               : 'model'.i18n(),
                           value: widget.imageEditMode
-                              ? (widget.selectedImageModel?.name ?? 'Default')
-                              : (widget.selectedModel?.name ?? 'Default'),
+                              ? (currentImageModel?.name ?? 'Default')
+                              : (currentModel?.name ?? 'Default'),
                           onTap: () => setSheet(() => activePage = 'model'),
                         ),
                         if (widget.imageEditMode)
                           buildSettingsNavigationTile(
                             icon: Icons.videocam_outlined,
                             label: 'Stage 2 — Video Model',
-                            value: widget.selectedVideoModel?.name ?? 'Default',
+                            value: currentVideoModel?.name ?? 'Default',
                             onTap: () => setSheet(() => activePage = 'model'),
                           ),
                         if (showAspectRatio)
                           buildSettingsNavigationTile(
                             icon: Icons.aspect_ratio_outlined,
                             label: 'aspect_ratio'.i18n(),
-                            value: widget.selectedAspectRatio,
+                            value: currentAspectRatio,
                             onTap: () =>
                                 setSheet(() => activePage = 'aspect_ratio'),
                           ),
@@ -805,7 +828,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                           buildSettingsNavigationTile(
                             icon: Icons.timer_outlined,
                             label: 'duration'.i18n(),
-                            value: widget.selectedDuration,
+                            value: currentDuration,
                             onTap: () =>
                                 setSheet(() => activePage = 'duration'),
                           ),
@@ -813,15 +836,18 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                           buildSettingsNavigationTile(
                             icon: Icons.high_quality_outlined,
                             label: 'resolution'.i18n(),
-                            value: widget.selectedResolution,
+                            value: currentResolution,
                             onTap: () =>
                                 setSheet(() => activePage = 'resolution'),
                           ),
                         buildToggleTile(
                           icon: Icons.auto_awesome_outlined,
                           label: 'enhance_prompt'.i18n(),
-                          value: widget.enhancePrompt,
-                          onChanged: widget.onEnhancePromptChanged,
+                          value: currentEnhancePrompt,
+                          onChanged: (v) {
+                            widget.onEnhancePromptChanged(v);
+                            setSheet(() => currentEnhancePrompt = v);
+                          },
                         ),
                         SizedBox(height: w * 0.06),
                       ],
@@ -835,8 +861,8 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
             Widget body;
             // Compute options based on current mode
             final activeOptions = widget.imageEditMode
-                ? widget.selectedVideoModel?.options
-                : widget.modelOptions;
+                ? currentVideoModel?.options
+                : currentModel?.options;
 
             final List<String> aspectRatioOptionsList =
                 activeOptions?.aspectRatios ?? [];
@@ -852,16 +878,22 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                 body = buildOptionPanel(
                   title: 'aspect_ratio'.i18n(),
                   options: aspectRatioChoicesList,
-                  selectedValue: widget.selectedAspectRatio,
-                  onSelected: widget.onAspectRatioChanged,
+                  selectedValue: currentAspectRatio,
+                  onSelected: (v) {
+                    widget.onAspectRatioChanged(v);
+                    setSheet(() => currentAspectRatio = v);
+                  },
                 );
                 break;
               case 'duration':
                 body = buildOptionPanel(
                   title: 'duration'.i18n(),
                   options: activeOptions?.durations ?? const ['5s', '10s'],
-                  selectedValue: widget.selectedDuration,
-                  onSelected: widget.onDurationChanged,
+                  selectedValue: currentDuration,
+                  onSelected: (v) {
+                    widget.onDurationChanged(v);
+                    setSheet(() => currentDuration = v);
+                  },
                   subLabelSuffix: 'Duration',
                 );
                 break;
@@ -871,8 +903,11 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   options:
                       activeOptions?.resolutions ??
                       const ['480p', '720p', '1080p'],
-                  selectedValue: widget.selectedResolution,
-                  onSelected: widget.onResolutionChanged,
+                  selectedValue: currentResolution,
+                  onSelected: (v) {
+                    widget.onResolutionChanged(v);
+                    setSheet(() => currentResolution = v);
+                  },
                 );
                 break;
               default:
@@ -958,7 +993,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(screenWidth * 0.06),
                     ),
                     child: Row(
@@ -1050,6 +1085,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
     required VoidCallback? onTap,
     required double screenWidth,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -1062,7 +1098,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
             : const BoxDecoration(shape: BoxShape.circle),
         child: Icon(
           icon,
-          color: isSelected ? Colors.white : Colors.white54,
+          color: isSelected ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
           size: screenWidth * 0.045,
         ),
       ),
@@ -1077,19 +1113,20 @@ Widget _buildIcon(
   VoidCallback? onTap,
 }) {
   final w = MediaQuery.of(context).size.width;
+  final bool isDark = Theme.of(context).brightness == Brightness.dark;
   return GestureDetector(
     onTap: onTap,
     child: Container(
       padding: EdgeInsets.all(w * 0.02),
       decoration: BoxDecoration(
         color: isSelected
-            ? const Color.fromRGBO(255, 255, 255, 0.45)
-            : const Color.fromRGBO(255, 255, 255, 0.2),
+            ? (isDark ? const Color.fromRGBO(255, 255, 255, 0.45) : Colors.black26)
+            : (isDark ? const Color.fromRGBO(255, 255, 255, 0.2) : Colors.black12),
         shape: BoxShape.circle,
       ),
       child: Icon(
         icon,
-        color: Colors.white,
+        color: isSelected ? (isDark ? Colors.white : Colors.black) : (isDark ? Colors.white : Colors.black87),
         size: w * 0.05,
       ), // Reduced from 0.06
     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/routes.dart';
+import 'package:trail_ai_app/Widgets/main_navigation.dart';
 
 class ProfileHeader extends StatelessWidget {
   final double w;
@@ -71,10 +72,15 @@ class ProfileHeader extends StatelessWidget {
                             if (Navigator.canPop(context)) {
                               Navigator.pop(context);
                             } else {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                AppRoutes.home,
-                              );
+                              final navState = context.findAncestorStateOfType<MainNavigationState>();
+                              if (navState != null) {
+                                navState.switchTab(0);
+                              } else {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  AppRoutes.home,
+                                );
+                              }
                             }
                           },
                           child: Padding(

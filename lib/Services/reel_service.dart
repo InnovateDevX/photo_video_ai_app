@@ -68,7 +68,9 @@ class ReelService {
     }
 
     _refreshNotifiers();
-    debugPrint('✅ [ReelService] Loaded ${_likedReels.length} liked, ${_savedReels.length} saved reels from local storage.');
+    debugPrint(
+      '✅ [ReelService] Loaded ${_likedReels.length} liked, ${_savedReels.length} saved reels from local storage.',
+    );
   }
 
   // ── Internal helpers ──────────────────────────────────────────────────────
@@ -106,15 +108,27 @@ class ReelService {
 
   // ── Reels from Remote Config ──────────────────────────────────────────────
 
-  List<Reel> _getReelsFromConfig() {
+  List<Reel> _getReelsFromConfigSync() {
     try {
       final jsonStr = _remoteConfig.reelsJson;
-      if (jsonStr.isEmpty) return [];
+      debugPrint(
+        '📋 [ReelService] Loading reels from Remote Config, length: ${jsonStr.length}',
+      );
+
+      if (jsonStr.isEmpty || jsonStr == '[]') {
+        debugPrint('⚠️ [ReelService] Remote config reels_json is empty');
+        return [];
+      }
 
       final List<dynamic> jsonList = json.decode(jsonStr);
+      debugPrint(
+        '📋 [ReelService] Loaded ${jsonList.length} reels from Remote Config',
+      );
 
       return jsonList.asMap().entries.map((entry) {
-        final Map<String, dynamic> data = Map<String, dynamic>.from(entry.value);
+        final Map<String, dynamic> data = Map<String, dynamic>.from(
+          entry.value,
+        );
         final String id = data['id'] ?? 'reel_${entry.key}';
 
         final likeIncrement = _likeIncrements[id] ?? 0;
@@ -130,8 +144,23 @@ class ReelService {
     }
   }
 
-  Stream<List<Reel>> getReelsStream() => Stream.value(_getReelsFromConfig());
-  Future<List<Reel>> getReels() async => _getReelsFromConfig();
+  /// Get reels from Remote Config
+  Future<List<Reel>> getReels() async => _getReelsFromConfigSync();
+
+  /// Stream that emits reels each time it's listened to (not just once)
+  Stream<List<Reel>> getReelsStream() {
+    // Return a stream that emits reels from Remote Config
+    return Stream.multi((controller) {
+      final reels = _getReelsFromConfigSync();
+      controller.add(reels);
+    });
+  }
+
+  /// Refresh reels - useful when remote config is updated
+  void refreshReels() {
+    // The stream will automatically get fresh data when listened to
+    debugPrint('🔄 [ReelService] Reels refreshed');
+  }
 
   // ── LIKES ─────────────────────────────────────────────────────────────────
 
@@ -157,9 +186,11 @@ class ReelService {
   }
 
   bool isReelLikedSync(String reelId) => _likedReels.contains(reelId);
-  Stream<bool> isReelLiked(String reelId) => Stream.value(isReelLikedSync(reelId));
+  Stream<bool> isReelLiked(String reelId) =>
+      Stream.value(isReelLikedSync(reelId));
 
-  Stream<List<Reel>> getLikedReelsStream() => Stream.value(likedReelsNotifier.value);
+  Stream<List<Reel>> getLikedReelsStream() =>
+      Stream.value(likedReelsNotifier.value);
   Future<List<Reel>> fetchLikedReelsOnce() async => likedReelsNotifier.value;
 
   // ── SAVES ─────────────────────────────────────────────────────────────────
@@ -186,9 +217,11 @@ class ReelService {
   }
 
   bool isReelSavedSync(String reelId) => _savedReels.contains(reelId);
-  Stream<bool> isReelSaved(String reelId) => Stream.value(isReelSavedSync(reelId));
+  Stream<bool> isReelSaved(String reelId) =>
+      Stream.value(isReelSavedSync(reelId));
 
-  Stream<List<Reel>> getSavedReelsStream() => Stream.value(savedReelsNotifier.value);
+  Stream<List<Reel>> getSavedReelsStream() =>
+      Stream.value(savedReelsNotifier.value);
   Future<List<Reel>> fetchSavedReelsOnce() async => savedReelsNotifier.value;
 
   // ── Utility ───────────────────────────────────────────────────────────────

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:trail_ai_app/Models/category_image.dart';
-import 'package:trail_ai_app/Models/reel.dart';
 import 'package:trail_ai_app/pages/category_preview_page.dart';
 import 'package:trail_ai_app/Services/data_service.dart';
 import 'package:trail_ai_app/pages/generation_page.dart';
@@ -57,7 +55,7 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
     try {
       // Simulate network delay to test loading states and stress test smoothly
       await Future.delayed(const Duration(milliseconds: 800));
-      
+
       List<dynamic> allItems = [];
       if (widget.categoryName != null) {
         allItems = DataService().getCategoryImages(widget.categoryName!);
@@ -67,7 +65,7 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
 
       // Slice the next chunk of items
       final nextItems = allItems.skip(_items.length).take(_pageSize).toList();
-      
+
       setState(() {
         _items.addAll(nextItems);
         // We have more items if we haven't reached the total length
@@ -202,7 +200,8 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
                           return _buildShimmerCard(isDark, sw);
                         }
                         return _TrendingSeeAllCard(
-                          item: _items[index],
+                          items: _items,
+                          index: index,
                           isDark: isDark,
                         );
                       },
@@ -249,13 +248,19 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
 }
 
 class _TrendingSeeAllCard extends StatelessWidget {
-  final dynamic item; // Can be Reference or CategoryImage
+  final List<dynamic> items;
+  final int index;
   final bool isDark;
 
-  const _TrendingSeeAllCard({required this.item, required this.isDark});
+  const _TrendingSeeAllCard({
+    required this.items,
+    required this.index,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final item = items[index];
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
 
@@ -288,75 +293,14 @@ class _TrendingSeeAllCard extends StatelessWidget {
       }
     }
 
-    void handleVideoTap() async {
-      if (item is CategoryImage && reelId != null) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const Center(child: CircularProgressIndicator()),
-        );
-        try {
-          final reelDoc = await FirebaseFirestore.instance
-              .collection('reels')
-              .doc(reelId)
-              .get();
-
-          if (context.mounted) Navigator.pop(context); // close dialog
-
-          if (reelDoc.exists && context.mounted) {
-            final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CategoryPreviewPage(
-                  imageUrl: reel.thumbnailUrl,
-                  videoUrl: reel.videoUrl,
-                  prompt: reel.videoPrompt,
-                  modelId: modelId,
-                  type: 'video',
-                  isEditable: item.isEditable,
-                  imageEditMode: reel.imageEdit,
-                  onTryStyle: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => GenerationPage(
-                          initialCategory: 'video',
-                          initialPrompt: reel.videoPrompt,
-                          imageEditMode: reel.imageEdit,
-                          imagePrompt: reel.imagePrompt,
-                          videoPrompt: reel.videoPrompt,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-            return;
-          }
-        } catch (e) {
-          if (context.mounted) Navigator.pop(context); // close dialog
-          debugPrint('Error fetching reel: $e');
-        }
-
-        // Fallback: if doc doesn't exist or fetch failed, open preview with local data
-        if (context.mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CategoryPreviewPage(
-                imageUrl: imageUrl,
-                videoUrl: videoUrl,
-                prompt: prompt,
-                modelId: modelId,
-                type: type,
-                isEditable: item.isEditable,
-              ),
-            ),
-          );
-        }
-      }
+    void handleVideoTap() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              CategoryPreviewPage(items: items, initialIndex: index),
+        ),
+      );
     }
 
     Widget buildMedia() {
@@ -378,14 +322,8 @@ class _TrendingSeeAllCard extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CategoryPreviewPage(
-                    imageUrl: imageUrl,
-                    videoUrl: videoUrl,
-                    prompt: prompt,
-                    modelId: modelId,
-                    type: type,
-                    isEditable: item.isEditable,
-                  ),
+                  builder: (_) =>
+                      CategoryPreviewPage(items: items, initialIndex: index),
                 ),
               );
             }
@@ -407,15 +345,31 @@ class _TrendingSeeAllCard extends StatelessWidget {
                         seamlessLoop: true,
                         enablePlayPauseGesture: false,
                         borderRadius: BorderRadius.circular(sw * 0.05),
-                        placeholder: Shimmer.fromColors(
-                          baseColor: isDark
-                              ? Colors.grey[850]!
-                              : Colors.grey[300]!,
-                          highlightColor: isDark
-                              ? Colors.grey[700]!
-                              : Colors.grey[100]!,
-                          child: Container(color: Colors.white),
-                        ),
+                        placeholder: (imageUrl != null && imageUrl.isNotEmpty)
+                            ? CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Shimmer.fromColors(
+                                  baseColor: isDark
+                                      ? Colors.grey[850]!
+                                      : Colors.grey[300]!,
+                                  highlightColor: isDark
+                                      ? Colors.grey[700]!
+                                      : Colors.grey[100]!,
+                                  child: Container(color: Colors.white),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error_outline),
+                              )
+                            : Shimmer.fromColors(
+                                baseColor: isDark
+                                    ? Colors.grey[850]!
+                                    : Colors.grey[300]!,
+                                highlightColor: isDark
+                                    ? Colors.grey[700]!
+                                    : Colors.grey[100]!,
+                                child: Container(color: Colors.white),
+                              ),
                       )
                     : CachedNetworkImage(
                         imageUrl: imageUrl ?? '',

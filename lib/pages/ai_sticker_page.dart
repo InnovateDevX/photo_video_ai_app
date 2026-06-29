@@ -112,25 +112,19 @@ class _AiStickerPageState extends State<AiStickerPage>
 
     // --- Safety Check ---
     try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFD66031)),
-        ),
-      );
-
       if (_isTextMode) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(
+            child: CircularProgressIndicator(color: Color(0xFFD66031)),
+          ),
+        );
         if (userText.isNotEmpty) {
           await ContentSafetyService().checkTextSafe(userText);
         }
-      } else {
-        if (_selectedImage != null) {
-          await ContentSafetyService().checkImageFileSafe(_selectedImage!);
-        }
+        if (mounted) Navigator.pop(context);
       }
-
-      if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);

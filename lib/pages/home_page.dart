@@ -84,7 +84,6 @@ class _HomepageState extends State<Homepage> {
 
   // --- Per-category gallery controllers ---
   final Map<String, _CategoryGalleryController> _categoryControllers = {};
-  final Map<String, GlobalKey> _categoryKeys = {};
 
   final ScrollController _mainScrollController = ScrollController();
   final ScrollController _categoryTabScrollController = ScrollController();
@@ -101,7 +100,6 @@ class _HomepageState extends State<Homepage> {
     final dataService = DataService();
     if (dataService.categories.isNotEmpty) {
       categories = List.from(dataService.categories);
-      _initializeCategoryMeta();
     } else {
       _fetchCategories();
     }
@@ -128,7 +126,8 @@ class _HomepageState extends State<Homepage> {
     final key = _chipKeys[categories[index]];
     if (key?.currentContext == null) {
       // Chip not rendered yet (lazy) — fall back to rough estimate
-      final double rough = (index * 110.0) - (MediaQuery.of(context).size.width / 2) + 55.0;
+      final double rough =
+          (index * 110.0) - (MediaQuery.of(context).size.width / 2) + 55.0;
       _categoryTabScrollController.animateTo(
         rough.clamp(0.0, _categoryTabScrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 300),
@@ -148,64 +147,50 @@ class _HomepageState extends State<Homepage> {
     final currentScroll = _categoryTabScrollController.offset;
 
     // The scroll offset needed to center this chip
-    final targetScroll = currentScroll + chipGlobal - (viewportWidth - chipWidth) / 2.0;
+    final targetScroll =
+        currentScroll + chipGlobal - (viewportWidth - chipWidth) / 2.0;
 
     _categoryTabScrollController.animateTo(
-      targetScroll.clamp(0.0, _categoryTabScrollController.position.maxScrollExtent),
+      targetScroll.clamp(
+        0.0,
+        _categoryTabScrollController.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
   }
 
-
   void _onMainScroll() {
     if (_isAutoScrolling || categories.isEmpty) return;
-
-    // Compute which category is currently at the top of the viewport
     final h = MediaQuery.of(context).size.height;
-    final stickyHeaderHeight = h * 0.085;
-    final double threshold =
-        MediaQuery.of(context).padding.top + stickyHeaderHeight + 20;
+    final currentOffset = _mainScrollController.offset;
 
-    int? candidateIndex;
-    double minDistance = double.infinity;
-
+    // Estimate which category is near the top of the viewport
+    int candidateIndex = 0;
     for (int i = 0; i < categories.length; i++) {
-      final key = _categoryKeys[categories[i]];
-      if (key == null) continue;
-      final ctx = key.currentContext;
-      if (ctx == null) continue;
-      final renderBox = ctx.findRenderObject() as RenderBox?;
-      if (renderBox == null) continue;
-
-      final position = renderBox.localToGlobal(Offset.zero).dy;
-
-      if (position <= threshold + 100) {
-        final distance = (threshold - position).abs();
-        if (distance < minDistance) {
-          minDistance = distance;
-          candidateIndex = i;
-        }
+      final sectionOffset = _estimatedCategoryOffset(i);
+      if (currentOffset >= sectionOffset - h * 0.15) {
+        candidateIndex = i;
+      } else {
+        break;
       }
     }
 
-    if (candidateIndex == null) return;
-
-    // Debounce: cancel any pending update and wait for scroll to settle
     _scrollSettleTimer?.cancel();
     _scrollSettleTimer = Timer(const Duration(milliseconds: 100), () {
       if (!mounted) return;
       if (candidateIndex != _selectedCategoryIndex.value) {
-        _selectedCategoryIndex.value = candidateIndex!;
+        _selectedCategoryIndex.value = candidateIndex;
       }
     });
   }
 
-  void _initializeCategoryMeta() {
-    for (var cat in categories) {
-      _categoryKeys[cat] = GlobalKey();
-      // REMOVED: _loadCategoryIfNeeded(cat); - Now loading on-demand in build
-    }
+  // Estimate the scroll offset for a category at the given index.
+  // The header area takes approximately 0.45 * h, and each category section
+  // takes approximately 0.42 * h (title + horizontal gallery + spacing).
+  double _estimatedCategoryOffset(int index) {
+    final h = MediaQuery.of(context).size.height;
+    return (h * 0.45) + (index * h * 0.42);
   }
 
   void _startTrendingAutoScroll() {
@@ -264,7 +249,17 @@ class _HomepageState extends State<Homepage> {
       final categoriesJson = config.categoriesJson;
       if (categoriesJson.isEmpty || categoriesJson == '[]') return;
 
-      final List<dynamic> parsed = json.decode(categoriesJson);
+      final dynamic parsedJson = json.decode(categoriesJson);
+
+      List<dynamic> parsed = [];
+      bool shuffleCategories = false;
+
+      if (parsedJson is Map<String, dynamic> && parsedJson.containsKey('categories')) {
+        parsed = parsedJson['categories'] as List<dynamic>;
+        shuffleCategories = parsedJson['shuffle'] == true;
+      } else if (parsedJson is List<dynamic>) {
+        parsed = parsedJson;
+      }
 
       if (mounted) {
         setState(() {
@@ -276,14 +271,21 @@ class _HomepageState extends State<Homepage> {
               }
               return data;
             }).toList();
+
+            if (shuffleCategories) {
+              categoryData.shuffle();
+            }
+
             DataService().categoryData = categoryData;
-            categories = categoryData.map((c) => c.name).toList();
+            categories = categoryData.map((c) => c.name).toSet().toList();
             DataService().categories = categories;
           } else {
-            categories = parsed.cast<String>();
+            categories = parsed.cast<String>().toSet().toList();
+            if (shuffleCategories) {
+              categories.shuffle();
+            }
             DataService().categories = categories;
           }
-          _initializeCategoryMeta();
         });
       }
     } catch (e) {
@@ -370,76 +372,17 @@ class _HomepageState extends State<Homepage> {
   void _onCategoryTapped(int index) async {
     _isAutoScrolling = true;
     _selectedCategoryIndex.value = index;
-    final category = categories[index];
 
-    final key = _categoryKeys[category];
-    if (key != null && key.currentContext != null) {
-      await Scrollable.ensureVisible(
-        key.currentContext!,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-        alignment: 0.1, // Scroll so the section is near the top
-      );
-    } else {
-      // The category widget hasn't been built yet because of lazy loading.
-      // Perform a seamless continuous scroll to quickly glide down or up and locate it.
-      await _findAndScrollToCategory(index, category);
-    }
+    final targetOffset = _estimatedCategoryOffset(index);
+    final maxExtent = _mainScrollController.position.maxScrollExtent;
+    await _mainScrollController.animateTo(
+      targetOffset.clamp(0.0, maxExtent),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOutCubic,
+    );
 
-    // Give it a small delay to ensure physics have settled before re-enabling listener
     await Future.delayed(const Duration(milliseconds: 100));
     _isAutoScrolling = false;
-  }
-
-  Future<void> _findAndScrollToCategory(
-    int targetIndex,
-    String category,
-  ) async {
-    final h = MediaQuery.of(context).size.height;
-    // Estimate target offset to determine which direction we need to search
-    final estimatedOffset = (h * 0.45) + (targetIndex * h * 0.42);
-
-    int maxAttempts = 20;
-
-    while (_categoryKeys[category]?.currentContext == null && maxAttempts > 0) {
-      maxAttempts--;
-
-      final currentMax = _mainScrollController.position.maxScrollExtent;
-      final currentMin = _mainScrollController.position.minScrollExtent;
-      final currentOffset = _mainScrollController.offset;
-      final isScrollingDown = estimatedOffset > currentOffset;
-
-      if (isScrollingDown) {
-        // Stop if we hit the absolute bottom and it's still not expanding
-        if (currentOffset >= currentMax && maxAttempts < 19) break;
-
-        await _mainScrollController.animateTo(
-          (currentOffset + h * 1.2).clamp(0.0, currentMax),
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.linear,
-        );
-      } else {
-        // Stop if we hit the absolute top
-        if (currentOffset <= currentMin && maxAttempts < 19) break;
-
-        await _mainScrollController.animateTo(
-          (currentOffset - h * 1.2).clamp(currentMin, currentMax),
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.linear,
-        );
-      }
-    }
-
-    // Now that the widget is forced into the tree, gently decelerate and snap to its exact position.
-    final exactKey = _categoryKeys[category];
-    if (exactKey != null && exactKey.currentContext != null) {
-      await Scrollable.ensureVisible(
-        exactKey.currentContext!,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-        alignment: 0.1,
-      );
-    }
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -453,6 +396,7 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       body: SafeArea(
+        bottom: false,
         child: CustomScrollView(
           controller: _mainScrollController,
           slivers: [
@@ -493,7 +437,9 @@ class _HomepageState extends State<Homepage> {
                                     ),
                                     child: trendingView2(
                                       context,
-                                      _trendingItems[index],
+                                      _trendingItems,
+                                      index,
+                                      isTopCarousel: true,
                                     ),
                                   ),
                                 ),
@@ -529,42 +475,45 @@ class _HomepageState extends State<Homepage> {
                     ),
             ),
 
-            SliverToBoxAdapter(child: SizedBox(height: h * 0.015)),
+            SliverToBoxAdapter(child: SizedBox(height: h * 0.01)),
 
             // --- Quick AI Tools ---
             SliverToBoxAdapter(child: _buildQuickAiTools(context, isDark)),
+
+            SliverToBoxAdapter(child: SizedBox(height: h * 0.025)),
 
             // --- Sticky Category Chips ---
             SliverPersistentHeader(
               pinned: true,
               delegate: _StickyCategoryDelegate(
-                height: h * 0.085,
+                height: h * 0.065,
                 child: Container(
                   color: AppColors.backgroundColor(isDark),
                   alignment: Alignment.center,
                   child: ValueListenableBuilder<int>(
                     valueListenable: _selectedCategoryIndex,
                     builder: (context, selectedIndex, _) {
-                      return ListView.builder(
+                      return SingleChildScrollView(
                         controller: _categoryTabScrollController,
                         padding: EdgeInsets.symmetric(horizontal: w * 0.04),
                         scrollDirection: Axis.horizontal,
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          final chipKey = _chipKeys.putIfAbsent(
-                            categories[index],
-                            () => GlobalKey(),
-                          );
-                          return Padding(
-                            key: chipKey,
-                            padding: EdgeInsets.only(right: w * 0.025),
-                            child: categoryChip(
-                              label: categories[index],
-                              isSelected: selectedIndex == index,
-                              onTap: () => _onCategoryTapped(index),
-                            ),
-                          );
-                        },
+                        child: Row(
+                          children: List.generate(categories.length, (index) {
+                            final chipKey = _chipKeys.putIfAbsent(
+                              categories[index],
+                              () => GlobalKey(),
+                            );
+                            return Padding(
+                              key: chipKey,
+                              padding: EdgeInsets.only(right: w * 0.025),
+                              child: categoryChip(
+                                label: categories[index],
+                                isSelected: selectedIndex == index,
+                                onTap: () => _onCategoryTapped(index),
+                              ),
+                            );
+                          }),
+                        ),
                       );
                     },
                   ),
@@ -575,9 +524,11 @@ class _HomepageState extends State<Homepage> {
             // --- Lazy Loaded Category Galleries ---
             if (categories.isEmpty)
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(w * 0.05),
-                  child: _buildShimmerLoading(isDark, w, h),
+                child: Column(
+                  children: List.generate(
+                    3,
+                    (i) => _buildCategorySectionSkeleton(isDark, w, h),
+                  ),
                 ),
               )
             else
@@ -588,7 +539,7 @@ class _HomepageState extends State<Homepage> {
                 }, childCount: categories.length),
               ),
 
-            SliverToBoxAdapter(child: SizedBox(height: h * 0.05)),
+            SliverToBoxAdapter(child: SizedBox(height: h * 0.15)),
           ],
         ),
       ),
@@ -615,7 +566,6 @@ class _HomepageState extends State<Homepage> {
     }
 
     return Padding(
-      key: _categoryKeys[category],
       padding: EdgeInsets.only(top: h * 0.035),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,9 +638,12 @@ class _HomepageState extends State<Homepage> {
                           ),
                         );
                       }
-                      return Container(
-                        margin: EdgeInsets.only(right: w * 0.035),
-                        child: trendingView2(context, ctrl.items[index]),
+                      return SizedBox(
+                        width: w * 0.45,
+                        child: Container(
+                          margin: EdgeInsets.only(right: w * 0.035),
+                          child: trendingView2(context, ctrl.items, index),
+                        ),
                       );
                     },
                   ),
@@ -745,6 +698,55 @@ class _HomepageState extends State<Homepage> {
   }
 
   // ── Shimmer Helpers ────────────────────────────────────────────────────────
+
+  Widget _buildCategorySectionSkeleton(bool isDark, double w, double h) {
+    final baseColor = isDark ? Colors.grey[850]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[200]!;
+    return Padding(
+      padding: EdgeInsets.only(top: h * 0.035),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row skeleton
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: w * 0.05),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Shimmer.fromColors(
+                  baseColor: baseColor,
+                  highlightColor: highlightColor,
+                  child: Container(
+                    width: w * 0.35,
+                    height: h * 0.022,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(w * 0.02),
+                    ),
+                  ),
+                ),
+                Shimmer.fromColors(
+                  baseColor: baseColor,
+                  highlightColor: highlightColor,
+                  child: Container(
+                    width: w * 0.14,
+                    height: h * 0.018,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(w * 0.02),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: h * 0.02),
+          // Cards skeleton
+          SizedBox(height: h * 0.32, child: _buildShimmerLoading(isDark, w, h)),
+        ],
+      ),
+    );
+  }
 
   Widget _buildShimmerLoading(bool isDark, double w, double h) {
     return ListView.builder(
@@ -866,7 +868,7 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
           childAspectRatio: 2.1,
           mainAxisSpacing: h * 0.012,
         ),
-        SizedBox(height: h * 0.025),
+        SizedBox(height: h * 0.005),
       ],
     ),
   );
@@ -874,14 +876,18 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
 
 // ── Image tile widgets ────────────────────────────────────────────────────────
 
-Widget trendingView2(BuildContext context, dynamic item) {
+Widget trendingView2(
+  BuildContext context,
+  List<dynamic> items,
+  int index, {
+  bool isTopCarousel = false,
+}) {
+  final item = items[index];
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final w = MediaQuery.of(context).size.width;
 
   String? imageUrl;
   String? videoUrl;
-  String? prompt;
-  String? modelId;
   String? type;
   String? reelId;
   String? categoryName;
@@ -889,8 +895,6 @@ Widget trendingView2(BuildContext context, dynamic item) {
   if (item is Reference) {
     imageUrl = DataService().getCachedURL(item);
   } else if (item is CategoryImage) {
-    prompt = item.prompt;
-    modelId = item.modelUsed;
     reelId = item.reelId;
     type = item.type;
     categoryName = item.categoryName;
@@ -914,25 +918,48 @@ Widget trendingView2(BuildContext context, dynamic item) {
         videoUrl: videoUrl,
         seamlessLoop: true,
         enablePlayPauseGesture: false,
+        showOverlayControls: false,
         borderRadius: BorderRadius.circular(w * 0.05),
-        placeholder: Shimmer.fromColors(
-          baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-          highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(color: Colors.white),
+        placeholder: ClipRRect(
+          borderRadius: BorderRadius.circular(w * 0.05),
+          child: (imageUrl != null && imageUrl.isNotEmpty)
+              ? CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+                    highlightColor: isDark
+                        ? Colors.grey[700]!
+                        : Colors.grey[100]!,
+                    child: Container(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error_outline),
+                )
+              : Shimmer.fromColors(
+                  baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+                  highlightColor: isDark
+                      ? Colors.grey[700]!
+                      : Colors.grey[100]!,
+                  child: Container(color: Colors.white),
+                ),
         ),
       );
     }
 
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: imageUrl,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Shimmer.fromColors(
-          baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-          highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-          child: Container(color: Colors.white),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(w * 0.05),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Shimmer.fromColors(
+            baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
+            highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+            child: Container(color: Colors.white),
+          ),
+          errorWidget: (context, url, error) => const Icon(Icons.error_outline),
         ),
-        errorWidget: (context, url, error) => const Icon(Icons.error_outline),
       );
     }
 
@@ -946,75 +973,13 @@ Widget trendingView2(BuildContext context, dynamic item) {
   }
 
   // Handle video tap - fetch reel from Firestore and navigate to preview
-  void handleVideoTap() async {
-    if (item is CategoryImage && reelId != null) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-      try {
-        final reelDoc = await FirebaseFirestore.instance
-            .collection('reels')
-            .doc(reelId)
-            .get();
-
-        if (context.mounted) Navigator.pop(context); // close dialog
-
-        if (reelDoc.exists && context.mounted) {
-          final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CategoryPreviewPage(
-                imageUrl: reel.thumbnailUrl,
-                videoUrl: reel.videoUrl,
-                prompt: reel.videoPrompt,
-                modelId: modelId,
-                type: 'video',
-                isEditable: item.isEditable,
-                imageEditMode: reel.imageEdit,
-                onTryStyle: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => GenerationPage(
-                        initialCategory: 'video',
-                        initialPrompt: reel.videoPrompt,
-                        imageEditMode: reel.imageEdit,
-                        imagePrompt: reel.imagePrompt,
-                        videoPrompt: reel.videoPrompt,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-          return;
-        }
-      } catch (e) {
-        if (context.mounted) Navigator.pop(context); // close dialog
-        debugPrint('Error fetching reel: $e');
-      }
-
-      // Fallback: if doc doesn't exist or fetch failed, open the preview with local data
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CategoryPreviewPage(
-              imageUrl: imageUrl,
-              videoUrl: videoUrl,
-              prompt: prompt,
-              modelId: modelId,
-              type: type,
-              isEditable: item.isEditable,
-            ),
-          ),
-        );
-      }
-    }
+  void handleVideoTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryPreviewPage(items: items, initialIndex: index),
+      ),
+    );
   }
 
   // If we have a reelId but no imageUrl and no videoUrl, we need to fetch the reel and generate thumbnail
@@ -1033,7 +998,7 @@ Widget trendingView2(BuildContext context, dynamic item) {
     );
   }
 
-  return GestureDetector(
+  Widget cardContent = GestureDetector(
     behavior: HitTestBehavior.opaque,
     onTap: () {
       if (item is CategoryImage) {
@@ -1050,14 +1015,8 @@ Widget trendingView2(BuildContext context, dynamic item) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CategoryPreviewPage(
-                imageUrl: imageUrl,
-                videoUrl: videoUrl,
-                prompt: prompt,
-                modelId: modelId,
-                type: type,
-                isEditable: item.isEditable,
-              ),
+              builder: (_) =>
+                  CategoryPreviewPage(items: items, initialIndex: index),
             ),
           );
         }
@@ -1100,6 +1059,45 @@ Widget trendingView2(BuildContext context, dynamic item) {
             },
           )
         : buildMedia(),
+  );
+
+  if (!isTopCarousel) return cardContent;
+
+  // Add the "Try Now" overlay
+  return Stack(
+    children: [
+      cardContent,
+      Positioned(
+        bottom: w * 0.03,
+        right: w * 0.03,
+        child: IgnorePointer(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: w * 0.04,
+              vertical: w * 0.015,
+            ),
+            decoration: ProGradientDecoration(
+              borderRadius: BorderRadius.circular(w * 0.04),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.play_arrow, color: Colors.white, size: w * 0.04),
+                SizedBox(width: w * 0.01),
+                Text(
+                  'Try Now',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: w * 0.03,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ],
   );
 }
 

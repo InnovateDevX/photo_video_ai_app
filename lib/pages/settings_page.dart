@@ -10,6 +10,7 @@ import 'package:trail_ai_app/Services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:trail_ai_app/Widgets/main_navigation.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -43,6 +44,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(darkTheme),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             SizedBox(height: h * 0.02),
@@ -61,10 +63,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         } else {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.home,
-                          );
+                          final navState = context.findAncestorStateOfType<MainNavigationState>();
+                          if (navState != null) {
+                            navState.switchTab(0);
+                          } else {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.home,
+                            );
+                          }
                         }
                       },
                       child: Padding(
@@ -103,7 +110,11 @@ class _SettingsPageState extends State<SettingsPage> {
             // Scrollable list
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: w * 0.05),
+                padding: EdgeInsets.only(
+                  left: w * 0.05,
+                  right: w * 0.05,
+                  bottom: h * 0.15,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -56,6 +56,8 @@ class EffectEditorProvider extends ChangeNotifier {
       final index = int.tryParse(filename.replaceAll(RegExp(r'\D'), '')) ?? 1;
 
       ui.Image? newImage;
+      bool loadedFromFirebase = false;
+
       try {
         final bytes = await EffectService().getEffectImage(
           category: effect.category,
@@ -66,14 +68,33 @@ class EffectEditorProvider extends ChangeNotifier {
           final codec = await ui.instantiateImageCodec(bytes);
           final frame = await codec.getNextFrame();
           newImage = frame.image;
+          loadedFromFirebase = true;
+          debugPrint(
+            'Successfully loaded effect from Firebase: ${effect.category}/$index (${newImage.width}x${newImage.height})',
+          );
+          if (_baseImage != null) {
+            debugPrint(
+              'Base image size: ${_baseImage!.width}x${_baseImage!.height}',
+            );
+          }
+        } else {
+          debugPrint(
+            'No bytes received from Firebase Storage for effect: ${effect.id}',
+          );
         }
       } catch (e) {
-        debugPrint(
-          'Failed to load overlay from Firebase, falling back to local asset: $e',
-        );
+        debugPrint('Failed to load overlay from Firebase: $e');
       }
 
-      newImage ??= await _engine.decodeImageFromAsset(path);
+      // Fallback to local asset if Firebase failed
+      if (!loadedFromFirebase && newImage == null) {
+        debugPrint('Falling back to local asset: $path');
+        try {
+          newImage = await _engine.decodeImageFromAsset(path);
+        } catch (e) {
+          debugPrint('Failed to load local asset fallback: $e');
+        }
+      }
 
       _overlayImage = newImage;
       _opacity = effect.defaultOpacity;

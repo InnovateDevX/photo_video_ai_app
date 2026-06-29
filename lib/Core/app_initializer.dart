@@ -8,6 +8,7 @@ import '../Core/user_session.dart';
 import '../Services/device_service.dart';
 import '../Services/auth_service.dart';
 import '../Services/data_service.dart';
+import '../Services/reel_service.dart';
 import '../repositories/device_repository.dart';
 import '../repositories/user_repository.dart';
 import '../Services/localization_service.dart';
@@ -39,6 +40,7 @@ class AppInitializer {
     // ── Step 0: Initialize Remote Config ──────────────────────────────────
     // Do this first so other services can use it immediately.
     await RemoteConfigService().initialize();
+    await ReelService().initialize();
     await SubscriptionService().initialize();
     LocalizationService.init();
 

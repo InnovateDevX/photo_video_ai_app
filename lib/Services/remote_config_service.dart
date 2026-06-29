@@ -55,6 +55,8 @@ class RemoteConfigService {
         'rc_credits_map': '{}',
         'google_cloud_api_key': '', // Add in Firebase Remote Config
         'tool_badges': '{}',
+        'nsfw_text_threshold': 0.65,
+        'nsfw_image_unsafe_values': '["VERY_LIKELY"]',
       });
 
       // 2. Configure Settings

@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:io';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class ReelVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final Widget? placeholder;
   final bool seamlessLoop;
   final bool enablePlayPauseGesture;
+  final bool showOverlayControls;
   final BorderRadiusGeometry? borderRadius;
+  final bool mute;
 
   const ReelVideoPlayer({
     super.key,
@@ -16,7 +19,9 @@ class ReelVideoPlayer extends StatefulWidget {
     this.placeholder,
     this.seamlessLoop = false,
     this.enablePlayPauseGesture = true,
+    this.showOverlayControls = true,
     this.borderRadius,
+    this.mute = true,
   });
 
   @override
@@ -30,6 +35,7 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
   bool _isPlaying = false;
   bool _isLooping = false;
   bool _isBuffering = false;
+  bool _isVisible = false;
 
   void _videoListener() {
     if (!mounted || _controller == null) return;
@@ -118,11 +124,11 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
         });
 
         _controller!.setLooping(!widget.seamlessLoop);
-        _controller!.setVolume(0.0);
+        _controller!.setVolume(widget.mute ? 0.0 : 1.0);
         _controller!.addListener(_videoListener);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _controller!.play();
+          if (mounted && _isVisible) _controller!.play();
         });
       }
     } catch (e) {
@@ -188,9 +194,9 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
           alignment: Alignment.center,
           children: [
             content,
-            if (_isBuffering)
+            if (widget.showOverlayControls && _isBuffering)
               const CircularProgressIndicator(color: Colors.white),
-            if (!_isPlaying && !_isBuffering)
+            if (widget.showOverlayControls && !_isPlaying && !_isBuffering)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: const BoxDecoration(
@@ -221,9 +227,30 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
     }
 
     if (widget.borderRadius != null) {
-      return ClipRRect(borderRadius: widget.borderRadius!, child: finalWidget);
+      finalWidget = ClipRRect(
+        borderRadius: widget.borderRadius!,
+        child: finalWidget,
+      );
     }
 
-    return finalWidget;
+    return VisibilityDetector(
+      key: Key(widget.videoUrl),
+      onVisibilityChanged: (info) {
+        if (!mounted) return;
+        final isVisible =
+            info.visibleFraction > 0.3; // Play if at least 30% visible
+        if (isVisible != _isVisible) {
+          _isVisible = isVisible;
+          if (_isInitialized && _controller != null) {
+            if (_isVisible) {
+              _controller!.play();
+            } else {
+              _controller!.pause();
+            }
+          }
+        }
+      },
+      child: finalWidget,
+    );
   }
 }

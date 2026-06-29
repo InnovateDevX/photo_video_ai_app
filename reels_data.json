@@ -6,8 +6,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 1,
-    "savedCount": -1
+    "likesCount": 8164,
+    "savedCount": 1498
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FFire%20Demon%20Rising%20Reel.mp4?alt=media&token=6a0b1da3-88c7-47cf-b12e-668f5f8c9c88",
@@ -16,8 +16,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 2,
-    "savedCount": 0
+    "likesCount": 7606,
+    "savedCount": 304
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FSkeleton%20Image%20.mp4?alt=media&token=0e9cbc8a-fe48-4a12-a4f6-64d0653ac7d7",
@@ -26,8 +26,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 0,
-    "savedCount": 0
+    "likesCount": 2462,
+    "savedCount": 204
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FHaunted%20Doll%20High-Fashion%20Transformation.mp4?alt=media&token=6809213e-a798-44a2-9c78-3b00859682aa",
@@ -36,8 +36,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 2,
-    "savedCount": 0
+    "likesCount": 8304,
+    "savedCount": 1287
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FVampire%20Couture%20Transformation%20Reel.mp4?alt=media&token=8b4f5fc4-1520-4f56-815f-927571d743cf",
@@ -46,8 +46,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 0,
-    "savedCount": 0
+    "likesCount": 2667,
+    "savedCount": 82
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FFallen%20Angel%20to%20Dark%20Angel.mp4?alt=media&token=bffddc7a-9765-4355-8805-761a83ff7da9",
@@ -56,8 +56,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 0,
-    "savedCount": 0
+    "likesCount": 7545,
+    "savedCount": 1382
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FBackStage%20Shoot%20.mp4?alt=media&token=8b0d5554-a30f-4119-90c3-d85f8c14f4f3",
@@ -66,8 +66,8 @@
     "imageEdit": false,
     "type": "video",
     "isEditable": true,
-    "likesCount": 2,
-    "savedCount": 1
+    "likesCount": 9481,
+    "savedCount": 1639
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FF1%20Driver%20.mp4?alt=media&token=530472ae-bfc3-4cb4-a1db-8df821f59b0a",
@@ -76,8 +76,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 0,
-    "savedCount": 0
+    "likesCount": 9181,
+    "savedCount": 1726
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FCyber%20Skeleton%20Neon%20Transformation.mp4?alt=media&token=bf8449b2-a1f2-4195-8ca9-babd37c1ed91",
@@ -86,8 +86,8 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 0,
-    "savedCount": 0
+    "likesCount": 6455,
+    "savedCount": 989
   },
   {
     "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/reels%2FRetro%20CRT%20Tape.mp4?alt=media&token=a962352c-82de-4c69-bc63-8ae3d329287d",
@@ -96,7 +96,207 @@
     "imageEdit": true,
     "type": "image",
     "isEditable": true,
-    "likesCount": 0,
-    "savedCount": 0
+    "likesCount": 8144,
+    "savedCount": 1420
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Braodcast%2Fgrok-video-6691ce10-4f01-4fde-802d-29a8ab40e151.mp4?alt=media&token=a654534f-84a8-46b0-9aa9-67d20d0d2142",
+    "videoPrompt": "A realistic documentary-style video shot in the stands of a Korean professional baseball game...",
+    "imagePrompt": "Create a realistic sports TV broadcast screenshot captured in the spectator stands of a Korean KBO baseball game...",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 2946,
+    "savedCount": 660
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Braodcast%2Fgrok-video-dfba9a3a-c2d3-40c1-b9da-df1f73fdf677.mp4?alt=media&token=99ad5bd5-7323-4e34-89e6-2ec3f0c791f5",
+    "videoPrompt": "Ultra-realistic live English Premier League broadcast shot inside a packed stadium...",
+    "imagePrompt": "Create a realistic sports TV broadcast screenshot captured in the spectator stands during a live English Premier League football match...",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 3523,
+    "savedCount": 253
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Braodcast%2Fgrok-video-c30f7080-7933-4a60-b961-3e42f7052919.mp4?alt=media&token=a0cc82a7-c6f0-4bc4-8ef0-cce1f4c6799d",
+    "videoPrompt": "Ultra-realistic live NFL Super Bowl broadcast shot inside a packed stadium...",
+    "imagePrompt": "Create a realistic NFL Super Bowl live broadcast screenshot captured in the spectator stands of a packed stadium...",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 1695,
+    "savedCount": 251
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Braodcast%2Fgrok-video-273de986-dcc1-4455-a7d9-943a27cfa90a.mp4?alt=media&token=df471f57-da6d-4fa3-985f-03da31e51a45",
+    "videoPrompt": "Animate this ultra-realistic live motorsport paddock broadcast image into a natural, realistic video...",
+    "imagePrompt": "Ultra-realistic F1 live TV broadcast screenshot, identity preserved exactly from reference image...",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 7914,
+    "savedCount": 280
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FBrazil_supporter_dancing_with_flag_202606231518.mp4?alt=media&token=857b7f4a-2693-48c6-bb5e-c07e16d4ab60",
+    "videoPrompt": "Create a short cinematic stadium animation of a Brazil supporter. The person dances with joyful samba-inspired movement while lifting a large Brazil flag above their head. The crowd pulses with festive energy, flags ripple strongly, and yellow-green colors glow under bright stadium lights. Add natural body swaying, quick celebratory gestures, and a candid crowd-shot feel like it was filmed on a phone. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Brazil supporter and come alive in a short stadium video. You dance joyfully while waving a large Brazil flag above your head. Wearing a vibrant yellow-and-green crop top with a tiny Brazil flag painted on your cheek. The crowd pulses with samba energy, drums beating in the background as supporters celebrate around you. Bright festive atmosphere, natural dancing motion, fluttering flag, candid phone-camera capture from inside the crowd. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 4407,
+    "savedCount": 194
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FCreate_a_short_cinematic_stadium_202606231524.mp4?alt=media&token=f0c46f46-4904-479f-817c-be3406c9d5bc",
+    "videoPrompt": "Create a short cinematic stadium animation of an Argentina supporter. The person waves a giant Argentina flag while lightly bouncing to chant rhythms, with subtle shoulder sways and expressive crowd energy around them. Sky-blue and white confetti drifts through the air, scarves wave behind them, and the flag fabric flutters naturally in the wind. Handheld phone-camera feel, realistic stadium lighting, emotional football atmosphere, lively but natural motion. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become an Argentina supporter and come alive in a short stadium video. You proudly wave a giant Argentina flag while singing with thousands of fans. Wearing a sky-blue-and-white striped supporter crop top, a tiny Argentina flag painted on your cheek. Confetti drifts through the air as you bounce to the rhythm of football chants. The crowd behind you moves as one in a sea of blue and white. Authentic stadium atmosphere, emotional World Cup passion, handheld phone-camera feel, soft natural movement and fluttering fabric. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 5057,
+    "savedCount": 331
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2Fgrok-video-d5dbf20a-7a4e-4583-a8a9-dba55a68fd79.mp4?alt=media&token=a5810a5e-774d-43c4-88e7-e0882f48585d",
+    "videoPrompt": "Create a short cinematic stadium animation of a France supporter. The person raises the French flag like a cape, then gently sways while chanting with the crowd. Add soft blue smoke in the background, rhythmic clapping fans, and a polished European stadium atmosphere. The flag should flutter realistically, and the camera should feel like a handheld clip captured in the stands. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a France supporter and come alive in a short stadium video. You hold the French flag over your shoulders like a cape while singing victory chants. Wearing a stylish blue supporter crop top with tricolor accents and a tiny French flag painted on your cheek. Blue smoke flares softly illuminate the crowd while fans clap rhythmically around you. Elegant European football atmosphere, realistic handheld recording, subtle movement and stadium energy. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 2721,
+    "savedCount": 241
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FEngland_supporter_waving_flag_ce%E2%80%A6_202606231421.mp4?alt=media&token=ecff6717-f62e-46d9-acd6-c6e5465aca4b",
+    "videoPrompt": "Create a short cinematic stadium animation of an England supporter. The person waves a St. George’s Cross flag overhead while chanting and lightly pumping a fist in celebration. Surround the scene with scarf-waving fans, intense football crowd reactions, and a classic English stadium atmosphere. Add natural flag movement, small shoulder bounces, and realistic phone-camera framing. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become an England supporter and come alive in a short stadium video. You raise a St. George's Cross flag high while chanting with passionate supporters. Wearing a white crop top with red accents and a tiny England flag painted on your cheek. The crowd erupts in synchronized football chants and scarf-waving traditions. Authentic British football atmosphere, lively crowd reactions, natural phone-camera footage, realistic movement. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 4779,
+    "savedCount": 902
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FGermany_supporter_waving_flag_202606231610.mp4?alt=media&token=1625f0af-e7b4-4bfe-b7e3-aa6d995e47e4",
+    "videoPrompt": "Create a short cinematic stadium animation of a Germany supporter. The person stands confidently while waving a black, red, and gold flag with strong, steady movements. Fans behind them chant in unison, scarves rise and fall together, and the stadium has a powerful organized-energy feel. Add realistic fabric flutter, subtle celebratory motions, and handheld crowd-video realism. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Germany supporter and come alive in a short stadium video. You wave a massive black-red-and-gold flag while celebrating with disciplined, energetic supporters. Wearing a sleek supporter crop top featuring Germany's national colors and a tiny German flag painted on your cheek. Fans raise coordinated scarves and chant in unison around you. Premium stadium atmosphere, strong football tradition, realistic handheld crowd footage. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 7838,
+    "savedCount": 1498
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FSpain_supporter_celebrating_with%E2%80%A6_202606231530.mp4?alt=media&token=6f50ea33-8568-4e10-a6bf-bb9afe4306d3",
+    "videoPrompt": "Create a short cinematic stadium animation of a Spain supporter. The person spins or lifts the Spanish flag with lively festive motion while smiling and celebrating with the crowd. Warm stadium lights glow across red and yellow colors, fans cheer in the background, and the atmosphere feels passionate and energetic. Use soft natural swaying, fluttering fabric, and a candid mobile-video style. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Spain supporter and come alive in a short stadium video. You celebrate passionately while spinning a Spanish flag above your head. Wearing a bold red-and-yellow crop top and a tiny Spain flag painted on your cheek. Warm evening stadium lights glow across cheering fans waving scarves and flags. Mediterranean football culture, vibrant crowd energy, natural movement and candid smartphone recording. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 3062,
+    "savedCount": 526
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FPortugal_supporter_waving_flag_202606231536.mp4?alt=media&token=4faa58d5-12ec-4464-bec3-636bb3906851",
+    "videoPrompt": "Create a short cinematic stadium animation of a Portugal supporter. The person holds the Portugal flag high while singing along with the crowd and making small celebratory gestures. Add emotional supporter energy, waving scarves, and a proud stadium atmosphere with red and green tones. The camera should feel handheld and close, with natural movement and realistic flag flutter. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Portugal supporter and come alive in a short stadium video. You proudly hold the Portuguese flag while joining a chorus of supporters singing together. Wearing a green-and-red crop top and a tiny Portugal flag painted on your cheek. The atmosphere feels emotional and celebratory, with fans raising scarves and phones in the air. Authentic Portuguese football passion, realistic crowd movement and handheld video feel. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 4520,
+    "savedCount": 929
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FNetherlands_supporter_waving_Dut%E2%80%A6_202606231540.mp4?alt=media&token=74532537-331c-45e8-8935-8a9dc43d30a8",
+    "videoPrompt": "Create a short cinematic stadium animation of a Netherlands supporter. The person stands in a sea of orange and waves a Dutch flag with upbeat, energetic motion. Add orange confetti, jumping supporters, and a festive stadium atmosphere that feels loud and alive. Include natural swaying, flag flutter, and a spontaneous phone-recorded crowd-shot look. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Netherlands supporter and come alive in a short stadium video. You stand among a sea of bright orange supporters, waving a Dutch flag enthusiastically. Wearing an eye-catching orange crop top and a tiny Netherlands flag painted on your cheek. Orange confetti fills the air while fans jump and celebrate around you. Iconic Dutch fan culture, festive atmosphere, natural phone-camera footage with lively crowd motion. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 2081,
+    "savedCount": 509
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FUS_supporter_waves_American_flag_202606221605.mp4?alt=media&token=3b8c88fa-1a02-4baf-b864-e716bf938b99",
+    "videoPrompt": "Create a short cinematic stadium animation of an Italy supporter. The person raises the Italian flag and celebrates with elegant, expressive movements while the crowd sings behind them. Add a cinematic blue-and-tricolor stadium glow, fluttering scarves, and emotional football pride. Use subtle natural body motion and a realistic handheld fan-video feel. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become an Italy supporter and come alive in a short stadium video. You wave the Italian tricolor while celebrating with expressive supporters. Wearing a stylish blue supporter crop top inspired by the Azzurri and a tiny Italy flag painted on your cheek. Fans sing passionately while stadium lights create a cinematic glow. Elegant football culture, emotional crowd atmosphere, realistic handheld recording. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 6885,
+    "savedCount": 721
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FCroatia_supporter_waves_flag_202606221609.mp4?alt=media&token=4c48e679-d31f-4fda-b050-fcc3085f841b",
+    "videoPrompt": "Create a short cinematic stadium animation of a Croatia supporter. The person waves the Croatian flag while bouncing in place with the crowd, surrounded by iconic red-and-white checkerboard visuals. Add energetic fan jumping, loud chanting, and strong fabric movement in the flag and outfit. The style should feel like a real celebratory clip filmed on a phone in the stands. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Croatia supporter and come alive in a short stadium video. You proudly wave the Croatian flag while surrounded by supporters wearing iconic red-and-white checkerboard patterns. Wearing a matching checkerboard crop top and a tiny Croatia flag painted on your cheek. The crowd jumps in celebration, creating an electric atmosphere. Authentic Balkan football passion, candid phone-camera footage, natural movement. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 2940,
+    "savedCount": 363
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FMorocco_supporter_waves_flag_202606231546.mp4?alt=media&token=0cb6003a-970c-45fa-af11-f1483de8dee2",
+    "videoPrompt": "Create a short cinematic stadium animation of a Morocco supporter. The person waves a Moroccan flag proudly while the crowd chants and claps around them. Add strong red-green visual energy, subtle drum-like rhythm in the atmosphere, and flowing flag motion under bright stadium lights. Keep the movement natural, emotional, and handheld, like a real fan video. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Morocco supporter and come alive in a short stadium video. You wave a large Moroccan flag while celebrating among a passionate sea of red supporters. Wearing a red crop top with green accents and a tiny Morocco flag painted on your cheek. Traditional drums and chants echo through the stadium as fans celebrate together. Powerful crowd energy, authentic North African football atmosphere, realistic smartphone footage. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 3182,
+    "savedCount": 761
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FJapan_supporter_with_flag_202606231554.mp4?alt=media&token=54ab0ad2-a112-4b8c-8997-ab07e1a3d0b4",
+    "videoPrompt": "Create a short cinematic stadium animation of a Japan supporter. The person holds the Japan flag neatly and moves with calm, organized fan energy while the crowd chants in rhythm. Add coordinated waving in the background, clean stadium lighting, and a respectful but exciting football atmosphere. The camera should feel like a real candid clip with gentle motion and realistic flag flutter. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Japan supporter and come alive in a short stadium video. You proudly hold the Japanese flag while joining organized supporter chants. Wearing a blue Samurai Blue supporter crop top and a tiny Japan flag painted on your cheek. Fans wave coordinated flags and banners in perfect rhythm around you. Clean, respectful fan culture, energetic but organized stadium atmosphere, realistic handheld recording. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 5805,
+    "savedCount": 1297
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FMexico_supporter_celebrating_wit%E2%80%A6_202606231510%20(1)%20(1).mp4?alt=media&token=09f19cac-a661-4ab3-9c6c-4e55f14cf78c",
+    "videoPrompt": "Create a short cinematic stadium animation of a South Korea supporter. The person cheers enthusiastically with strong rhythmic movement, clapping and swaying with the crowd. Add bright red supporter energy, waving banners, and lively stadium motion with a powerful fan-section feel. The video should look handheld and spontaneous, with fluttering fabric and natural crowd reactions. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a South Korea supporter and come alive in a short stadium video. You cheer enthusiastically with a large South Korea flag, joining the famous Red Devils supporter atmosphere. Wearing a bright red crop top and a tiny South Korea flag painted on your cheek. Fans clap rhythmically and chant together while waving illuminated light sticks. Dynamic crowd energy, vibrant football culture, natural phone-camera footage. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 8668,
+    "savedCount": 720
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FBelgium_supporter_waves_flag_cel%E2%80%A6_202606231602.mp4?alt=media&token=b9a62f0f-2fa6-4387-b8a5-68b164c9d5f4",
+    "videoPrompt": "Create a short cinematic stadium animation of a Belgium supporter. The person waves the Belgian flag while celebrating among fans dressed in black, red, and gold. Add strong crowd chanting, scarf movement, and small celebratory gestures with a lively European football feeling. Make the clip look like a real phone video from the stands with realistic motion and fluttering fabric. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Belgium supporter and come alive in a short stadium video. You wave the Belgian flag while surrounded by supporters dressed in black, red and gold. Wearing a matching supporter crop top and a tiny Belgium flag painted on your cheek. Fans sing loudly and celebrate with colorful smoke and scarves. Energetic European football atmosphere, realistic phone-camera recording, natural crowd movement. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 4230,
+    "savedCount": 494
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FAustralia_supporter_waving_flag_202606231428.mp4?alt=media&token=9365eebf-836f-46c3-a364-8c49e5f77999",
+    "videoPrompt": "Create a short cinematic stadium animation of an Australia supporter. The person cheers energetically while waving the Australian flag with relaxed but excited movement. Add green-and-gold crowd energy, light jumping motion, and a fun, upbeat stadium atmosphere. Keep the motion natural and the footage looking like a spontaneous handheld fan video. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become an Australia supporter and come alive in a short stadium video. You enthusiastically wave the Australian flag while surrounded by green-and-gold supporters. Wearing a green-and-gold crop top and a tiny Australia flag painted on your cheek. Fans bounce together and celebrate with infectious energy. Relaxed yet passionate football culture, realistic handheld crowd footage, lively stadium atmosphere. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 4658,
+    "savedCount": 226
+  },
+  {
+    "videoUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/World%20cup%20supporters%2FCanada_supporter_waving_flag_cel%E2%80%A6_202606231607.mp4?alt=media&token=8488b578-dce5-44c4-8c70-e4679108720c",
+    "videoPrompt": "Create a short cinematic stadium animation of a Canada supporter. The person waves a Canadian flag while celebrating with calm but proud energy among red-and-white fans. Add maple-leaf banners, gentle bouncing motion, and a warm, friendly stadium atmosphere. The flag should move naturally, with a candid phone-shot feel and realistic crowd motion. Keep the face, hair, and identity exactly matching the reference photo.",
+    "imagePrompt": "Become a Canada supporter and come alive in a short stadium video. You wave a large Canadian flag while cheering alongside a sea of red-and-white supporters. Wearing a stylish red-and-white crop top and a tiny Canada flag painted on your cheek. Maple leaf banners wave throughout the crowd as fans celebrate together. Friendly but passionate football atmosphere, natural movement, candid phone-camera feel. Your face, hair and features stay exactly as in your photo.",
+    "imageEdit": true,
+    "type": "image",
+    "isEditable": true,
+    "likesCount": 4013,
+    "savedCount": 772
   }
 ]
