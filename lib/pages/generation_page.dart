@@ -249,7 +249,8 @@ class _GenerationPageState extends State<GenerationPage> {
 
     String prompt = _promptController.text.trim();
     if (_enhancePrompt && prompt.isNotEmpty) {
-      prompt = '$prompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
+      prompt =
+          '$prompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
     }
 
     if (prompt.isEmpty) {
@@ -291,7 +292,10 @@ class _GenerationPageState extends State<GenerationPage> {
               _isNsfw = true;
             });
           }
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           ScaffoldMessenger.of(
             context,
@@ -583,7 +587,10 @@ class _GenerationPageState extends State<GenerationPage> {
               _isNsfw = true;
             });
           }
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
@@ -603,10 +610,12 @@ class _GenerationPageState extends State<GenerationPage> {
     String actualVideoPrompt = widget.videoPrompt;
     if (_enhancePrompt) {
       if (actualImagePrompt.isNotEmpty) {
-        actualImagePrompt = '$actualImagePrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
+        actualImagePrompt =
+            '$actualImagePrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
       }
       if (actualVideoPrompt.isNotEmpty) {
-        actualVideoPrompt = '$actualVideoPrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
+        actualVideoPrompt =
+            '$actualVideoPrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
       }
     }
     if (_selectedImage == null) {
@@ -636,7 +645,6 @@ class _GenerationPageState extends State<GenerationPage> {
     }
 
     // --- Safety Check ---
-
 
     // Credit gate — charge cost of both models
     final totalCost = (imageModel.creditUsed) + (videoModel.creditUsed);
@@ -877,7 +885,10 @@ class _GenerationPageState extends State<GenerationPage> {
               _isNsfw = true;
             });
           }
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Two-stage error: ${e.toString()}')),
@@ -954,6 +965,7 @@ class _GenerationPageState extends State<GenerationPage> {
                       onRemoveImage: () =>
                           setState(() => _selectedImage = null),
                     ),
+                    SizedBox(height: screenHeight * 0.015),
                     Padding(
                       padding: EdgeInsets.only(
                         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -1050,13 +1062,15 @@ class _GenerationPageState extends State<GenerationPage> {
                       if (_isDownloading) return;
                       setState(() => _isDownloading = true);
                       try {
-                        if (_selectedCategory == 'image' && _generatedImageUrl != null) {
+                        if (_selectedCategory == 'image' &&
+                            _generatedImageUrl != null) {
                           await MediaService.downloadImage(
                             context,
                             _generatedImageUrl!,
                             isLocal: !_generatedImageUrl!.startsWith('http'),
                           );
-                        } else if (_selectedCategory == 'video' && _generatedVideoUrl != null) {
+                        } else if (_selectedCategory == 'video' &&
+                            _generatedVideoUrl != null) {
                           await MediaService.downloadVideo(
                             context,
                             _generatedVideoUrl!,
@@ -1171,7 +1185,11 @@ class _GenerationPageState extends State<GenerationPage> {
         : _buildPlaceholder(screenWidth, screenHeight, isDark);
   }
 
-  Widget _buildResultView(double screenWidth, double screenHeight, bool isDark) {
+  Widget _buildResultView(
+    double screenWidth,
+    double screenHeight,
+    bool isDark,
+  ) {
     Widget resultWidget;
     if (_selectedCategory == 'image') {
       Widget imageWidget = CachedNetworkImage(
@@ -1248,8 +1266,12 @@ class _GenerationPageState extends State<GenerationPage> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _isLiked == true ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
-                  color: _isLiked == true ? Colors.green : AppColors.textColor(isDark),
+                  _isLiked == true
+                      ? Icons.thumb_up_rounded
+                      : Icons.thumb_up_outlined,
+                  color: _isLiked == true
+                      ? Colors.green
+                      : AppColors.textColor(isDark),
                   size: 20,
                 ),
               ),
@@ -1269,8 +1291,12 @@ class _GenerationPageState extends State<GenerationPage> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _isLiked == false ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
-                  color: _isLiked == false ? Colors.red : AppColors.textColor(isDark),
+                  _isLiked == false
+                      ? Icons.thumb_down_rounded
+                      : Icons.thumb_down_outlined,
+                  color: _isLiked == false
+                      ? Colors.red
+                      : AppColors.textColor(isDark),
                   size: 20,
                 ),
               ),
@@ -1339,16 +1365,23 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
     if (fetchedImages.isEmpty) {
       fetchedImages = dataService.trendingItems;
     }
-    
+
     // Filter out images with invalid URLs or missing prompts
-    final validImages = fetchedImages.where((img) => img.imageUrl.isNotEmpty && img.imageUrl.startsWith('http') && img.prompt.trim().isNotEmpty).toList();
-    
+    final validImages = fetchedImages
+        .where(
+          (img) =>
+              img.imageUrl.isNotEmpty &&
+              img.imageUrl.startsWith('http') &&
+              img.prompt.trim().isNotEmpty,
+        )
+        .toList();
+
     // Copy and shuffle images to make it interesting
     _images = List.from(validImages)..shuffle();
 
     _timer?.cancel();
     if (_images.isNotEmpty) {
-      _timer = Timer.periodic(const Duration(seconds: 8), (timer) {
+      _timer = Timer.periodic(const Duration(seconds: 38), (timer) {
         if (mounted) {
           setState(() {
             _currentIndex = (_currentIndex + 1) % _images.length;
@@ -1425,7 +1458,9 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
             duration: const Duration(milliseconds: 500),
             child: Padding(
               key: ValueKey<String>(currentImage.prompt),
-              padding: EdgeInsets.symmetric(horizontal: widget.screenWidth * 0.1),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.screenWidth * 0.1,
+              ),
               child: Text(
                 currentImage.prompt.isNotEmpty
                     ? currentImage.prompt
