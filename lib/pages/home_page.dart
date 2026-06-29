@@ -496,7 +496,7 @@ class _HomepageState extends State<Homepage> {
                     builder: (context, selectedIndex, _) {
                       return SingleChildScrollView(
                         controller: _categoryTabScrollController,
-                        padding: EdgeInsets.symmetric(horizontal: w * 0.04),
+                        padding: EdgeInsets.only(left: w * 0.04, right: w * 0.1),
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
                         child: Row(
