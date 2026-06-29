@@ -1340,15 +1340,15 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
       fetchedImages = dataService.trendingItems;
     }
     
-    // Filter out images with invalid URLs to prevent image resource exceptions
-    final validImages = fetchedImages.where((img) => img.imageUrl.isNotEmpty && img.imageUrl.startsWith('http')).toList();
+    // Filter out images with invalid URLs or missing prompts
+    final validImages = fetchedImages.where((img) => img.imageUrl.isNotEmpty && img.imageUrl.startsWith('http') && img.prompt.trim().isNotEmpty).toList();
     
     // Copy and shuffle images to make it interesting
     _images = List.from(validImages)..shuffle();
 
     _timer?.cancel();
     if (_images.isNotEmpty) {
-      _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      _timer = Timer.periodic(const Duration(seconds: 8), (timer) {
         if (mounted) {
           setState(() {
             _currentIndex = (_currentIndex + 1) % _images.length;
