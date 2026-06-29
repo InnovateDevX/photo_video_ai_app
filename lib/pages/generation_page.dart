@@ -23,6 +23,9 @@ import '../Helpers/image_picker_helper.dart';
 import '../Services/content_safety_service.dart';
 import '../Helpers/error_dialog_helper.dart';
 import '../Services/media_service.dart';
+import '../Services/data_service.dart';
+import '../Models/category_image.dart';
+import 'dart:async';
 
 class GenerationPage extends StatefulWidget {
   final String initialCategory;
@@ -1284,23 +1287,159 @@ class _GenerationPageState extends State<GenerationPage> {
     double screenHeight,
     bool isDark,
   ) {
+    return _SlideshowPlaceholder(
+      screenWidth: screenWidth,
+      screenHeight: screenHeight,
+      isDark: isDark,
+      category: _selectedCategory,
+    );
+  }
+}
+
+class _SlideshowPlaceholder extends StatefulWidget {
+  final double screenWidth;
+  final double screenHeight;
+  final bool isDark;
+  final String category;
+
+  const _SlideshowPlaceholder({
+    required this.screenWidth,
+    required this.screenHeight,
+    required this.isDark,
+    required this.category,
+  });
+
+  @override
+  State<_SlideshowPlaceholder> createState() => _SlideshowPlaceholderState();
+}
+
+class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
+  Timer? _timer;
+  int _currentIndex = 0;
+  List<CategoryImage> _images = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImages();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SlideshowPlaceholder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category) {
+      _loadImages();
+    }
+  }
+
+  void _loadImages() {
+    final dataService = DataService();
+    // Get images for the current category, or trending if not found
+    var fetchedImages = dataService.getCategoryImages(widget.category);
+    if (fetchedImages.isEmpty) {
+      fetchedImages = dataService.trendingItems;
+    }
+    
+    // Filter out images with invalid URLs to prevent image resource exceptions
+    final validImages = fetchedImages.where((img) => img.imageUrl.isNotEmpty && img.imageUrl.startsWith('http')).toList();
+    
+    // Copy and shuffle images to make it interesting
+    _images = List.from(validImages)..shuffle();
+
+    _timer?.cancel();
+    if (_images.isNotEmpty) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+        if (mounted) {
+          setState(() {
+            _currentIndex = (_currentIndex + 1) % _images.length;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_images.isEmpty) {
+      // Fallback to original placeholder if no images
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              widget.category == 'image'
+                  ? Icons.image_outlined
+                  : Icons.videocam_outlined,
+              color: AppColors.iconColor(widget.isDark).withValues(alpha: 0.5),
+              size: widget.screenWidth * 0.2,
+            ),
+            SizedBox(height: widget.screenHeight * 0.02),
+            Text(
+              '${'enter_prompt_hint'.i18n()} ${widget.category}',
+              style: TextStyle(
+                color: AppColors.secondaryTextColor(widget.isDark),
+                fontSize: widget.screenWidth * 0.04,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final currentImage = _images[_currentIndex];
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            _selectedCategory == 'image'
-                ? Icons.image_outlined
-                : Icons.videocam_outlined,
-            color: AppColors.iconColor(isDark).withValues(alpha: 0.5),
-            size: screenWidth * 0.2,
+          AnimatedSwitcher(
+            duration: const Duration(seconds: 1),
+            child: Container(
+              key: ValueKey<String>(currentImage.imageUrl),
+              width: widget.screenWidth * 0.85,
+              height: widget.screenWidth * 0.85,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                image: DecorationImage(
+                  image: CachedNetworkImageProvider(currentImage.imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
           ),
-          SizedBox(height: screenHeight * 0.02),
-          Text(
-            '${'enter_prompt_hint'.i18n()} $_selectedCategory',
-            style: TextStyle(
-              color: AppColors.secondaryTextColor(isDark),
-              fontSize: screenWidth * 0.04,
+          SizedBox(height: widget.screenHeight * 0.03),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            child: Padding(
+              key: ValueKey<String>(currentImage.prompt),
+              padding: EdgeInsets.symmetric(horizontal: widget.screenWidth * 0.1),
+              child: Text(
+                currentImage.prompt.isNotEmpty
+                    ? currentImage.prompt
+                    : '${'enter_prompt_hint'.i18n()} ${widget.category}',
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.secondaryTextColor(widget.isDark),
+                  fontSize: widget.screenWidth * 0.038,
+                  fontStyle: FontStyle.italic,
+                  height: 1.4,
+                ),
+              ),
             ),
           ),
         ],
