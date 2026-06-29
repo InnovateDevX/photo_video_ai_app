@@ -10,6 +10,7 @@ class MenuOverlay extends StatelessWidget {
   final VoidCallback onUseSettings;
   final VoidCallback onDownload;
   final VoidCallback onDelete;
+  final bool isDownloading;
 
   const MenuOverlay({
     super.key,
@@ -20,6 +21,7 @@ class MenuOverlay extends StatelessWidget {
     required this.onUseSettings,
     required this.onDownload,
     required this.onDelete,
+    this.isDownloading = false,
   });
 
   @override
@@ -60,6 +62,7 @@ class MenuOverlay extends StatelessWidget {
               screenWidth,
               onTap: onDownload,
               isDark: isDark,
+              isLoading: isDownloading,
             ),
           ],
         ),
@@ -74,17 +77,27 @@ class MenuOverlay extends StatelessWidget {
     required VoidCallback onTap,
     bool isRed = false,
     bool isDark = false,
+    bool isLoading = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: isRed ? Colors.red : AppColors.textColor(isDark),
-            size: screenWidth * 0.045,
-          ),
+          isLoading
+              ? SizedBox(
+                  width: screenWidth * 0.045,
+                  height: screenWidth * 0.045,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.textColor(isDark),
+                  ),
+                )
+              : Icon(
+                  icon,
+                  color: isRed ? Colors.red : AppColors.textColor(isDark),
+                  size: screenWidth * 0.045,
+                ),
           SizedBox(width: screenWidth * 0.03),
           Text(
             text,

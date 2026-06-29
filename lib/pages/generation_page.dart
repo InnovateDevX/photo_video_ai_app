@@ -22,6 +22,7 @@ import '../Services/background_generation_service.dart';
 import '../Helpers/image_picker_helper.dart';
 import '../Services/content_safety_service.dart';
 import '../Helpers/error_dialog_helper.dart';
+import '../Services/media_service.dart';
 
 class GenerationPage extends StatefulWidget {
   final String initialCategory;
@@ -78,6 +79,7 @@ class _GenerationPageState extends State<GenerationPage> {
   bool _showMenu = false;
   bool _isNsfw = false;
   bool? _isLiked;
+  bool _isDownloading = false;
 
   // Reference image picked via + button
   File? _selectedImage;
@@ -1041,9 +1043,31 @@ class _GenerationPageState extends State<GenerationPage> {
                       setState(() => _showMenu = false);
                       // TODO: Implement using settings from generated content
                     },
-                    onDownload: () {
-                      setState(() => _showMenu = false);
-                      // TODO: Implement batch download
+                    onDownload: () async {
+                      if (_isDownloading) return;
+                      setState(() => _isDownloading = true);
+                      try {
+                        if (_selectedCategory == 'image' && _generatedImageUrl != null) {
+                          await MediaService.downloadImage(
+                            context,
+                            _generatedImageUrl!,
+                            isLocal: !_generatedImageUrl!.startsWith('http'),
+                          );
+                        } else if (_selectedCategory == 'video' && _generatedVideoUrl != null) {
+                          await MediaService.downloadVideo(
+                            context,
+                            _generatedVideoUrl!,
+                            isLocal: !_generatedVideoUrl!.startsWith('http'),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isDownloading = false;
+                            _showMenu = false;
+                          });
+                        }
+                      }
                     },
                     onDelete: () {
                       setState(() {
@@ -1053,6 +1077,7 @@ class _GenerationPageState extends State<GenerationPage> {
                         _isLiked = null;
                       });
                     },
+                    isDownloading: _isDownloading,
                   ),
               ],
             ),

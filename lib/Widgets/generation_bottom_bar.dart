@@ -1045,6 +1045,17 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (widget.isGenerating) ...[
+                      SizedBox(
+                        width: screenWidth * 0.045,
+                        height: screenWidth * 0.045,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.02),
+                    ],
                     Text(
                       widget.isGenerating ? 'creating'.i18n() : 'create'.i18n(),
                       style: TextStyle(
