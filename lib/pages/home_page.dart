@@ -399,6 +399,7 @@ class _HomepageState extends State<Homepage> {
         bottom: false,
         child: CustomScrollView(
           controller: _mainScrollController,
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             // --- Top Bar ---
             SliverToBoxAdapter(
@@ -489,7 +490,7 @@ class _HomepageState extends State<Homepage> {
                 height: h * 0.065,
                 child: Container(
                   color: AppColors.backgroundColor(isDark),
-                  alignment: Alignment.center,
+                  alignment: Alignment.centerLeft,
                   child: ValueListenableBuilder<int>(
                     valueListenable: _selectedCategoryIndex,
                     builder: (context, selectedIndex, _) {
@@ -497,6 +498,7 @@ class _HomepageState extends State<Homepage> {
                         controller: _categoryTabScrollController,
                         padding: EdgeInsets.symmetric(horizontal: w * 0.04),
                         scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         child: Row(
                           children: List.generate(categories.length, (index) {
                             final chipKey = _chipKeys.putIfAbsent(
@@ -626,6 +628,7 @@ class _HomepageState extends State<Homepage> {
                 : ListView.builder(
                     controller: ctrl.scrollController,
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     padding: EdgeInsets.symmetric(horizontal: w * 0.04),
                     itemCount: ctrl.items.length + (ctrl.hasMore ? 1 : 0),
                     itemBuilder: (context, index) {

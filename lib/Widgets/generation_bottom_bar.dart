@@ -371,6 +371,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                     ),
                     Expanded(
                       child: ListView(
+                        physics: const BouncingScrollPhysics(),
                         padding: EdgeInsets.only(
                           bottom: MediaQuery.of(context).padding.bottom + w * 0.04,
                         ),
@@ -567,6 +568,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                             ),
                           )
                         : GridView.builder(
+                            physics: const BouncingScrollPhysics(),
                             padding: EdgeInsets.only(
                               left: w * 0.01,
                               right: w * 0.01,
