@@ -9,7 +9,6 @@ import '../Services/ad_service.dart';
 import '../Services/credit_service.dart';
 import '../Services/generation_gate.dart';
 import '../Widgets/generation_bottom_bar.dart';
-import '../Widgets/topbar.dart';
 import '../Widgets/menu_overlay.dart';
 import '../Widgets/prompt_input.dart';
 import '../Widgets/video_result_view.dart';
@@ -43,9 +42,12 @@ class GenerationPage extends StatefulWidget {
 
   /// Initial model ID to pre-select (e.g., from category image click)
   final String? initialModelId;
+  final String? initialImageModelId;
 
   /// Whether to automatically trigger the image picker upon entering the page
   final bool autoTriggerImagePicker;
+
+  final String? initialImageUrl;
 
   const GenerationPage({
     super.key,
@@ -56,7 +58,9 @@ class GenerationPage extends StatefulWidget {
     this.imagePrompt = '',
     this.videoPrompt = '',
     this.initialModelId,
+    this.initialImageModelId,
     this.autoTriggerImagePicker = false,
+    this.initialImageUrl,
   });
 
   @override
@@ -65,6 +69,7 @@ class GenerationPage extends StatefulWidget {
 
 class _GenerationPageState extends State<GenerationPage> {
   final TextEditingController _promptController = TextEditingController();
+  final FocusNode _promptFocusNode = FocusNode();
   final TextEditingController _widthController = TextEditingController(
     text: "1024",
   );
@@ -83,6 +88,9 @@ class _GenerationPageState extends State<GenerationPage> {
   bool _isNsfw = false;
   bool? _isLiked;
   bool _isDownloading = false;
+
+  String? _currentPollUrl;
+  String? _currentCancelUrl;
 
   // Reference image picked via + button
   File? _selectedImage;
@@ -110,6 +118,13 @@ class _GenerationPageState extends State<GenerationPage> {
     _selectedCategory = widget.initialCategory;
     if (widget.initialPrompt != null) {
       _promptController.text = widget.initialPrompt!;
+    }
+    if (widget.initialImageUrl != null) {
+      if (widget.initialCategory == 'image') {
+        _generatedImageUrl = widget.initialImageUrl;
+      } else {
+        _generatedVideoUrl = widget.initialImageUrl;
+      }
     }
 
     // Portrait aspect ratio for Reel templates (both image edit & video)
@@ -149,6 +164,16 @@ class _GenerationPageState extends State<GenerationPage> {
           _updateSelectedModel();
         }
 
+        // If initialImageModelId is provided (specifically for stage 1 of two-stage pipeline)
+        if (widget.initialImageModelId != null) {
+          final imgModelMatch = _replicateService.imageModels.where(
+            (m) => m.id == widget.initialImageModelId,
+          );
+          if (imgModelMatch.isNotEmpty) {
+            _selectedImageModel = imgModelMatch.first;
+          }
+        }
+
         // For two-stage pipeline, initialize both models
         if (widget.imageEditMode) {
           if (_replicateService.imageModels.isNotEmpty) {
@@ -171,6 +196,9 @@ class _GenerationPageState extends State<GenerationPage> {
     if (imageModel.isNotEmpty) {
       _selectedCategory = 'image';
       _selectedModel = imageModel.first;
+      if (widget.imageEditMode) {
+        _selectedImageModel = imageModel.first;
+      }
       _syncOptionsToModel();
       return;
     }
@@ -182,6 +210,9 @@ class _GenerationPageState extends State<GenerationPage> {
     if (videoModel.isNotEmpty) {
       _selectedCategory = 'video';
       _selectedModel = videoModel.first;
+      if (widget.imageEditMode) {
+        _selectedVideoModel = videoModel.first;
+      }
       _syncOptionsToModel();
       return;
     }
@@ -232,6 +263,7 @@ class _GenerationPageState extends State<GenerationPage> {
   @override
   void dispose() {
     _promptController.dispose();
+    _promptFocusNode.dispose();
     _widthController.dispose();
     _heightController.dispose();
     super.dispose();
@@ -242,6 +274,8 @@ class _GenerationPageState extends State<GenerationPage> {
   }
 
   Future<void> _generateContent() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (widget.imageEditMode) {
       await _generateTwoStage();
       return;
@@ -297,9 +331,12 @@ class _GenerationPageState extends State<GenerationPage> {
             messageKey: e.messageKey,
           );
         } else {
-          ScaffoldMessenger.of(
+          ErrorDialogHelper.showErrorDialog(
             context,
-          ).showSnackBar(SnackBar(content: Text('Generation failed: $e')));
+            title: 'Something went wrong',
+            message:
+                'We encountered an error while processing your request. Please try again.',
+          );
         }
       }
       return;
@@ -358,7 +395,9 @@ class _GenerationPageState extends State<GenerationPage> {
                   padding: EdgeInsets.all(sw * 0.06),
                   decoration: BoxDecoration(
                     color: AppColors.tileBackgroundColor(isDark),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(
+                      MediaQuery.of(context).size.width * 0.06,
+                    ),
                     border: Border.all(
                       color: AppColors.creditsCardBorder(isDark),
                       width: 1,
@@ -422,7 +461,9 @@ class _GenerationPageState extends State<GenerationPage> {
                             child: Container(
                               height: sh * 0.065,
                               decoration: ProGradientDecoration(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(
+                                  MediaQuery.of(context).size.width * 0.04,
+                                ),
                               ),
                               child: Center(
                                 child: Text(
@@ -436,7 +477,9 @@ class _GenerationPageState extends State<GenerationPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.015,
+                          ),
 
                           // Wait Here (Secondary)
                           TextButton(
@@ -471,10 +514,7 @@ class _GenerationPageState extends State<GenerationPage> {
       int? height;
       String? aspectRatio;
 
-      if (_selectedModel!.supportsDimensions) {
-        width = int.tryParse(_widthController.text) ?? 1024;
-        height = int.tryParse(_heightController.text) ?? 1024;
-      } else if (_selectedModel!.supportsAspectRatio) {
+      if (_selectedModel!.supportsAspectRatio || _selectedModel!.supportsDimensions) {
         aspectRatio = _selectedAspectRatio;
       }
 
@@ -528,10 +568,7 @@ class _GenerationPageState extends State<GenerationPage> {
       int? height;
       String? aspectRatio;
 
-      if (_selectedModel!.supportsDimensions) {
-        width = int.tryParse(_widthController.text) ?? 1024;
-        height = int.tryParse(_heightController.text) ?? 1024;
-      } else if (_selectedModel!.supportsAspectRatio) {
+      if (_selectedModel!.supportsAspectRatio || _selectedModel!.supportsDimensions) {
         aspectRatio = _selectedAspectRatio;
       }
 
@@ -557,6 +594,12 @@ class _GenerationPageState extends State<GenerationPage> {
                 'resolution': _selectedResolution,
               }
             : null,
+        onPredictionStarted: (String pollUrl, String cancelUrl) {
+          if (mounted) {
+            _currentPollUrl = pollUrl;
+            _currentCancelUrl = cancelUrl;
+          }
+        },
       );
 
       // Deduct credits on success
@@ -581,7 +624,7 @@ class _GenerationPageState extends State<GenerationPage> {
     } catch (e) {
       if (mounted) {
         if (e is NsfwContentException) {
-          if (e.url != null && _selectedCategory == 'image') {
+          if (e.url != null) {
             setState(() {
               _generatedImageUrl = e.url;
               _isNsfw = true;
@@ -592,13 +635,19 @@ class _GenerationPageState extends State<GenerationPage> {
             messageKey: e.messageKey,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+          ErrorDialogHelper.showErrorDialog(
+            context,
+            title: 'Something went wrong',
+            message:
+                'We encountered an error while processing your request. Please try again.',
           );
         }
       }
     } finally {
-      if (mounted) setState(() => _isGenerating = false);
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        _promptFocusNode.unfocus();
+      }
     }
   }
 
@@ -606,6 +655,8 @@ class _GenerationPageState extends State<GenerationPage> {
   // Stage 1: image model + imagePrompt + uploaded photo  → edited image URL
   // Stage 2: first video model + videoPrompt + temp file  → final video URL
   Future<void> _generateTwoStage() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     String actualImagePrompt = widget.imagePrompt;
     String actualVideoPrompt = widget.videoPrompt;
     if (_enhancePrompt) {
@@ -652,8 +703,8 @@ class _GenerationPageState extends State<GenerationPage> {
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
-    // ── 1. Progress state ───────────────────────────────────────────────────
     setState(() {
+      _selectedCategory = 'video';
       _isGenerating = true;
       _isNsfw = false;
       _generatedImageUrl = null;
@@ -693,7 +744,9 @@ class _GenerationPageState extends State<GenerationPage> {
                 padding: EdgeInsets.all(sw * 0.06),
                 decoration: BoxDecoration(
                   color: AppColors.tileBackgroundColor(isDark),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(
+                    MediaQuery.of(context).size.width * 0.06,
+                  ),
                   border: Border.all(
                     color: AppColors.creditsCardBorder(isDark),
                     width: 1,
@@ -757,7 +810,9 @@ class _GenerationPageState extends State<GenerationPage> {
                           child: Container(
                             height: sh * 0.065,
                             decoration: ProGradientDecoration(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.04,
+                              ),
                             ),
                             child: Center(
                               child: Text(
@@ -771,7 +826,9 @@ class _GenerationPageState extends State<GenerationPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.015,
+                        ),
 
                         // Wait Here (Secondary)
                         TextButton(
@@ -879,7 +936,7 @@ class _GenerationPageState extends State<GenerationPage> {
     } catch (e) {
       if (mounted) {
         if (e is NsfwContentException) {
-          if (e.url != null && _selectedCategory == 'image') {
+          if (e.url != null) {
             setState(() {
               _generatedImageUrl = e.url;
               _isNsfw = true;
@@ -890,13 +947,19 @@ class _GenerationPageState extends State<GenerationPage> {
             messageKey: e.messageKey,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Two-stage error: ${e.toString()}')),
+          ErrorDialogHelper.showErrorDialog(
+            context,
+            title: 'Something went wrong',
+            message:
+                'We encountered an error while processing your request. Please try again.',
           );
         }
       }
     } finally {
-      if (mounted) setState(() => _isGenerating = false);
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        _promptFocusNode.unfocus();
+      }
     }
   }
 
@@ -916,191 +979,410 @@ class _GenerationPageState extends State<GenerationPage> {
     return file;
   }
 
+  Future<void> _onAnimatePressed() async {
+    if (_generatedImageUrl == null) return;
+
+    setState(() {
+      _isDownloading = true;
+    });
+
+    try {
+      final tempFile = await _downloadToTempFile(_generatedImageUrl!);
+
+      if (mounted) {
+        setState(() {
+          _selectedImage = tempFile;
+          _selectedCategory = 'video';
+          _updateSelectedModel();
+          _isDownloading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+        });
+        ErrorDialogHelper.showErrorDialog(
+          context,
+          message: 'Failed to prepare image for animation: $e',
+        );
+      }
+    }
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_isGenerating) return true;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: EdgeInsets.all(sw * 0.06),
+          decoration: BoxDecoration(
+            color: AppColors.tileBackgroundColor(isDark),
+            borderRadius: BorderRadius.circular(
+              MediaQuery.of(context).size.width * 0.06,
+            ),
+            border: Border.all(
+              color: AppColors.creditsCardBorder(isDark),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(sw * 0.04),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.auto_awesome_motion_rounded,
+                  color: const Color(0xFFFF9800),
+                  size: sw * 0.08,
+                ),
+              ),
+              SizedBox(height: sh * 0.025),
+              Text(
+                'Generation in Progress',
+                style: TextStyle(
+                  color: AppColors.textColor(isDark),
+                  fontSize: sw * 0.055,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: sh * 0.015),
+              Text(
+                'You have a generation running. Would you like to continue it in the background or cancel the request entirely?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.secondaryTextColor(isDark),
+                  fontSize: sw * 0.035,
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: sh * 0.04),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_currentPollUrl != null) ...[
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx, 'background'),
+                      child: Container(
+                        height: sh * 0.065,
+                        decoration: ProGradientDecoration(
+                          borderRadius: BorderRadius.circular(
+                            MediaQuery.of(context).size.width * 0.04,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Run in Background',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: sw * 0.04,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.015,
+                    ),
+                  ],
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx, 'cancel_request'),
+                    child: Container(
+                      height: sh * 0.065,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.04,
+                        ),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Cancel Generation',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: sw * 0.04,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: sh * 0.015),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, 'wait'),
+                    child: Text(
+                      'Continue Waiting',
+                      style: TextStyle(
+                        color: AppColors.secondaryTextColor(isDark),
+                        fontWeight: FontWeight.w600,
+                        fontSize: sw * 0.038,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result == 'background') {
+      if (_currentPollUrl != null) {
+        BackgroundGenerationService().takeOverGeneration(
+          pollUrl: _currentPollUrl!,
+          category: _selectedCategory,
+          prompt: _promptController.text.trim(),
+        );
+      }
+      setState(() {
+        _isGenerating = false;
+        _currentPollUrl = null;
+        _currentCancelUrl = null;
+      });
+      return true;
+    } else if (result == 'cancel_request') {
+      if (_currentCancelUrl != null) {
+        _replicateService.cancelPrediction(_currentCancelUrl!);
+      }
+      setState(() {
+        _isGenerating = false;
+        _currentPollUrl = null;
+        _currentCancelUrl = null;
+      });
+      return true;
+    }
+
+    return false; // User selected 'wait' or dismissed dialog
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return StreamBuilder<int>(
-      stream: _creditService.creditStream,
-      initialData: _creditService.credits,
-      builder: (context, snapshot) {
-        final currentCredits = snapshot.data ?? 0;
-        return Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: AppColors.backgroundColor(isDark),
-          body: SafeArea(
-            bottom: false,
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    _buildHeader(screenWidth, screenHeight, isDark),
+    return PopScope(
+      canPop: !_isGenerating,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: StreamBuilder<int>(
+        stream: _creditService.creditStream,
+        initialData: _creditService.credits,
+        builder: (context, snapshot) {
+          final currentCredits = snapshot.data ?? 0;
+          return Scaffold(
+            resizeToAvoidBottomInset: false,
+            backgroundColor: AppColors.backgroundColor(isDark),
+            body: SafeArea(
+              bottom: false,
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      _buildHeader(screenWidth, screenHeight, isDark),
 
-                    // Content Display — hidden when keyboard is open
-                    if (MediaQuery.of(context).viewInsets.bottom == 0)
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.04,
+                      // Content Display — hidden when keyboard is open
+                      if (MediaQuery.of(context).viewInsets.bottom == 0)
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04,
+                            ),
+                            child: _buildContentDisplay(
+                              screenWidth,
+                              screenHeight,
+                              isDark,
+                            ),
                           ),
-                          child: _buildContentDisplay(
-                            screenWidth,
-                            screenHeight,
-                            isDark,
-                          ),
+                        )
+                      else
+                        const Spacer(),
+
+                      // Prompt Input
+                      PromptInput(
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
+                        isDark: isDark,
+                        controller: _promptController,
+                        focusNode: _promptFocusNode,
+                        selectedImage: _selectedImage,
+                        onRemoveImage: () =>
+                            setState(() => _selectedImage = null),
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom,
                         ),
-                      )
-                    else
-                      const Spacer(),
+                        child: GenerationBottomBar(
+                          isGenerating: _isGenerating,
+                          selectedCategory: _selectedCategory,
+                          isSettingsSelected: _selectedIcon == 'settings',
+                          isEditSelected: _selectedIcon == 'edit',
+                          isImageSelected: _selectedCategory == 'image',
+                          isVideoSelected: _selectedCategory == 'video',
+                          currentCredits: currentCredits,
+                          creditCost: widget.imageEditMode
+                              ? (_selectedImageModel?.creditUsed ?? 0) +
+                                    (_selectedVideoModel?.creditUsed ?? 0)
+                              : (_selectedModel?.creditUsed ?? 0),
+                          // Models
+                          imageModels: _replicateService.imageModels,
+                          videoModels: _replicateService.videoModels,
+                          selectedModel: _selectedModel,
+                          modelOptions: _selectedModel?.options,
+                          selectedImage: _selectedImage,
+                          imageEditMode: widget.imageEditMode,
+                          selectedImageModel: _selectedImageModel,
+                          selectedVideoModel: _selectedVideoModel,
+                          onImageModelSelected: (m) =>
+                              setState(() => _selectedImageModel = m),
+                          onVideoModelSelected: (m) =>
+                              setState(() => _selectedVideoModel = m),
+                          onModelSelected: (m) => setState(() {
+                            _selectedModel = m;
+                            _syncOptionsToModel();
+                          }),
+                          // Settings state
+                          selectedAspectRatio: _selectedAspectRatio,
+                          selectedDuration: _selectedDuration,
+                          selectedResolution: _selectedResolution,
+                          enhancePrompt: _enhancePrompt,
+                          onAspectRatioChanged: (v) =>
+                              setState(() => _selectedAspectRatio = v),
+                          onDurationChanged: (v) =>
+                              setState(() => _selectedDuration = v),
+                          onResolutionChanged: (v) =>
+                              setState(() => _selectedResolution = v),
+                          onEnhancePromptChanged: (v) =>
+                              setState(() => _enhancePrompt = v),
+                          // Actions
+                          onCreatePressed: _generateContent,
+                          onEditPressed: () =>
+                              setState(() => _selectedIcon = 'edit'),
+                          onImageUploaded: _onImageUploaded,
+                          onImagePressed: () {
+                            setState(() {
+                              _selectedCategory = 'image';
+                              _updateSelectedModel();
+                            });
+                          },
+                          onVideoPressed: () {
+                            setState(() {
+                              _selectedCategory = 'video';
+                              _updateSelectedModel();
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
 
-                    // Prompt Input
-                    PromptInput(
+                  // Menu Overlay Background
+                  if (_showMenu)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _showMenu = false),
+                        behavior: HitTestBehavior.opaque,
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+
+                  // Menu Overlay
+                  if (_showMenu)
+                    MenuOverlay(
                       screenWidth: screenWidth,
                       screenHeight: screenHeight,
                       isDark: isDark,
-                      controller: _promptController,
-                      selectedImage: _selectedImage,
-                      onRemoveImage: () =>
-                          setState(() => _selectedImage = null),
-                    ),
-                    SizedBox(height: screenHeight * 0.015),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                      ),
-                      child: GenerationBottomBar(
-                        isGenerating: _isGenerating,
-                        selectedCategory: _selectedCategory,
-                        isSettingsSelected: _selectedIcon == 'settings',
-                        isEditSelected: _selectedIcon == 'edit',
-                        isImageSelected: _selectedCategory == 'image',
-                        isVideoSelected: _selectedCategory == 'video',
-                        currentCredits: currentCredits,
-                        creditCost: widget.imageEditMode
-                            ? (_selectedImageModel?.creditUsed ?? 0) +
-                                  (_selectedVideoModel?.creditUsed ?? 0)
-                            : (_selectedModel?.creditUsed ?? 0),
-                        // Models
-                        imageModels: _replicateService.imageModels,
-                        videoModels: _replicateService.videoModels,
-                        selectedModel: _selectedModel,
-                        modelOptions: _selectedModel?.options,
-                        selectedImage: _selectedImage,
-                        imageEditMode: widget.imageEditMode,
-                        selectedImageModel: _selectedImageModel,
-                        selectedVideoModel: _selectedVideoModel,
-                        onImageModelSelected: (m) =>
-                            setState(() => _selectedImageModel = m),
-                        onVideoModelSelected: (m) =>
-                            setState(() => _selectedVideoModel = m),
-                        onModelSelected: (m) => setState(() {
-                          _selectedModel = m;
-                          _syncOptionsToModel();
-                        }),
-                        // Settings state
-                        selectedAspectRatio: _selectedAspectRatio,
-                        selectedDuration: _selectedDuration,
-                        selectedResolution: _selectedResolution,
-                        enhancePrompt: _enhancePrompt,
-                        onAspectRatioChanged: (v) =>
-                            setState(() => _selectedAspectRatio = v),
-                        onDurationChanged: (v) =>
-                            setState(() => _selectedDuration = v),
-                        onResolutionChanged: (v) =>
-                            setState(() => _selectedResolution = v),
-                        onEnhancePromptChanged: (v) =>
-                            setState(() => _enhancePrompt = v),
-                        // Actions
-                        onCreatePressed: _generateContent,
-                        onEditPressed: () =>
-                            setState(() => _selectedIcon = 'edit'),
-                        onImageUploaded: _onImageUploaded,
-                        onImagePressed: () {
-                          setState(() {
-                            _selectedCategory = 'image';
-                            _updateSelectedModel();
-                          });
-                        },
-                        onVideoPressed: () {
-                          setState(() {
-                            _selectedCategory = 'video';
-                            _updateSelectedModel();
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                      onRecreate: () {
+                        setState(() => _showMenu = false);
+                        _generateContent();
+                      },
+                      onUseSettings: () {
+                        setState(() => _showMenu = false);
+                        // TODO: Implement using settings from generated content
+                      },
+                      onDownload: () async {
+                        if (_isDownloading) return;
+                        setState(() {
+                          _isDownloading = true;
+                          _showMenu = false;
+                        });
 
-                // Menu Overlay Background
-                if (_showMenu)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _showMenu = false),
-                      behavior: HitTestBehavior.opaque,
-                      child: const SizedBox.expand(),
-                    ),
-                  ),
-
-                // Menu Overlay
-                if (_showMenu)
-                  MenuOverlay(
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
-                    isDark: isDark,
-                    onRecreate: () {
-                      setState(() => _showMenu = false);
-                      _generateContent();
-                    },
-                    onUseSettings: () {
-                      setState(() => _showMenu = false);
-                      // TODO: Implement using settings from generated content
-                    },
-                    onDownload: () async {
-                      if (_isDownloading) return;
-                      setState(() => _isDownloading = true);
-                      try {
+                        // Fire-and-forget background download with progress notification
                         if (_selectedCategory == 'image' &&
                             _generatedImageUrl != null) {
-                          await MediaService.downloadImage(
-                            context,
+                          MediaService.downloadImageInBackground(
                             _generatedImageUrl!,
-                            isLocal: !_generatedImageUrl!.startsWith('http'),
                           );
                         } else if (_selectedCategory == 'video' &&
                             _generatedVideoUrl != null) {
-                          await MediaService.downloadVideo(
-                            context,
+                          MediaService.downloadVideoInBackground(
                             _generatedVideoUrl!,
-                            isLocal: !_generatedVideoUrl!.startsWith('http'),
                           );
                         }
-                      } finally {
+
                         if (mounted) {
-                          setState(() {
-                            _isDownloading = false;
-                            _showMenu = false;
-                          });
+                          setState(() => _isDownloading = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Download started. Check notifications for progress.',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
                         }
-                      }
-                    },
-                    onDelete: () {
-                      setState(() {
-                        _showMenu = false;
-                        _generatedImageUrl = null;
-                        _generatedVideoUrl = null;
-                        _isLiked = null;
-                      });
-                    },
-                    isDownloading: _isDownloading,
-                  ),
-              ],
+                      },
+                      onDelete: () {
+                        setState(() {
+                          _showMenu = false;
+                          _generatedImageUrl = null;
+                          _generatedVideoUrl = null;
+                          _isLiked = null;
+                        });
+                      },
+                      isDownloading: _isDownloading,
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -1112,13 +1394,11 @@ class _GenerationPageState extends State<GenerationPage> {
       ),
       child: Column(
         children: [
-          const TopBar(),
-          SizedBox(height: screenHeight * 0.012),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () => Navigator.maybePop(context),
                 child: Container(
                   padding: EdgeInsets.all(screenWidth * 0.02),
                   decoration: BoxDecoration(
@@ -1132,21 +1412,22 @@ class _GenerationPageState extends State<GenerationPage> {
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => setState(() => _showMenu = !_showMenu),
-                child: Container(
-                  padding: EdgeInsets.all(screenWidth * 0.02),
-                  decoration: BoxDecoration(
-                    color: AppColors.tileBackgroundColor(isDark),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.menu,
-                    color: AppColors.textColor(isDark),
-                    size: screenWidth * 0.05,
+              if (_generatedImageUrl != null || _generatedVideoUrl != null)
+                GestureDetector(
+                  onTap: () => setState(() => _showMenu = !_showMenu),
+                  child: Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.tileBackgroundColor(isDark),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.menu,
+                      color: AppColors.textColor(isDark),
+                      size: screenWidth * 0.05,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ],
@@ -1218,11 +1499,11 @@ class _GenerationPageState extends State<GenerationPage> {
               if (_isNsfw)
                 Container(
                   color: Colors.black.withValues(alpha: 0.3),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.visibility_off,
                       color: Colors.white,
-                      size: 48,
+                      size: MediaQuery.of(context).size.width * 0.12,
                     ),
                   ),
                 ),
@@ -1235,74 +1516,185 @@ class _GenerationPageState extends State<GenerationPage> {
         videoUrl: _generatedVideoUrl!,
         borderRadius: screenWidth * 0.06,
       );
+
+      if (_isNsfw) {
+        resultWidget = Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(screenWidth * 0.06),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: resultWidget,
+                ),
+                Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  child: Center(
+                    child: Icon(
+                      Icons.visibility_off,
+                      color: Colors.white,
+                      size: MediaQuery.of(context).size.width * 0.12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     }
 
     return Column(
       children: [
         Expanded(child: resultWidget),
-        SizedBox(height: screenHeight * 0.015),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Was this generation helpful?',
-              style: TextStyle(
-                color: AppColors.secondaryTextColor(isDark),
-                fontSize: screenWidth * 0.038,
-              ),
-            ),
-            SizedBox(width: screenWidth * 0.03),
-            GestureDetector(
-              onTap: () {
-                setState(() => _isLiked = true);
-                FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
-              },
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _isLiked == true
-                      ? Colors.green.withValues(alpha: 0.2)
-                      : (isDark ? Colors.white12 : Colors.grey.shade200),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _isLiked == true
-                      ? Icons.thumb_up_rounded
-                      : Icons.thumb_up_outlined,
-                  color: _isLiked == true
-                      ? Colors.green
-                      : AppColors.textColor(isDark),
-                  size: 20,
+        if (_isLiked == null && !_isNsfw) ...[
+          SizedBox(height: screenHeight * 0.015),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Was this generation helpful?',
+                style: TextStyle(
+                  color: AppColors.secondaryTextColor(isDark),
+                  fontSize: screenWidth * 0.038,
                 ),
               ),
-            ),
-            SizedBox(width: screenWidth * 0.03),
-            GestureDetector(
-              onTap: () {
-                setState(() => _isLiked = false);
-                FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
-              },
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _isLiked == false
-                      ? Colors.red.withValues(alpha: 0.2)
-                      : (isDark ? Colors.white12 : Colors.grey.shade200),
-                  shape: BoxShape.circle,
+              SizedBox(width: screenWidth * 0.03),
+              GestureDetector(
+                onTap: (_isLiked != null || _isNsfw)
+                    ? null
+                    : () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        setState(() => _isLiked = true);
+                        FeedbackHelper.showThumbsUpDialog(
+                          context,
+                          isDark: isDark,
+                        );
+                      },
+                child: Container(
+                  padding: EdgeInsets.all(
+                    MediaQuery.of(context).size.width * 0.02,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isLiked == true
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : (isDark ? Colors.white12 : Colors.grey.shade200),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isLiked == true
+                        ? Icons.thumb_up_rounded
+                        : Icons.thumb_up_outlined,
+                    color: _isLiked == true
+                        ? Colors.green
+                        : AppColors.textColor(isDark),
+                    size: MediaQuery.of(context).size.width * 0.05,
+                  ),
                 ),
-                child: Icon(
-                  _isLiked == false
-                      ? Icons.thumb_down_rounded
-                      : Icons.thumb_down_outlined,
-                  color: _isLiked == false
-                      ? Colors.red
-                      : AppColors.textColor(isDark),
-                  size: 20,
+              ),
+              SizedBox(width: screenWidth * 0.03),
+              GestureDetector(
+                onTap: (_isLiked != null || _isNsfw)
+                    ? null
+                    : () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        setState(() => _isLiked = false);
+                        FeedbackHelper.showThumbsDownDialog(
+                          context,
+                          isDark: isDark,
+                        );
+                      },
+                child: Container(
+                  padding: EdgeInsets.all(
+                    MediaQuery.of(context).size.width * 0.02,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isLiked == false
+                        ? Colors.red.withValues(alpha: 0.2)
+                        : (isDark ? Colors.white12 : Colors.grey.shade200),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isLiked == false
+                        ? Icons.thumb_down_rounded
+                        : Icons.thumb_down_outlined,
+                    color: _isLiked == false
+                        ? Colors.red
+                        : AppColors.textColor(isDark),
+                    size: MediaQuery.of(context).size.width * 0.05,
+                  ),
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.03),
+              GestureDetector(
+                onTap: (_isLiked != null || _isNsfw)
+                    ? null
+                    : () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        setState(() => _isNsfw = true);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Content flagged as inappropriate.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      },
+                child: Container(
+                  padding: EdgeInsets.all(
+                    MediaQuery.of(context).size.width * 0.02,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isNsfw
+                        ? Colors.red.withValues(alpha: 0.2)
+                        : (isDark ? Colors.white12 : Colors.grey.shade200),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isNsfw ? Icons.flag_rounded : Icons.flag_outlined,
+                    color: _isNsfw ? Colors.red : AppColors.textColor(isDark),
+                    size: MediaQuery.of(context).size.width * 0.05,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        if (_selectedCategory == 'image' && _generatedImageUrl != null)
+          Padding(
+            padding: EdgeInsets.only(top: screenHeight * 0.02),
+            child: SizedBox(
+              width: screenWidth * 0.6,
+              child: ElevatedButton.icon(
+                onPressed: _isDownloading ? null : _onAnimatePressed,
+                icon: _isDownloading
+                    ? SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.05,
+                        height: MediaQuery.of(context).size.width * 0.05,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome, color: Colors.white),
+                label: Text(
+                  _isDownloading ? 'Preparing...' : 'Animate Image',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD66031),
+                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
         SizedBox(height: screenHeight * 0.01),
       ],
     );
@@ -1402,25 +1794,30 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
     if (_images.isEmpty) {
       // Fallback to original placeholder if no images
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              widget.category == 'image'
-                  ? Icons.image_outlined
-                  : Icons.videocam_outlined,
-              color: AppColors.iconColor(widget.isDark).withValues(alpha: 0.5),
-              size: widget.screenWidth * 0.2,
-            ),
-            SizedBox(height: widget.screenHeight * 0.02),
-            Text(
-              '${'enter_prompt_hint'.i18n()} ${widget.category}',
-              style: TextStyle(
-                color: AppColors.secondaryTextColor(widget.isDark),
-                fontSize: widget.screenWidth * 0.04,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.category == 'image'
+                    ? Icons.image_outlined
+                    : Icons.videocam_outlined,
+                color: AppColors.iconColor(
+                  widget.isDark,
+                ).withValues(alpha: 0.5),
+                size: widget.screenWidth * 0.2,
               ),
-            ),
-          ],
+              SizedBox(height: widget.screenHeight * 0.02),
+              Text(
+                '${'enter_prompt_hint'.i18n()} ${widget.category}',
+                style: TextStyle(
+                  color: AppColors.secondaryTextColor(widget.isDark),
+                  fontSize: widget.screenWidth * 0.04,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -1428,56 +1825,61 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
     final currentImage = _images[_currentIndex];
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(seconds: 1),
-            child: Container(
-              key: ValueKey<String>(currentImage.imageUrl),
-              width: widget.screenWidth * 0.85,
-              height: widget.screenWidth * 0.85,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(seconds: 1),
+              child: Container(
+                key: ValueKey<String>(currentImage.imageUrl),
+                width: widget.screenWidth * 0.85,
+                height: widget.screenWidth * 0.85,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(
+                    MediaQuery.of(context).size.width * 0.06,
                   ),
-                ],
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(currentImage.imageUrl),
-                  fit: BoxFit.cover,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                  image: DecorationImage(
+                    image: CachedNetworkImageProvider(currentImage.imageUrl),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: widget.screenHeight * 0.03),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            child: Padding(
-              key: ValueKey<String>(currentImage.prompt),
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.screenWidth * 0.1,
-              ),
-              child: Text(
-                currentImage.prompt.isNotEmpty
-                    ? currentImage.prompt
-                    : '${'enter_prompt_hint'.i18n()} ${widget.category}',
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppColors.secondaryTextColor(widget.isDark),
-                  fontSize: widget.screenWidth * 0.038,
-                  fontStyle: FontStyle.italic,
-                  height: 1.4,
+            SizedBox(height: widget.screenHeight * 0.03),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              child: Padding(
+                key: ValueKey<String>(currentImage.prompt),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.screenWidth * 0.1,
+                ),
+                child: Text(
+                  currentImage.prompt.isNotEmpty
+                      ? currentImage.prompt
+                      : '${'enter_prompt_hint'.i18n()} ${widget.category}',
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.secondaryTextColor(widget.isDark),
+                    fontSize: widget.screenWidth * 0.038,
+                    fontStyle: FontStyle.italic,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

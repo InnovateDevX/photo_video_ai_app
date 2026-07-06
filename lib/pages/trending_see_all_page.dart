@@ -162,7 +162,7 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.005),
             Text(
               'Trending apps now a click\naway',
               textAlign: TextAlign.center,

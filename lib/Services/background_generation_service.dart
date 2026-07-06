@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../Models/generated_asset.dart';
 import 'local_storage_service.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:trail_ai_app/Services/foreground_task_handler.dart';
 import 'replicate_service.dart';
 import 'notification_service.dart';
 import 'content_safety_service.dart';
@@ -14,6 +18,8 @@ class BackgroundGenerationService {
       BackgroundGenerationService._internal();
   factory BackgroundGenerationService() => _instance;
   BackgroundGenerationService._internal();
+
+  static const String _pendingKey = 'pending_generations';
 
   // Stream to notify the UI when a generation is complete
   final StreamController<GeneratedAsset> _completionController =
@@ -29,6 +35,283 @@ class BackgroundGenerationService {
   /// Reports a failure manually (e.g. from MediaService when context is lost)
   void reportFailure(String message) {
     _failureController.add(message);
+  }
+
+  // ── Pending Generation Persistence ──────────────────────────────────────────
+
+  Future<void> _savePendingGeneration({
+    required String pollUrl,
+    required String cancelUrl,
+    required String category,
+    required String prompt,
+    required int notificationId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> pending = prefs.getStringList(_pendingKey) ?? [];
+    pending.add(
+      jsonEncode({
+        'pollUrl': pollUrl,
+        'cancelUrl': cancelUrl,
+        'category': category,
+        'prompt': prompt,
+        'notificationId': notificationId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'authToken':
+            ReplicateService().authToken, // Passed for the background isolate
+      }),
+    );
+    await prefs.setStringList(_pendingKey, pending);
+    debugPrint(
+      '💾 [BackgroundGeneration] Saved pending generation: $pollUrl (cancel: $cancelUrl)',
+    );
+  }
+
+  Future<void> _removePendingGeneration(String pollUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> pending = prefs.getStringList(_pendingKey) ?? [];
+    pending.removeWhere((item) {
+      try {
+        final data = jsonDecode(item);
+        return data['pollUrl'] == pollUrl;
+      } catch (_) {
+        return false;
+      }
+    });
+    await prefs.setStringList(_pendingKey, pending);
+    debugPrint(
+      '🗑️ [BackgroundGeneration] Removed pending generation: $pollUrl',
+    );
+  }
+
+
+  Future<void> initializeBackgroundService() async {
+    final service = FlutterBackgroundService();
+    await service.configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: onStart,
+        autoStart: false,
+        isForegroundMode: true,
+        notificationChannelId: 'ai_generation_channel',
+        initialNotificationTitle: 'Trail AI Studio',
+        initialNotificationContent: 'Initializing background service',
+        foregroundServiceNotificationId: 888,
+      ),
+      iosConfiguration: IosConfiguration(
+        autoStart: false,
+        onForeground: onStart,
+        onBackground: (ServiceInstance service) {
+          return true;
+        },
+      ),
+    );
+  }
+
+  /// Called on app startup to resume any pending generations that were
+  /// interrupted when the app was killed.
+  Future<void> resumePendingGenerations() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Sync any assets completed by the background isolate while the UI was killed
+    final List<String> completed =
+        prefs.getStringList('background_completed_assets') ?? [];
+    if (completed.isNotEmpty) {
+      for (final item in completed) {
+        try {
+          final data = jsonDecode(item);
+          final asset = GeneratedAsset(
+            id: data['id'],
+            filePath: data['filePath'],
+            category: data['category'],
+            prompt: data['prompt'],
+            createdAt: DateTime.parse(data['createdAt']),
+          );
+          await LocalStorageService().saveAsset(asset);
+          _completionController.add(asset);
+        } catch (e) {
+          debugPrint(
+            '❌ [BackgroundGeneration] Failed to sync completed asset: $e',
+          );
+        }
+      }
+      await prefs.setStringList('background_completed_assets', []);
+    }
+
+    final List<String> pending = prefs.getStringList(_pendingKey) ?? [];
+
+    if (pending.isEmpty) {
+      debugPrint('✅ [BackgroundGeneration] No pending generations to resume.');
+      return;
+    }
+
+    debugPrint(
+      '🔄 [BackgroundGeneration] Found ${pending.length} pending generation(s). Resuming...',
+    );
+
+    // Process each pending generation
+    for (final item in List<String>.from(pending)) {
+      try {
+        final data = jsonDecode(item);
+        final String pollUrl = data['pollUrl'];
+        final String category = data['category'];
+        final String prompt = data['prompt'];
+        final int notificationId = data['notificationId'];
+        final int timestamp = data['timestamp'];
+
+        // Check if older than 10 minutes — likely expired
+        final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+        if (age > 10 * 60 * 1000) {
+          debugPrint(
+            '⏰ [BackgroundGeneration] Pending generation expired (${(age / 60000).toStringAsFixed(1)} min old): $pollUrl',
+          );
+          await _removePendingGeneration(pollUrl);
+          await NotificationService().cancelNotification(notificationId);
+          continue;
+        }
+
+        // Poll once to check current status
+        await _checkAndResumePrediction(
+          pollUrl: pollUrl,
+          category: category,
+          prompt: prompt,
+          notificationId: notificationId,
+        );
+      } catch (e) {
+        debugPrint(
+          '❌ [BackgroundGeneration] Error resuming pending generation: $e',
+        );
+      }
+    }
+  }
+
+  Future<void> _checkAndResumePrediction({
+    required String pollUrl,
+    required String category,
+    required String prompt,
+    required int notificationId,
+  }) async {
+    try {
+      final replicateService = ReplicateService();
+      await replicateService.initialize();
+
+      // Single poll to check status
+      final response = await http.get(
+        Uri.parse(pollUrl),
+        headers: {'Authorization': 'Bearer ${replicateService.authToken}'},
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          '❌ [BackgroundGeneration] Resume poll failed: ${response.statusCode}',
+        );
+        await _removePendingGeneration(pollUrl);
+        await NotificationService().cancelNotification(notificationId);
+        return;
+      }
+
+      final data = jsonDecode(response.body);
+      final status = data['status'];
+
+      debugPrint('🔄 [BackgroundGeneration] Resume check — status: $status');
+
+      if (status == 'succeeded') {
+        final url = replicateService.extractOutput(data['output']);
+        await _removePendingGeneration(pollUrl);
+        await NotificationService().cancelNotification(notificationId);
+        await saveAndNotifyAsset(url: url, category: category, prompt: prompt);
+      } else if (status == 'failed' || status == 'canceled') {
+        await _removePendingGeneration(pollUrl);
+        await NotificationService().cancelNotification(notificationId);
+        _failureController.add('Background $category generation failed.');
+        NotificationService().showGenerationCompleteNotification(
+          title: 'Trail AI Studio',
+          body: 'Background $category generation failed. Please try again.',
+        );
+      } else {
+        // Still processing — resume polling in background
+        debugPrint(
+          '⏳ [BackgroundGeneration] Still processing, resuming poll...',
+        );
+        NotificationService().showProgressNotification(
+          id: notificationId,
+          title: 'Trail AI Studio',
+          body: 'Resuming $category generation...',
+          progress: null,
+          payload: 'OPEN_APP',
+        );
+
+        // Resume polling in the background (fire and forget)
+        replicateService
+            .pollForResult(pollUrl, (double p) {
+              final int percent = (p * 100).toInt();
+              NotificationService().showProgressNotification(
+                id: notificationId,
+                title: 'Trail AI Studio',
+                body: 'Generating $category ($percent%)...',
+                progress: percent,
+                payload: 'OPEN_APP',
+              );
+            })
+            .then((String url) async {
+              await _removePendingGeneration(pollUrl);
+              await NotificationService().cancelNotification(notificationId);
+              await saveAndNotifyAsset(
+                url: url,
+                category: category,
+                prompt: prompt,
+              );
+            })
+            .catchError((error) async {
+              debugPrint(
+                '❌ [BackgroundGeneration] Resumed poll failed: $error',
+              );
+              await _removePendingGeneration(pollUrl);
+              await NotificationService().cancelNotification(notificationId);
+              _failureController.add('Background $category generation failed.');
+              NotificationService().showGenerationCompleteNotification(
+                title: 'Trail AI Studio',
+                body:
+                    'Background $category generation failed. Please try again.',
+              );
+            });
+      }
+    } catch (e) {
+      debugPrint('❌ [BackgroundGeneration] Resume error: $e');
+      await _removePendingGeneration(pollUrl);
+      await NotificationService().cancelNotification(notificationId);
+    }
+  }
+
+  /// Takes over an already running generation (e.g. user clicked "Generate in Background" mid-way).
+  void takeOverGeneration({
+    required String pollUrl,
+    required String category,
+    required String prompt,
+  }) async {
+    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+      100000,
+    );
+
+    // Save so it survives kills (cancelUrl not available here)
+    await _savePendingGeneration(
+      pollUrl: pollUrl,
+      cancelUrl: '', // Not available when taking over
+      category: category,
+      prompt: prompt,
+      notificationId: notificationId,
+    );
+
+    NotificationService().showProgressNotification(
+      id: notificationId,
+      title: 'Trail AI Studio',
+      body: 'Resuming $category generation...',
+      progress: null,
+      payload: 'OPEN_APP',
+    );
+
+    final service = FlutterBackgroundService();
+    if (!await service.isRunning()) {
+      await service.startService();
+    }
   }
 
   /// Starts the generation logic independently of the calling widget so that
@@ -79,31 +362,40 @@ class BackgroundGenerationService {
               payload: 'OPEN_APP',
             );
           },
+          onPredictionStarted: (String pollUrl, String cancelUrl) async {
+            // Persist the poll URL and cancel URL so we can resume or cancel if app is killed
+            await _savePendingGeneration(
+              pollUrl: pollUrl,
+              cancelUrl: cancelUrl,
+              category: category,
+              prompt: prompt,
+              notificationId: notificationId,
+            );
+
+            // Start the foreground service to handle the polling
+            final service = FlutterBackgroundService();
+            if (!await service.isRunning()) {
+              await service.startService();
+            }
+          },
         )
-        .then((String url) async {
-          debugPrint(
-            '✅ [BackgroundGeneration] Generation completed! URL: $url',
-          );
-
-          // Cancel progress notification now that work is done
-          await NotificationService().cancelNotification(notificationId);
-
-          // Save to local storage and DB
-          await saveAndNotifyAsset(
-            url: url,
-            category: category,
-            prompt: prompt,
-          );
-        })
         .catchError((error) async {
           debugPrint('❌ [BackgroundGeneration] Generation failed: $error');
 
           // Cancel progress notification
           await NotificationService().cancelNotification(notificationId);
 
-          String errorMessage = 'Failed to generate $category. Please try again.';
-          if (error is NsfwContentException || error.toString().contains('generated_content_restricted')) {
-            errorMessage = 'Your generated content was flagged as restricted and could not be saved.';
+          if (error.toString().contains('Generation canceled')) {
+            // Silently ignore explicit cancellations
+            return '';
+          }
+
+          String errorMessage =
+              'Failed to generate $category. Please try again.';
+          if (error is NsfwContentException ||
+              error.toString().contains('generated_content_restricted')) {
+            errorMessage =
+                'Your generated content was flagged as restricted and could not be saved.';
           }
 
           _failureController.add(errorMessage);
@@ -111,6 +403,7 @@ class BackgroundGenerationService {
             title: 'Trail AI Studio',
             body: errorMessage,
           );
+          return '';
         });
   }
 
@@ -183,17 +476,26 @@ class BackgroundGenerationService {
         .catchError((error) async {
           debugPrint('❌ [BackgroundTwoStage] Failed: $error');
           await NotificationService().cancelNotification(notificationId);
-          
-          String errorMessage = 'Failed to generate video template. Please try again.';
-          if (error is NsfwContentException || error.toString().contains('generated_content_restricted')) {
-            errorMessage = 'Your generated content was flagged as restricted and could not be saved.';
+
+          if (error.toString().contains('Generation canceled')) {
+            // Silently ignore explicit cancellations
+            return null;
           }
-          
+
+          String errorMessage =
+              'Failed to generate video template. Please try again.';
+          if (error is NsfwContentException ||
+              error.toString().contains('generated_content_restricted')) {
+            errorMessage =
+                'Your generated content was flagged as restricted and could not be saved.';
+          }
+
           reportFailure(errorMessage);
           NotificationService().showGenerationCompleteNotification(
             title: 'Trail AI Studio',
             body: errorMessage,
           );
+          return null;
         });
   }
 

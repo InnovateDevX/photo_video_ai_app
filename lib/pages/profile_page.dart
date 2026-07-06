@@ -638,7 +638,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.black54,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.01),
                           ),
                           child: const Icon(
                             Icons.videocam,
@@ -837,7 +837,7 @@ class _ReelViewerPageState extends State<_ReelViewerPage> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
@@ -846,7 +846,7 @@ class _ReelViewerPageState extends State<_ReelViewerPage> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white24),
                   ),
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                   child: const Icon(Icons.close, color: Colors.white, size: 20),
                 ),
               ),

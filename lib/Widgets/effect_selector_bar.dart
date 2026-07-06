@@ -28,18 +28,18 @@ class EffectSelectorBar extends StatelessWidget {
         itemCount: effects.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
-            return _buildClearItem();
+            return _buildClearItem(context);
           }
           final effect = effects[index - 1];
           final isSelected = selectedEffect?.id == effect.id;
 
-          return _buildEffectItem(effect, isSelected);
+          return _buildEffectItem(context, effect, isSelected);
         },
       ),
     );
   }
 
-  Widget _buildClearItem() {
+  Widget _buildClearItem(BuildContext context) {
     return GestureDetector(
       onTap: onClear,
       child: Padding(
@@ -52,7 +52,9 @@ class EffectSelectorBar extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.02,
+                ),
                 border: selectedEffect == null
                     ? Border.all(color: Colors.blueAccent, width: 2)
                     : Border.all(color: Colors.transparent, width: 2),
@@ -61,8 +63,8 @@ class EffectSelectorBar extends StatelessWidget {
                 child: Icon(Icons.block, color: Colors.white, size: 30),
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+            Text(
               'None',
               style: TextStyle(
                 color: Colors.white,
@@ -76,7 +78,11 @@ class EffectSelectorBar extends StatelessWidget {
     );
   }
 
-  Widget _buildEffectItem(EffectOverlay effect, bool isSelected) {
+  Widget _buildEffectItem(
+    BuildContext context,
+    EffectOverlay effect,
+    bool isSelected,
+  ) {
     return GestureDetector(
       onTap: () => onEffectSelected(effect),
       child: Padding(
@@ -100,7 +106,7 @@ class EffectSelectorBar extends StatelessWidget {
                 category: effect.category,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             SizedBox(
               width: 80,
               child: Text(
@@ -136,7 +142,16 @@ class _EffectThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final index = int.tryParse(thumbnailPath.split('/').last.split('.').first.replaceAll(RegExp(r'\D'), '')) ?? 1;
+    final index =
+        int.tryParse(
+          thumbnailPath
+              .split('/')
+              .last
+              .split('.')
+              .first
+              .replaceAll(RegExp(r'\D'), ''),
+        ) ??
+        1;
     return FutureBuilder<String?>(
       future: EffectService().getEffectThumbnailUrl(
         category: category,
@@ -148,7 +163,10 @@ class _EffectThumbnail extends StatelessWidget {
             child: SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.blueAccent,
+              ),
             ),
           );
         }
@@ -163,7 +181,10 @@ class _EffectThumbnail extends StatelessWidget {
             child: SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.blueAccent,
+              ),
             ),
           ),
           errorWidget: (context, url, error) => _buildFallback(),
@@ -200,7 +221,7 @@ class _EffectThumbnail extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(placeholderIcon, color: placeholderColor, size: 24),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               effectId.substring(0, effectId.length.clamp(0, 8)),
               style: TextStyle(

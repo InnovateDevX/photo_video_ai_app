@@ -773,7 +773,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.only(bottom: 340, left: 20, right: 20),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.03,
+                ),
               ),
             ),
           );
@@ -1421,6 +1423,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                     ),
                   ),
                 ),
+                initialBackgroundColorMode: LayerBackgroundMode.onlyColor,
                 style: TextEditorStyle(
                   // Keep background dark/light so the scaffold color matches;
                   // the image is rendered by wrapBody instead.
@@ -1466,6 +1469,8 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                 initAspectRatio: 0.0,
               ),
               paintEditor: PaintEditorConfigs(
+                safeArea: const EditorSafeArea.none(),
+                enableZoom: false,
                 style: PaintEditorStyle(
                   background: isDark ? const Color(0xFF161616) : Colors.white,
                   bottomBarBackground: Colors.transparent,
@@ -1478,29 +1483,24 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                 widgets: PaintEditorWidgets(
                   appBar: (editor, rebuildStream) => ReactiveAppbar(
                     stream: rebuildStream,
-                    builder: (_) => const PreferredSize(
-                      preferredSize: Size.zero,
-                      child: SizedBox.shrink(),
+                    builder: (_) => PreferredSize(
+                      preferredSize: Size.fromHeight(topPad),
+                      child: const SizedBox.shrink(),
                     ),
                   ),
-                  bodyItems: (editor, rebuildStream) => [
-                    ReactiveWidget(
-                      stream: rebuildStream,
-                      builder: (context) {
-                        if (MediaQuery.of(context).viewInsets.bottom > 0) {
-                          return const SizedBox.shrink();
-                        }
-                        return _buildSubEditorPanelOverlay(
-                          editor,
-                          rebuildStream,
-                          usePositioned: true,
-                        );
-                      },
-                    ),
-                  ],
+                  bodyItems: (editor, rebuildStream) => [],
                   bottomBar: (editor, rebuildStream) => ReactiveWidget(
                     stream: rebuildStream,
-                    builder: (_) => const SizedBox.shrink(),
+                    builder: (context) {
+                      if (MediaQuery.of(context).viewInsets.bottom > 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return _buildSubEditorPanelOverlay(
+                        editor,
+                        rebuildStream,
+                        usePositioned: false,
+                      );
+                    },
                   ),
                 ),
                 tools: _activeTool == EditorTool.doodle
@@ -1704,7 +1704,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                 _activeTool != EditorTool.text &&
                 _activeTool != EditorTool.crop &&
                 _activeTool != EditorTool.filters) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1813,9 +1813,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             ] else
-              const SizedBox(height: 8),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             if (_activeTool == EditorTool.sticker)
               Expanded(
                 child: Padding(
@@ -1875,7 +1875,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               onChanged: (v) => setState(() => _adjustValue = v),
               isDark: isDark,
             ),
-          const SizedBox(height: 16),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
           // Full-width so the horizontal ListView inside can measure correctly
           EditorSubToolsRow(
             tools: AppEditorConstants.adjustSubTools,
@@ -1907,7 +1907,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             },
             isDark: isDark,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         ],
       );
     }
@@ -1996,7 +1996,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             isDark: isDark,
           ),
           if (state.selectedEffect != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             EditorSliderRow(
               label: 'Intensity',
               value: state.overlayOpacity,
@@ -2186,7 +2186,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                   margin: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     color: AppEditorConstants.iconBg(_isDark),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      MediaQuery.of(context).size.width * 0.03,
+                    ),
                     border: Border.all(
                       color: state.selectedEffect == null
                           ? AppEditorConstants.accent
@@ -2219,7 +2221,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       color: AppEditorConstants.iconBg(_isDark),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.03,
+                      ),
                       border: Border.all(
                         color: active
                             ? AppEditorConstants.accent
@@ -2228,7 +2232,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                       ),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.03,
+                      ),
                       child: FutureBuilder<String?>(
                         future: EffectService().getEffectThumbnailUrl(
                           category: e.category,
@@ -2305,7 +2311,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
 
     return Column(
       children: [
-        const SizedBox(height: 8),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         EditorColorRow(
           selectedColor: _paintColor,
           onChanged: (c) {
@@ -2342,7 +2348,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           isDark: isDark,
         ),
         if (!isDoodle) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
           EditorShapeRow(
             shapes: AppEditorConstants.shapeModes,
             activeMode:
@@ -2384,7 +2390,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                     const ImageEditorUpdateCircle(editInside: true),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                 _buildModeToggle(
                   label: 'Outside',
                   active: !state.editInsideCircle,
@@ -2394,7 +2400,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             EditorSliderRow(
               label: 'Blur',
               value: state.circleBlur,
@@ -2403,7 +2409,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               ),
               isDark: _isDark,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             EditorSliderRow(
               label: 'Brightness',
               value: state.circleBrightness,
@@ -2412,7 +2418,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               ),
               isDark: _isDark,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             EditorSliderRow(
               label: 'Contrast',
               value: state.circleContrast,
@@ -2421,7 +2427,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               ),
               isDark: _isDark,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             EditorSliderRow(
               label: 'Saturation',
               value: state.circleSaturation,
@@ -2430,7 +2436,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
               ),
               isDark: _isDark,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             EditorSliderRow(
               label: 'Hue',
               value: state.circleHue,
@@ -2511,7 +2517,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           onChanged: (i) => setState(() => _selectedHslColorIndex = i),
           isDark: _isDark,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
         EditorSliderRow(
           label: 'Hue',
           value: _hslAdjustments[_selectedHslColorIndex]['hue']!,
@@ -2521,7 +2527,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           },
           isDark: _isDark,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         EditorSliderRow(
           label: 'Sat',
           value: _hslAdjustments[_selectedHslColorIndex]['saturation']!,
@@ -2533,7 +2539,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           },
           isDark: _isDark,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
         EditorSliderRow(
           label: 'Lum',
           value: _hslAdjustments[_selectedHslColorIndex]['luminance']!,
@@ -2882,7 +2888,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           color: active
               ? AppEditorConstants.accent
               : AppEditorConstants.iconBg(_isDark),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(
+            MediaQuery.of(context).size.width * 0.05,
+          ),
           border: Border.all(
             color: active ? AppEditorConstants.accent : Colors.white24,
             width: 1.5,
@@ -3122,7 +3130,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           color: active
               ? AppEditorConstants.accent.withAlpha(40)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(
+            MediaQuery.of(context).size.width * 0.01,
+          ),
         ),
         child: Icon(
           icon,
@@ -3153,13 +3163,11 @@ class _ImageEditorViewState extends State<_ImageEditorView>
 
   void _updateTextAlign(dynamic subEditor, TextAlign align) {
     try {
-      (subEditor as dynamic).onTextAlignChanged(align);
+      // The TextEditorState has a public `align` field and public `setState`
+      (subEditor as dynamic).align = align;
+      (subEditor as dynamic).setState(() {});
     } catch (_) {
-      try {
-        (subEditor as dynamic).setTextAlign(align);
-      } catch (_) {
-        // Alignment update not supported or different method name
-      }
+      // Alignment update not supported
     }
   }
 

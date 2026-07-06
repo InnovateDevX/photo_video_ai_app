@@ -1,0 +1,417 @@
+[
+    {
+        "id": "prunaai/z-image-turbo",
+        "name": "Z-Image Turbo",
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/z-image-turbo/predictions",
+        "credit_used": 10,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2Fimage%203.png?alt=media&token=284ffa5f-de71-4f7f-88b5-df863bad6446",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "height": "{{height}}",
+                "width": "{{width}}",
+                "num_inference_steps": 14,
+                "guidance_scale": 1,
+                "output_format": "jpg",
+                "output_quality": 100
+            }
+        }
+    },
+    {
+        "id": "openai/gpt-image-2",
+        "name": "GPT Image 2",
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "  https://api.replicate.com/v1/models/openai/gpt-image-2/predictions",
+        "credit_used": 500,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2Farcticons_openai-chatgpt.png?alt=media&token=76d02ef5-7f5f-41b9-824d-d03edb7fc02b",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "quality": "medium",
+                "background": "auto",
+                "moderation": "auto",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "input_images": [
+                    "{{image}}"
+                ],
+                "output_format": "jpg",
+                "number_of_images": 1,
+                "output_compression": 90
+            }
+        }
+    },
+    {
+        "id": "prunaai/p-image-edit",
+        "name": "P-Image Edit",
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-image-edit/predictions",
+        "credit_used": 10,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2Fimage%203.png?alt=media&token=284ffa5f-de71-4f7f-88b5-df863bad6446",
+        "request_body": {
+            "input": {
+                "turbo": true,
+                "images": [
+                    "{{image}}"
+                ],
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg"
+            }
+        }
+    },
+    {
+        "id": "runwayml/gen4-image",
+        "name": "RunwayML Gen4 Image",
+        "iseditable": true,
+        "owner": "runwayml",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/runwayml/gen4-image/predictions",
+        "credit_used": 300,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095618.png?alt=media&token=4d02e696-5529-44e6-9472-994ee39dcff4",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "{{resolution}}",
+                "reference_images": [
+                    "{{image}}"
+                ]
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-kontext-dev",
+        "name": "FLUX Kontext Dev",
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-dev/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095829.png?alt=media&token=cc6bfdc3-bb3f-42fa-a0be-cd2d7076b728",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "input_image": "{{image}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "num_inference_steps": 45,
+                "guidance": 5,
+                "output_format": "jpg",
+                "output_quality": 100
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-kontext-pro",
+        "name": "FLUX Kontext Pro",
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-pro/predictions",
+        "credit_used": 30,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095829.png?alt=media&token=cc6bfdc3-bb3f-42fa-a0be-cd2d7076b728",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "input_image": "{{image}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "prompt_upsampling": true,
+                "output_format": "jpg",
+                "safety_tolerance": 5
+            }
+        }
+    },
+    {
+        "id": "openai/gpt-image-1.5",
+        "name": "GPT Image 1.5",
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/openai/gpt-image-1.5/predictions",
+        "credit_used": 500,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2Farcticons_openai-chatgpt.png?alt=media&token=76d02ef5-7f5f-41b9-824d-d03edb7fc02b",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "input_images": [
+                    "{{image}}"
+                ],
+                "number_of_images": 1,
+                "quality": "high",
+                "output_format": "jpg",
+                "moderation": "auto"
+            }
+        }
+    },
+    {
+        "id": "stability-ai/stable-diffusion-3.5-large",
+        "name": "Stable Diffusion 3.5 Large",
+        "iseditable": false,
+        "owner": "stability-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/stability-ai/stable-diffusion-3.5-large/predictions",
+        "credit_used": 100,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095828.png?alt=media&token=b79f97f1-f7cf-478d-98dd-ac4422cd0029",
+        "request_body": {
+            "input": {
+                "cfg": 4.5,
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg",
+                "image": "{{image}}",
+                "prompt_strength": 0.85
+            }
+        }
+    },
+    {
+        "id": "google/imagen-3",
+        "name": "Google Imagen 3",
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/imagen-3/predictions",
+        "credit_used": 60,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup.png?alt=media&token=97194157-9b77-4149-b9b1-b661676d465d",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "safety_filter_level": "block_only_high",
+                "person_generation": "allow_adult"
+            }
+        }
+    },
+    {
+        "id": "luma/photon",
+        "name": "Luma Photon",
+        "iseditable": false,
+        "owner": "luma",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/luma/photon/predictions",
+        "credit_used": 45,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095827.png?alt=media&token=b0a22777-0b96-472c-bf04-4228d5cae813",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-1.1-pro",
+        "name": "FLUX 1.1 Pro",
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
+        "credit_used": 335,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095829.png?alt=media&token=cc6bfdc3-bb3f-42fa-a0be-cd2d7076b728",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg",
+                "output_quality": 95
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-2-pro",
+        "name": "FLUX 2 Pro",
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions",
+        "credit_used": 50,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095829.png?alt=media&token=cc6bfdc3-bb3f-42fa-a0be-cd2d7076b728",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg",
+                "output_quality": 95,
+                "safety_tolerance": 2
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-2-flex",
+        "name": "FLUX 2 Flex",
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-2-flex/predictions",
+        "credit_used": 40,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095829.png?alt=media&token=cc6bfdc3-bb3f-42fa-a0be-cd2d7076b728",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "num_inference_steps": 30,
+                "guidance_scale": 3.5,
+                "output_format": "jpg"
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-2-max",
+        "name": "FLUX 2 Max",
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-2-max/predictions",
+        "credit_used": 60,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095829.png?alt=media&token=cc6bfdc3-bb3f-42fa-a0be-cd2d7076b728",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg",
+                "output_quality": 100
+            }
+        }
+    },
+    {
+        "id": "google/nano-banana-pro",
+        "name": "Nano Banana Pro (Gemini)",
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-pro/predictions",
+        "credit_used": 40,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup.png?alt=media&token=97194157-9b77-4149-b9b1-b661676d465d",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg"
+            }
+        }
+    },
+    {
+        "id": "bytedance/seedream-4",
+        "name": "Seedream 4",
+        "iseditable": true,
+        "owner": "bytedance",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedream-4/predictions",
+        "credit_used": 40,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095619.png?alt=media&token=998098ce-a4be-4072-9a10-b62690a1df78",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "reference_images": [
+                    "{{image}}"
+                ]
+            }
+        }
+    },
+    {
+        "id": "bytedance/seedream-5-lite",
+        "name": "Seedream 5 Lite",
+        "iseditable": true,
+        "owner": "bytedance",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedream-5-lite/predictions",
+        "credit_used": 50,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095619.png?alt=media&token=998098ce-a4be-4072-9a10-b62690a1df78",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "reference_images": [
+                    "{{image}}"
+                ]
+            }
+        }
+    },
+    {
+        "id": "stability-ai/stable-diffusion-3.5-large-turbo",
+        "name": "Stable Diffusion 3.5 Large Turbo",
+        "iseditable": false,
+        "owner": "stability-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/stability-ai/stable-diffusion-3.5-large-turbo/predictions",
+        "credit_used": 80,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095828.png?alt=media&token=b79f97f1-f7cf-478d-98dd-ac4422cd0029",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg"
+            }
+        }
+    },
+    {
+        "id": "bytedance/seedream-4.5",
+        "name": "ByteDance Seedream 4.5",
+        "iseditable": false,
+        "owner": "bytedance",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedream-4.5/predictions",
+        "credit_used": 55,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2FGroup%2048095619.png?alt=media&token=998098ce-a4be-4072-9a10-b62690a1df78",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "size": "{{size}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        }
+    },
+    {
+        "id": "qwen/qwen-image",
+        "name": "Qwen Image",
+        "iseditable": false,
+        "owner": "qwen",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/qwen/qwen-image/predictions",
+        "credit_used": 30,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2Farcticons_openai-chatgpt-1.png?alt=media&token=1fa13e39-9677-477c-8147-e7f815f4eeb6",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "guidance": 4,
+                "strength": 0.9,
+                "image_size": "optimize_for_quality",
+                "lora_scale": 1,
+                "output_format": "jpg",
+                "enhance_prompt": false,
+                "output_quality": 80,
+                "negative_prompt": " ",
+                "num_inference_steps": 50
+            }
+        }
+    },
+    {
+        "id": "qwen/qwen-image-edit-plus",
+        "name": "Qwen Image Edit Plus",
+        "iseditable": true,
+        "owner": "qwen",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/qwen/qwen-image-edit-plus/predictions",
+        "credit_used": 280,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/model%20images%2Farcticons_openai-chatgpt-1.png?alt=media&token=1fa13e39-9677-477c-8147-e7f815f4eeb6",
+        "request_body": {
+            "input": {
+                "image": [
+                    "{{image}}"
+                ],
+                "prompt": "{{prompt}}",
+                "go_fast": true,
+                "aspect_ratio": "match_input_image",
+                "output_format": "jpg",
+                "output_quality": 95
+            }
+        }
+    }
+]

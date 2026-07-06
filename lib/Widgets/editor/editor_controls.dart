@@ -291,7 +291,7 @@ class EditorSubToolsRow extends StatelessWidget {
                                 : AppEditorConstants.textDim(isDark),
                           )
                         : Padding(
-                            padding: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025),
                             child: Image.asset(
                               t.icon as String,
                               color: active
@@ -301,7 +301,7 @@ class EditorSubToolsRow extends StatelessWidget {
                             ),
                           ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.005),
                   Text(
                     t.label,
                     maxLines: 1,
@@ -359,7 +359,7 @@ class EditorBrushRow extends StatelessWidget {
                 color: active
                     ? AppEditorConstants.accent
                     : AppEditorConstants.iconBg(isDark),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.035),
                 boxShadow: active
                     ? [
                         BoxShadow(
@@ -418,7 +418,7 @@ class EditorShapeRow extends StatelessWidget {
                 color: active
                     ? AppEditorConstants.accent
                     : AppEditorConstants.iconBg(isDark),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.035),
                 boxShadow: active
                     ? [
                         BoxShadow(
@@ -605,7 +605,7 @@ class EditorFontCard extends StatelessWidget {
           color: isSelected
               ? AppEditorConstants.accent
               : AppEditorConstants.iconBg(isDark),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
           gradient: isSelected
               ? const LinearGradient(
                   colors: [Color(0xFFD66031), Color(0xFFB54D26)],

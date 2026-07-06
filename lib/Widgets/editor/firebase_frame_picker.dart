@@ -80,7 +80,7 @@ class _FirebaseFramePickerState extends State<FirebaseFramePicker> {
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: AppEditorConstants.iconBg(widget.isDark),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.03),
                 border: Border.all(
                   color: widget.selectedFrameUrl == null
                       ? AppEditorConstants.accent
@@ -110,7 +110,7 @@ class _FirebaseFramePickerState extends State<FirebaseFramePicker> {
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
                   color: AppEditorConstants.iconBg(widget.isDark),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.03),
                   border: Border.all(
                     color: isActive
                         ? AppEditorConstants.accent
@@ -119,7 +119,7 @@ class _FirebaseFramePickerState extends State<FirebaseFramePicker> {
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.025),
                   child: CachedNetworkImage(
                     imageUrl: url,
                     fit: BoxFit.cover,

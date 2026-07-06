@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:trail_ai_app/Services/base64_image_encoder.dart';
-import 'package:trail_ai_app/Services/storage_service.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:trail_ai_app/Services/cancellation_manager.dart';
 
 /// Options supported by a specific AI model
 class ModelOptions {
@@ -118,7 +118,7 @@ class AIModelConfig {
 
   bool get supportsAspectRatio {
     final templateStr = jsonEncode(requestBodyTemplate);
-    return templateStr.contains('{{aspect_ratio}}');
+    return templateStr.contains('{{aspect_ratio}}') || supportsDimensions;
   }
 
   bool get supportsDimensions {
@@ -134,6 +134,24 @@ class ReplicateService {
   ReplicateService._internal();
 
   String _authToken = '';
+  String get authToken => _authToken;
+
+  // ── Active prediction tracking (for cancellation on app minimize/exit) ──
+  String? _currentPollUrl;
+  String? _currentCancelUrl;
+
+  /// Cancels the currently active prediction (if any) by sending a POST to its cancel URL.
+  /// Also closes any tracked HTTP client to abort in-flight requests.
+  Future<void> cancelActivePrediction() async {
+    if (_currentCancelUrl != null && _currentCancelUrl!.isNotEmpty) {
+      await cancelPrediction(_currentCancelUrl!);
+    }
+    // Also close any tracked HTTP clients to abort in-flight polling
+    CancellationManager().cancelAll();
+    _currentPollUrl = null;
+    _currentCancelUrl = null;
+  }
+
   List<AIModelConfig> _imageModels = [];
   List<AIModelConfig> _videoModels = [];
   AIModelConfig? _clothModel;
@@ -336,6 +354,7 @@ class ReplicateService {
     List<File>? images,
     Map<String, dynamic>? extraVariables,
     Function(double)? onProgress,
+    Function(String pollUrl, String cancelUrl)? onPredictionStarted,
   }) async {
     if (!_isInitialized) {
       debugPrint(
@@ -364,7 +383,41 @@ class ReplicateService {
     );
 
     final variables = <String, dynamic>{'prompt': prompt, 'PROMPT': prompt};
-    if (aspectRatio != null) variables['aspect_ratio'] = aspectRatio;
+    if (aspectRatio != null) {
+      variables['aspect_ratio'] = aspectRatio;
+      if (modelConfig.supportsDimensions && (width == null || height == null)) {
+        switch (aspectRatio) {
+          case '1:1':
+            width = 1024;
+            height = 1024;
+            break;
+          case '16:9':
+            width = 1344;
+            height = 768;
+            break;
+          case '9:16':
+            width = 768;
+            height = 1344;
+            break;
+          case '4:3':
+            width = 1152;
+            height = 864;
+            break;
+          case '3:4':
+            width = 864;
+            height = 1152;
+            break;
+          case '2:3':
+            width = 832;
+            height = 1216;
+            break;
+          case '3:2':
+            width = 1216;
+            height = 832;
+            break;
+        }
+      }
+    }
     if (width != null) variables['width'] = width;
     if (height != null) variables['height'] = height;
     if (extraVariables != null) {
@@ -376,90 +429,50 @@ class ReplicateService {
     final List<String> rawBase64s = [];
     final List<String> imageUrls = [];
 
-    // ── Pre-upload images to Firebase to get public URIs ──────────────────────
-    if (modelConfig.iseditable && referenceImage != null) {
-      try {
-        debugPrint(
-          '☁️ [ReplicateService] Uploading reference image to Storage...',
-        );
-        final url = await StorageService().uploadFile(referenceImage);
-        imageUrls.add(url);
-
-        // Comprehensive mapping to all possible template placeholders
-        final List<String> imageKeys = [
-          'image',
-          'image_url',
-          'input_image',
-          'start_image',
-          'end_image',
-          'reference_image',
-          'prompt_image',
-        ];
-        for (final k in imageKeys) {
-          variables[k] = url;
+    bool templateIncludesDataUriPrefix(dynamic v) {
+      final placeholders = [
+        '{{image}}',
+        '{{image_url}}',
+        '{{input_image}}',
+        '{{start_image}}',
+        '{{end_image}}',
+        '{{reference_image}}',
+        '{{prompt_image}}',
+      ];
+      if (v is String) {
+        for (final p in placeholders) {
+          if (v.contains(p) && v.contains('data:') && v.contains('base64,')) {
+            return true;
+          }
         }
-
-        // Also handle the specific case for models like Seedance
-        variables['reference_images'] = [url];
-        debugPrint('✅ [ReplicateService] Image uploaded and mapped: $url');
-      } catch (e) {
-        debugPrint(
-          '❌ [ReplicateService] Image upload failed: $e. Falling back to base64 encoding...',
-        );
+        return false;
       }
+      if (v is Map<String, dynamic>) {
+        return v.values.any(templateIncludesDataUriPrefix);
+      }
+      if (v is List) return v.any(templateIncludesDataUriPrefix);
+      return false;
     }
 
-    if (images != null && images.isNotEmpty) {
-      try {
-        debugPrint(
-          '☁️ [ReplicateService] Uploading ${images.length} images to Storage...',
-        );
-        final urls = await StorageService().uploadFiles(images);
-        variables['images'] = urls;
-        variables['image_urls'] = urls;
-        variables['reference_images'] = urls;
-        debugPrint('✅ [ReplicateService] ${urls.length} images uploaded.');
-      } catch (e) {
-        debugPrint(
-          '❌ [ReplicateService] Images upload failed: $e. Falling back to base64...',
-        );
-      }
-    }
-
-    // Re-create body with updated variables (now containing URLs)
-    finalBody = modelConfig.createRequestBody(variables);
-
-    // ── Base64 Fallback for single reference image ──────────────────────────
-    if (modelConfig.iseditable &&
-        referenceImage != null &&
-        variables['image'] == null) {
-      debugPrint(
-        '🖼 [ReplicateService] No URL available, falling back to base64 encoding...',
-      );
+    // ── Base64 Encoding for single reference image ──────────────────────────
+    if (referenceImage != null) {
+      debugPrint('🖼 [ReplicateService] Encoding reference image to base64...');
       try {
         final encoded = await Base64ImageEncoder.encodeFile(referenceImage);
         final rawBase64 = encoded.split(',').last;
         rawBase64s.add(encoded);
-
-        bool templateIncludesDataUriPrefix(dynamic v) {
-          const placeholder = '{{image}}';
-          if (v is String) {
-            return v.contains(placeholder) &&
-                v.contains('data:') &&
-                v.contains('base64,');
-          }
-          if (v is Map<String, dynamic>) {
-            return v.values.any(templateIncludesDataUriPrefix);
-          }
-          if (v is List) return v.any(templateIncludesDataUriPrefix);
-          return false;
-        }
 
         final hasPrefix = templateIncludesDataUriPrefix(finalBody);
         final base64ForTemplate = hasPrefix ? rawBase64 : encoded;
 
         finalBody = modelConfig._replaceValues(finalBody, {
           'image': base64ForTemplate,
+          'image_url': base64ForTemplate,
+          'input_image': base64ForTemplate,
+          'start_image': base64ForTemplate,
+          'end_image': base64ForTemplate,
+          'reference_image': base64ForTemplate,
+          'prompt_image': base64ForTemplate,
         });
         debugPrint('✅ [ReplicateService] Reference image injected as base64.');
       } catch (e) {
@@ -467,25 +480,43 @@ class ReplicateService {
       }
     }
 
-    // ── Base64 Fallback for multiple images ─────────────────────────────────
-    if (images != null && images.isNotEmpty && variables['images'] == null) {
+    // ── Base64 Encoding for multiple images ─────────────────────────────────
+    if (images != null && images.isNotEmpty) {
       debugPrint(
-        '🖼 [ReplicateService] No image URLs available, falling back to base64 for ${images.length} images...',
+        '🖼 [ReplicateService] Encoding ${images.length} images to base64...',
       );
       try {
-        final List<String> encodedImages = [];
+        final List<String> encodedImagesWithPrefix = [];
+        final List<String> rawImages = [];
         for (final img in images) {
           final encoded = await Base64ImageEncoder.encodeFile(img);
-          final rawBase64 = encoded.split(',').last;
+          encodedImagesWithPrefix.add(encoded);
+          rawImages.add(encoded.split(',').last);
           rawBase64s.add(encoded);
-          encodedImages.add(rawBase64);
         }
-        finalBody = modelConfig._replaceValues(finalBody, {
-          'images': encodedImages,
-          'image_urls': encodedImages,
-        });
+
+        final hasPrefix = templateIncludesDataUriPrefix(finalBody);
+        final replacements = <String, dynamic>{
+          'images': encodedImagesWithPrefix,
+          'image_urls': encodedImagesWithPrefix,
+        };
+
+        if (encodedImagesWithPrefix.isNotEmpty) {
+          final base64ForTemplate = hasPrefix
+              ? rawImages.first
+              : encodedImagesWithPrefix.first;
+          replacements['image'] = base64ForTemplate;
+          replacements['image_url'] = base64ForTemplate;
+          replacements['input_image'] = base64ForTemplate;
+          replacements['start_image'] = base64ForTemplate;
+          replacements['end_image'] = base64ForTemplate;
+          replacements['reference_image'] = base64ForTemplate;
+          replacements['prompt_image'] = base64ForTemplate;
+        }
+
+        finalBody = modelConfig._replaceValues(finalBody, replacements);
         debugPrint(
-          '✅ [ReplicateService] ${encodedImages.length} images injected as base64.',
+          '✅ [ReplicateService] ${encodedImagesWithPrefix.length} images injected as base64.',
         );
       } catch (e) {
         debugPrint(
@@ -500,7 +531,12 @@ class ReplicateService {
     );
     finalBody = _pruneBody(finalBody) ?? finalBody;
 
-    final url = await _createPrediction(modelConfig.url, finalBody, onProgress);
+    final url = await _createPrediction(
+      modelConfig.url,
+      finalBody,
+      onProgress,
+      onPredictionStarted,
+    );
 
     // --- Safety Check on Generated Image ---
     if (url.isNotEmpty) {
@@ -552,6 +588,7 @@ class ReplicateService {
     String url,
     Map<String, dynamic> requestBody,
     Function(double)? onProgress,
+    Function(String, String)? onPredictionStarted,
   ) async {
     try {
       final cleanUrl = url.trim();
@@ -560,38 +597,52 @@ class ReplicateService {
         '📦 [ReplicateService] Request Body: ${jsonEncode(requestBody)}',
       );
 
-      final response = await http.post(
-        Uri.parse(cleanUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_authToken',
-        },
-        body: jsonEncode(requestBody),
-      );
+      final client = CancellationManager().createClient();
+      try {
+        final response = await client.post(
+          Uri.parse(cleanUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_authToken',
+          },
+          body: jsonEncode(requestBody),
+        );
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to start generation: ${response.body}');
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          throw Exception('Failed to start generation: ${response.body}');
+        }
+
+        final data = jsonDecode(response.body);
+
+        if (data['output'] != null) {
+          return extractOutput(data['output']);
+        }
+
+        final getUrl = data['urls']?['get'];
+        final cancelUrl = data['urls']?['cancel'];
+
+        // Store the active prediction URLs for cancellation on app minimize/exit
+        _currentPollUrl = getUrl;
+        _currentCancelUrl = cancelUrl;
+
+        if (getUrl != null) {
+          if (onPredictionStarted != null && cancelUrl != null) {
+            onPredictionStarted(getUrl, cancelUrl);
+          }
+          return await pollForResult(getUrl, onProgress);
+        }
+
+        throw Exception('No output or poll URL found');
+      } finally {
+        CancellationManager().unregisterClient(client);
       }
-
-      final data = jsonDecode(response.body);
-
-      if (data['output'] != null) {
-        return _extractOutput(data['output']);
-      }
-
-      final getUrl = data['urls']?['get'];
-      if (getUrl != null) {
-        return await _pollForResult(getUrl, onProgress);
-      }
-
-      throw Exception('No output or poll URL found');
     } catch (e) {
       debugPrint('❌ [ReplicateService] Error: $e');
       rethrow;
     }
   }
 
-  String _extractOutput(dynamic output) {
+  String extractOutput(dynamic output) {
     if (output is List && output.isNotEmpty) {
       return output[0].toString();
     } else if (output is String) {
@@ -600,44 +651,72 @@ class ReplicateService {
     throw Exception('Unknown output format: $output');
   }
 
-  Future<String> _pollForResult(
-    String url,
-    Function(double)? onProgress,
-  ) async {
+  /// Cancels an active prediction by sending a POST to its cancel URL
+  Future<void> cancelPrediction(String cancelUrl) async {
+    try {
+      debugPrint(
+        '🚫 [ReplicateService] POST $cancelUrl (Canceling prediction)',
+      );
+      final response = await http.post(
+        Uri.parse(cancelUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_authToken',
+        },
+        body: jsonEncode({}),
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint(
+          '⚠️ [ReplicateService] Failed to cancel prediction: ${response.statusCode} - ${response.body}',
+        );
+      } else {
+        debugPrint('✅ [ReplicateService] Prediction cancelled successfully.');
+      }
+    } catch (e) {
+      debugPrint('❌ [ReplicateService] Error cancelling prediction: $e');
+    }
+  }
+
+  Future<String> pollForResult(String url, Function(double)? onProgress) async {
     final cleanUrl = url.trim();
     debugPrint('⏳ [ReplicateService] Polling: $cleanUrl');
 
-    const int maxRetries = 60;
-    for (int i = 0; i < maxRetries; i++) {
-      // Calculate approximate progress
-      // Video generation usually takes 30-90 seconds.
-      // We'll advance progress slowly until it hits ~95%
-      if (onProgress != null) {
-        double progress = (i / maxRetries) * 1.0;
-        onProgress(progress);
+    final client = CancellationManager().createClient();
+    try {
+      const int maxRetries = 60;
+      for (int i = 0; i < maxRetries; i++) {
+        // Calculate approximate progress
+        // Video generation usually takes 30-90 seconds.
+        // We'll advance progress slowly until it hits ~95%
+        if (onProgress != null) {
+          double progress = (i / maxRetries) * 1.0;
+          onProgress(progress);
+        }
+
+        await Future.delayed(const Duration(seconds: 2));
+
+        final response = await client.get(
+          Uri.parse(cleanUrl),
+          headers: {'Authorization': 'Bearer $_authToken'},
+        );
+
+        if (response.statusCode != 200) continue;
+
+        final data = jsonDecode(response.body);
+        final status = data['status'];
+
+        debugPrint('   Status: $status');
+
+        if (status == 'succeeded') {
+          return extractOutput(data['output']);
+        } else if (status == 'failed' || status == 'canceled') {
+          throw Exception('Generation $status: ${data['error']}');
+        }
       }
 
-      await Future.delayed(const Duration(seconds: 2));
-
-      final response = await http.get(
-        Uri.parse(cleanUrl),
-        headers: {'Authorization': 'Bearer $_authToken'},
-      );
-
-      if (response.statusCode != 200) continue;
-
-      final data = jsonDecode(response.body);
-      final status = data['status'];
-
-      debugPrint('   Status: $status');
-
-      if (status == 'succeeded') {
-        return _extractOutput(data['output']);
-      } else if (status == 'failed' || status == 'canceled') {
-        throw Exception('Generation $status: ${data['error']}');
-      }
+      throw Exception('Timeout waiting for generation');
+    } finally {
+      CancellationManager().unregisterClient(client);
     }
-
-    throw Exception('Timeout waiting for generation');
   }
 }

@@ -72,7 +72,10 @@ class ImagePickerHelper {
       if (context != null && context.mounted) {
         Navigator.pop(context); // Remove loading
         if (e is NsfwContentException) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           debugPrint('⚠️ [ImagePickerHelper] Safety check error: $e');
         }
@@ -87,10 +90,8 @@ class ImagePickerHelper {
       final croppedFile = await Navigator.push<File?>(
         context,
         MaterialPageRoute(
-          builder: (_) => ImageCropPage(
-            imageFile: file,
-            aspectRatio: targetAspectRatio,
-          ),
+          builder: (_) =>
+              ImageCropPage(imageFile: file, aspectRatio: targetAspectRatio),
         ),
       );
       if (croppedFile == null) return null;
@@ -107,7 +108,9 @@ class ImagePickerHelper {
       builder: (ctx) {
         final w = MediaQuery.of(ctx).size.width;
         return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(MediaQuery.of(context).size.width * 0.06),
+          ),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
@@ -117,9 +120,13 @@ class ImagePickerHelper {
                 w * 0.05,
                 w * 0.06,
               ),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Color.fromRGBO(0, 0, 0, 0.5),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(
+                    MediaQuery.of(context).size.width * 0.06,
+                  ),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -128,10 +135,12 @@ class ImagePickerHelper {
                   Container(
                     width: w * 0.1,
                     height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
+                    margin: EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       color: Colors.white30,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.06,
+                      ),
                     ),
                   ),
                   Text(

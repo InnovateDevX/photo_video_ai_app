@@ -58,6 +58,7 @@ class RemoteConfigService {
         'nsfw_text_threshold': 0.65,
         'nsfw_image_unsafe_values': '["VERY_LIKELY"]',
         'share_app_url': '',
+        'show_ads': true,
       });
 
       // 2. Configure Settings
@@ -141,4 +142,6 @@ class RemoteConfigService {
   String get rcCreditsMapJson => getString('rc_credits_map');
 
   String get googleCloudApiKey => getString('google_cloud_api_key');
+  
+  bool get showAds => getBool('show_ads');
 }

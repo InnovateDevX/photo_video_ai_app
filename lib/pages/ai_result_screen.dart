@@ -22,10 +22,12 @@ class AIResultScreen extends StatefulWidget {
   final String? customActionLabel;
   final IconData? customActionIcon;
   final VoidCallback? onCustomAction;
+  final VoidCallback? onBack;
 
   // Visual Customization
   final BoxFit fit;
   final bool isNsfw;
+  final bool hideEnhance;
 
   const AIResultScreen({
     super.key,
@@ -38,6 +40,8 @@ class AIResultScreen extends StatefulWidget {
     this.onCustomAction,
     this.fit = BoxFit.contain, // Default to contain to ensure it's not cropped
     this.isNsfw = false,
+    this.onBack,
+    this.hideEnhance = false,
   });
 
   @override
@@ -52,10 +56,12 @@ class _AIResultScreenState extends State<AIResultScreen> {
   bool _isVideoInitialized = false;
   bool _isImageLoaded = false;
   bool? _isLiked;
+  bool _isNsfw = false;
 
   @override
   void initState() {
     super.initState();
+    _isNsfw = widget.isNsfw;
     _checkAndInitVideo();
     _checkAndInitImage();
     // Trigger in-app review check after a short delay
@@ -182,9 +188,9 @@ class _AIResultScreenState extends State<AIResultScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: widget.onBack ?? () => Navigator.pop(context),
                     child: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                       decoration: BoxDecoration(
                         color: isDark ? Colors.white12 : Colors.grey.shade200,
                         shape: BoxShape.circle,
@@ -198,17 +204,26 @@ class _AIResultScreenState extends State<AIResultScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
+                      setState(() {
+                        _isNsfw = true;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Content flagged as inappropriate.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                       FeedbackHelper.showFeedbackSheet(context, isDark: isDark);
                     },
                     child: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                        color: _isNsfw ? Colors.red.withValues(alpha: 0.2) : (isDark ? Colors.white12 : Colors.grey.shade200),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.flag_outlined,
-                        color: AppColors.textColor(isDark),
+                        _isNsfw ? Icons.flag_rounded : Icons.flag_outlined,
+                        color: _isNsfw ? Colors.red : AppColors.textColor(isDark),
                         size: 20,
                       ),
                     ),
@@ -228,7 +243,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
 
                     SizedBox(height: sh * 0.02),
 
-                    if (canInteract) ...[
+                    if (canInteract && _isLiked == null && !_isNsfw) ...[
                       // Feedback row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -247,7 +262,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
                               FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
                             },
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                               decoration: BoxDecoration(
                                 color: _isLiked == true
                                     ? Colors.green.withValues(alpha: 0.2)
@@ -268,7 +283,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
                               FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
                             },
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                               decoration: BoxDecoration(
                                 color: _isLiked == false
                                     ? Colors.red.withValues(alpha: 0.2)
@@ -286,7 +301,9 @@ class _AIResultScreenState extends State<AIResultScreen> {
                       ),
 
                       SizedBox(height: sh * 0.02),
+                    ],
 
+                    if (canInteract) ...[
                       // Action Pills (Enhance/Try Again)
                       if (widget.onReEdit != null || widget.onTryAgain != null)
                         _buildActionPills(sw, sh, isDark, isVideo),
@@ -363,33 +380,44 @@ class _AIResultScreenState extends State<AIResultScreen> {
     }
 
     // Default Video/Image Display
-    Widget mediaWidget = isVideo
-        ? (_isVideoInitialized && _videoController != null
-            ? AspectRatio(
-                aspectRatio: _videoController!.value.aspectRatio,
-                child: VideoPlayer(_videoController!),
-              )
-            : _buildPlaceholder(isDark))
-        : InteractiveViewer(
-            maxScale: 3.0,
-            child: Center(
-              child: widget.resultImageUrl.startsWith('http')
-                  ? CachedNetworkImage(
-                      imageUrl: widget.resultImageUrl,
-                      fit: widget.fit,
-                      placeholder: (context, url) =>
-                          _buildPlaceholder(isDark),
-                      errorWidget: (context, url, err) =>
-                          const Icon(Icons.error_outline),
-                    )
-                  : Image.file(
-                      File(widget.resultImageUrl),
-                      fit: widget.fit,
-                    ),
+    Widget mediaWidget = AspectRatio(
+      aspectRatio: 1.0,
+      child: isVideo
+          ? (_isVideoInitialized && _videoController != null
+              ? FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _videoController!.value.size.width > 0
+                        ? _videoController!.value.size.width
+                        : 100, // Fallback width
+                    height: _videoController!.value.size.height > 0
+                        ? _videoController!.value.size.height
+                        : 100, // Fallback height
+                    child: VideoPlayer(_videoController!),
+                  ),
+                )
+              : _buildPlaceholder(isDark))
+          : InteractiveViewer(
+              maxScale: 3.0,
+              child: SizedBox.expand(
+                child: widget.resultImageUrl.startsWith('http')
+                    ? CachedNetworkImage(
+                        imageUrl: widget.resultImageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            _buildPlaceholder(isDark),
+                        errorWidget: (context, url, err) =>
+                            const Icon(Icons.error_outline),
+                      )
+                    : Image.file(
+                        File(widget.resultImageUrl),
+                        fit: BoxFit.cover,
+                      ),
+              ),
             ),
-          );
+    );
 
-    if (widget.isNsfw) {
+    if (_isNsfw) {
       mediaWidget = Stack(
         fit: StackFit.expand,
         children: [
@@ -422,7 +450,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
   Widget _mediaWrapper({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -431,7 +459,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
           ),
         ],
       ),
-      child: ClipRRect(borderRadius: BorderRadius.circular(24), child: child),
+      child: ClipRRect(borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06), child: child),
     );
   }
 
@@ -445,7 +473,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
   Widget _buildActionPills(double sw, double sh, bool isDark, bool isVideo) {
     return Row(
       children: [
-        if (!isVideo)
+        if (!isVideo && !widget.hideEnhance)
           _actionPill(
             context: context,
             isDark: isDark,
@@ -508,10 +536,10 @@ class _AIResultScreenState extends State<AIResultScreen> {
                 decoration: widget.isNsfw 
                   ? BoxDecoration(
                       color: Colors.grey,
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.07),
                     )
                   : ProGradientDecoration(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.07),
                     ),
                 child: Center(
                   child: _isDownloading
@@ -559,7 +587,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
                   color: (isDark || widget.isNsfw)
                       ? Colors.white.withValues(alpha: 0.08)
                       : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.07),
                   border: Border.all(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.12)

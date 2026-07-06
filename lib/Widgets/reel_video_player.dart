@@ -12,6 +12,7 @@ class ReelVideoPlayer extends StatefulWidget {
   final bool showOverlayControls;
   final BorderRadiusGeometry? borderRadius;
   final bool mute;
+  final BoxFit fit;
 
   const ReelVideoPlayer({
     super.key,
@@ -22,6 +23,7 @@ class ReelVideoPlayer extends StatefulWidget {
     this.showOverlayControls = true,
     this.borderRadius,
     this.mute = true,
+    this.fit = BoxFit.contain,
   });
 
   @override
@@ -177,7 +179,7 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
             : constraints.maxHeight;
 
         Widget content = FittedBox(
-          fit: BoxFit.cover,
+          fit: widget.fit,
           clipBehavior: Clip.hardEdge,
           child: SizedBox(
             width: _controller!.value.size.width,
@@ -198,7 +200,7 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
               const CircularProgressIndicator(color: Colors.white),
             if (widget.showOverlayControls && !_isPlaying && !_isBuffering)
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                 decoration: const BoxDecoration(
                   color: Colors.black45,
                   shape: BoxShape.circle,

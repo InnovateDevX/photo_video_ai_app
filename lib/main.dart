@@ -17,6 +17,8 @@ import 'package:trail_ai_app/Core/app_initializer.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
 import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
+import 'package:trail_ai_app/Services/background_generation_service.dart';
+import 'package:trail_ai_app/Services/replicate_service.dart';
 import 'package:trail_ai_app/pages/onboarding_page.dart';
 import 'firebase_options.dart';
 
@@ -29,11 +31,12 @@ void main() async {
         overlays: [SystemUiOverlay.top],
       );
       SystemChrome.setSystemUIOverlayStyle(
-        SystemUiOverlayStyle(
+        const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           systemNavigationBarColor: Colors.transparent,
           systemNavigationBarDividerColor: Colors.transparent,
           statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
           systemNavigationBarIconBrightness: Brightness.dark,
           systemNavigationBarContrastEnforced: false,
         ),
@@ -72,6 +75,10 @@ void main() async {
       // Check if user has completed onboarding
       final bool onboardingDone = await OnboardingPage.hasCompleted();
 
+      // Initialize background service and resume any pending generations
+      await BackgroundGenerationService().initializeBackgroundService();
+      BackgroundGenerationService().resumePendingGenerations();
+
       runApp(MyApp(initialUid: uid, showOnboarding: !onboardingDone));
     },
     (error, stack) {
@@ -80,7 +87,7 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final String? initialUid;
   final bool showOnboarding;
 
@@ -89,6 +96,35 @@ class MyApp extends StatelessWidget {
     required this.initialUid,
     this.showOnboarding = false,
   });
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // App is being minimized or killed — cancel any active Replicate prediction
+      debugPrint(
+        '🚫 [MyApp] App lifecycle: $state — Cancelling active Replicate prediction',
+      );
+      ReplicateService().cancelActivePrediction();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +162,6 @@ class MyApp extends StatelessWidget {
                     ? Color(0xFF161616)
                     : Colors.white,
               ),
-              // ── Localization ───────────────────────────────────────────────────
               locale: locale,
               localizationsDelegates: [
                 GlobalMaterialLocalizations.delegate,
@@ -150,7 +185,7 @@ class MyApp extends StatelessWidget {
               builder: (context, child) {
                 return GlobalNotificationOverlay(child: child!);
               },
-              initialRoute: showOnboarding
+              initialRoute: widget.showOnboarding
                   ? AppRoutes.onboarding
                   : AppRoutes.home,
               routes: getAppRoutes(),

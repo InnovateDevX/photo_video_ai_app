@@ -86,4 +86,7 @@ class AppColors {
   static Color toolItemBackground(bool isDark) {
     return isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEFEFEF);
   }
+
+  // Primary Theme Color
+  static const Color primaryOrange = Color(0xFFFF9800);
 }

@@ -311,6 +311,33 @@ class _AiStickerPageState extends State<AiStickerPage>
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (_pageState == _PageState.result && _generatedImageUrl != null) {
+      return AIResultScreen(
+        originalImage: _isTextMode ? null : _selectedImage,
+        resultImageUrl: _generatedImageUrl!,
+        isNsfw: _isNsfw,
+        fit: BoxFit.contain,
+        customActionLabel: 'background_ai'.i18n(),
+        customActionIcon: Icons.layers_clear,
+        onCustomAction: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                AiBackgroundPage(initialImageUrl: _generatedImageUrl),
+          ),
+        ),
+        onReEdit: () => setState(() => _pageState = _PageState.selection),
+        onTryAgain: () {
+          setState(() => _pageState = _PageState.selection);
+          Future.delayed(
+            const Duration(milliseconds: 100),
+            _generateSticker,
+          );
+        },
+        onBack: () => setState(() => _pageState = _PageState.selection),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       body: SafeArea(
@@ -360,30 +387,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                     setState(() => _pageState = _PageState.selection);
                   },
                 ),
-                _PageState.result => AIResultScreen(
-                  originalImage: _isTextMode ? null : _selectedImage,
-                  resultImageUrl: _generatedImageUrl!,
-                  isNsfw: _isNsfw,
-                  fit: BoxFit.contain,
-                  customActionLabel: 'background_ai'.i18n(),
-                  customActionIcon: Icons.layers_clear,
-                  onCustomAction: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          AiBackgroundPage(initialImageUrl: _generatedImageUrl),
-                    ),
-                  ),
-                  onReEdit: () =>
-                      setState(() => _pageState = _PageState.selection),
-                  onTryAgain: () {
-                    setState(() => _pageState = _PageState.selection);
-                    Future.delayed(
-                      const Duration(milliseconds: 100),
-                      _generateSticker,
-                    );
-                  },
-                ),
+                _PageState.result => const SizedBox.shrink(),
                 _PageState.selection => _buildSelectionBody(isDark),
               },
             ),
@@ -446,9 +450,9 @@ class _AiStickerPageState extends State<AiStickerPage>
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         decoration: !_isTextMode
-                            ? const ProGradientDecoration(
+                            ? ProGradientDecoration(
                                 borderRadius: BorderRadius.all(
-                                  Radius.circular(30),
+                                  Radius.circular(w * 0.03),
                                 ),
                               )
                             : null,

@@ -101,7 +101,7 @@ class _ToolButton extends StatelessWidget {
                       ),
                     ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             Text(
               tool.label,
               textAlign: TextAlign.center,
@@ -165,7 +165,7 @@ class EditorFilterThumbnails extends StatelessWidget {
                     height: 64,
                     decoration: BoxDecoration(
                       color: AppEditorConstants.iconBg(isDark),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.03),
                       border: Border.all(
                         color: active
                             ? AppEditorConstants.accent
@@ -174,7 +174,7 @@ class EditorFilterThumbnails extends StatelessWidget {
                       ),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.025),
                       child: ColorFiltered(
                         colorFilter: f.matrix != null
                             ? ColorFilter.matrix(f.matrix!)
@@ -190,7 +190,7 @@ class EditorFilterThumbnails extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.0075),
                   SizedBox(
                     width: 64,
                     child: Text(
@@ -248,7 +248,7 @@ class EditorEffectThumbnails extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: AppEditorConstants.iconBg(isDark),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.03),
                 border: Border.all(
                   color: selectedEffectId == null
                       ? AppEditorConstants.accent
@@ -277,7 +277,7 @@ class EditorEffectThumbnails extends StatelessWidget {
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
                   color: AppEditorConstants.iconBg(isDark),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.03),
                   border: Border.all(
                     color: active
                         ? AppEditorConstants.accent

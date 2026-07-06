@@ -9,6 +9,7 @@ class PromptInput extends StatelessWidget {
   final double screenHeight;
   final bool isDark;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final File? selectedImage;
   final VoidCallback onRemoveImage;
 
@@ -18,6 +19,7 @@ class PromptInput extends StatelessWidget {
     required this.screenHeight,
     required this.isDark,
     required this.controller,
+    required this.focusNode,
     this.selectedImage,
     required this.onRemoveImage,
   });
@@ -107,6 +109,7 @@ class PromptInput extends StatelessWidget {
                 ],
                 TextField(
                   controller: controller,
+                  focusNode: focusNode,
                   maxLines: 4,
                   minLines: 1,
                   style: TextStyle(

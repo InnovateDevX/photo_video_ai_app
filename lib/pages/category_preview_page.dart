@@ -8,6 +8,7 @@ import 'package:trail_ai_app/Models/category_image.dart';
 import 'package:trail_ai_app/Models/reel.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:trail_ai_app/Services/data_service.dart';
+import 'package:trail_ai_app/Core/colors.dart';
 
 class CategoryPreviewPage extends StatefulWidget {
   final List<dynamic> items;
@@ -40,10 +41,12 @@ class _CategoryPreviewPageState extends State<CategoryPreviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.black, // Immersive preview
+      backgroundColor: AppColors.backgroundColor(isDark), // Immersive preview
       body: PageView.builder(
         controller: _pageController,
+        physics: const BouncingScrollPhysics(),
         itemCount: widget.items.length,
         itemBuilder: (context, index) {
           final item = widget.items[index];
@@ -163,9 +166,14 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = AppColors.textColor(isDark);
+    final secondaryTextColor = AppColors.secondaryTextColor(isDark);
+    final iconColor = AppColors.iconColor(isDark);
+
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      return Center(
+        child: CircularProgressIndicator(color: textColor),
       );
     }
 
@@ -225,132 +233,184 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
       }
     }
 
-    return Stack(
-      fit: StackFit.expand,
+    return Column(
       children: [
-        // Media Layer
-        if (videoUrl != null && videoUrl!.isNotEmpty)
-          ReelVideoPlayer(
-            videoUrl: videoUrl!,
-            seamlessLoop: true,
-            mute: false,
-            placeholder: (imageUrl != null && imageUrl!.isNotEmpty)
-                ? SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: EdgeInsets.only(top: h * 0.1),
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl!,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.topCenter,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Media Layer
+              if (videoUrl != null && videoUrl!.isNotEmpty)
+                ReelVideoPlayer(
+                  videoUrl: videoUrl!,
+                  seamlessLoop: true,
+                  mute: false,
+                  fit: BoxFit.contain,
+                  placeholder: (imageUrl != null && imageUrl!.isNotEmpty)
+                      ? SafeArea(
+                          bottom: false,
+                          child: Padding(
+                            padding: EdgeInsets.only(top: h * 0.02),
+                            child: CachedNetworkImage(
+                              imageUrl: imageUrl!,
+                              fit: BoxFit.contain,
+                              alignment: Alignment.topCenter,
+                              placeholder: (context, url) => Center(
+                                child: CircularProgressIndicator(color: textColor),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  Icon(Icons.error_outline, color: textColor),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: CircularProgressIndicator(color: textColor),
                         ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error_outline, color: Colors.white),
+                )
+              else if (imageUrl != null && imageUrl!.isNotEmpty)
+                SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: h * 0.02),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl!,
+                      fit: BoxFit.contain,
+                      alignment: Alignment.topCenter,
+                      placeholder: (context, url) => Center(
+                        child: CircularProgressIndicator(color: textColor),
                       ),
+                      errorWidget: (context, url, error) =>
+                          Icon(Icons.error_outline, color: textColor),
                     ),
-                  )
-                : const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
                   ),
-          )
-        else if (imageUrl != null && imageUrl!.isNotEmpty)
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.only(top: h * 0.1),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl!,
-                fit: BoxFit.contain,
-                alignment: Alignment.topCenter,
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
+                )
+              else
+                Center(child: Icon(Icons.broken_image, color: textColor)),
+
+              // Top gradient for back button visibility
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: h * 0.15,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        isDark ? Colors.black.withOpacity(0.6) : Colors.white.withOpacity(0.9),
+                        Colors.transparent
+                      ],
+                    ),
+                  ),
                 ),
-                errorWidget: (context, url, error) =>
-                    const Icon(Icons.error_outline, color: Colors.white),
               ),
-            ),
-          )
-        else
-          const Center(child: Icon(Icons.broken_image, color: Colors.white)),
 
-        // Top gradient for back button visibility
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: h * 0.15,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+              // Swipe Text Box
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 15,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black.withOpacity(0.4) : Colors.white.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
+                      border: Border.all(color: isDark ? Colors.white24 : Colors.black12, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.swipe, color: secondaryTextColor, size: 16),
+                        SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                        Text(
+                          'Swipe left or right to see more',
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
 
-        // Back Button
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 10,
-          left: 10,
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+              // Back Button
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 10,
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back_ios_new, color: textColor),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
           ),
         ),
 
         // Bottom Info & Button
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [Colors.black.withOpacity(0.9), Colors.transparent],
-              ),
-            ),
-            padding: EdgeInsets.fromLTRB(w * 0.05, 0, w * 0.05, w * 0.08),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title != null && title!.isNotEmpty) ...[
-                  Text(
-                    title!,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: w * 0.06,
-                      fontWeight: FontWeight.bold,
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.backgroundColor(isDark),
+          ),
+          padding: EdgeInsets.fromLTRB(w * 0.05, h * 0.02, w * 0.05, w * 0.08),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null && title!.isNotEmpty) ...[
+                Text(
+                  title!,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: w * 0.06,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: h * 0.008),
+              ],
+              if (prompt != null && prompt!.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(w * 0.03),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black.withOpacity(0.6) : Colors.white.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(w * 0.02),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
                     ),
                   ),
-                  SizedBox(height: h * 0.008),
-                ],
-                if (prompt != null && prompt!.isNotEmpty) ...[
-                  Text(
-                    'Prompt',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: w * 0.035,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Prompt',
+                        style: TextStyle(
+                          color: secondaryTextColor,
+                          fontSize: w * 0.035,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: h * 0.005),
+                      Text(
+                        useTwoStage ? (videoPrompt ?? prompt!) : prompt!,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: textColor, fontSize: w * 0.04),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: h * 0.005),
-                  Text(
-                    useTwoStage ? (videoPrompt ?? prompt!) : prompt!,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.white, fontSize: w * 0.04),
-                  ),
-                  SizedBox(height: h * 0.042),
-                ] else
-                  SizedBox(height: h * 0.02),
-                SizedBox(
+                ),
+                SizedBox(height: h * 0.042),
+              ] else
+                SizedBox(height: h * 0.02),
+              SafeArea(
+                top: false,
+                child: SizedBox(
                   width: double.infinity,
                   height: h * 0.065,
                   child: ElevatedButton(
@@ -382,6 +442,8 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                             imageEditMode: useTwoStage,
                             imagePrompt: prompt ?? '',
                             videoPrompt: videoPrompt ?? '',
+                            initialImageUrl: type == 'video' ? videoUrl : imageUrl,
+                            initialImageModelId: useTwoStage ? modelId : null,
                           ),
                         ),
                       );
@@ -396,8 +458,8 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],

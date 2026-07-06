@@ -65,7 +65,7 @@ class _ReelsPageState extends State<ReelsPage> {
                 children: [
                   Icon(
                     Icons.video_library_outlined,
-                    size: MediaQuery.of(context).size.width * 0.15,
+                    size: MediaQuery.of(context).size.width * 0.12,
                     color: Colors.grey.shade400,
                   ),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.02),
@@ -210,7 +210,7 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
 
         // Bottom Content (Prompt & Button)
         Positioned(
-          bottom: sh * 0.1, // Responsively positioned above bottom bar
+          bottom: sh * 0.16, // Responsively positioned above bottom bar
           left: sw * 0.04,
           right: sw * 0.04,
           child: Container(
@@ -292,7 +292,7 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
               _LikeButton(reel: reel, reelService: reelService),
               SizedBox(height: sh * 0.03),
               _ActionButton(
-                icon: Icons.download_outlined,
+                icon: Icons.share_outlined,
                 label: 'share_action'.i18n(),
                 onTap: () {
                   Share.share("${'share_message'.i18n()} ${reel.videoUrl}");
@@ -388,7 +388,7 @@ class _ActionButton extends StatelessWidget {
       child: Column(
         children: [
           Icon(icon, color: color, size: 36),
-          const SizedBox(height: 4),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.005),
           Text(
             label,
             style: const TextStyle(color: Colors.white, fontSize: 12),

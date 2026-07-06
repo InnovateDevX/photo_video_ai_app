@@ -15,6 +15,9 @@ class AdService {
   RewardedInterstitialAd? _rewardedInterstitialAd;
   bool _isAdLoaded = false;
   String _rewardedAdUnitId = '';
+  bool _showAds = true;
+  
+  bool get showAds => _showAds;
 
   /// Initialize the ad service and fetch ad unit IDs from Remote Config
   Future<void> initialize() async {
@@ -36,6 +39,12 @@ class AdService {
 
       // Get the ad unit ID from Remote Config
       _rewardedAdUnitId = config.rewardedAdUnitId;
+      _showAds = config.showAds;
+
+      if (!_showAds) {
+        debugPrint('🚫 [AdService] Ads are disabled via Remote Config');
+        _rewardedAdUnitId = ''; // Explicitly clear so ads are not loaded
+      }
 
       debugPrint(
         '🔧 [AdService] Retrieved ad unit ID length: ${_rewardedAdUnitId.length}',

@@ -36,7 +36,7 @@ class _PaywallPageState extends State<PaywallPage> {
           // This ensures you can always get out of the paywall during testing
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
               child: Align(
                 alignment: Alignment.topRight,
                 child: GestureDetector(
@@ -47,7 +47,7 @@ class _PaywallPageState extends State<PaywallPage> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white24),
                     ),
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                     child: const Icon(
                       Icons.close,
                       color: Colors.white,

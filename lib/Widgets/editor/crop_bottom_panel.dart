@@ -28,7 +28,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
       child: Container(
         width: 44,
         height: 44,
-        padding: const EdgeInsets.all(1.5),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.00375),
         decoration: const ProGradientDecoration(shape: BoxShape.circle),
         child: Container(
           decoration: BoxDecoration(
@@ -65,7 +65,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
             Container(
               width: 50,
               height: 50,
-              padding: active ? const EdgeInsets.all(2) : EdgeInsets.zero,
+              padding: active ? EdgeInsets.all(MediaQuery.of(context).size.width * 0.005) : EdgeInsets.zero,
               decoration: active
                   ? const ProGradientDecoration(shape: BoxShape.circle)
                   : BoxDecoration(
@@ -86,7 +86,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.0075),
             Text(
               label,
               style: TextStyle(
@@ -139,7 +139,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(
                   color: AppEditorConstants.textDim(_isDark).withAlpha(100),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.005),
                 ),
               ),
 
@@ -151,7 +151,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                     // ✓ Apply
                     _iconBtn(Icons.check, () => widget.editor.done()),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Undo
                     _iconBtn(Icons.undo, () {
@@ -161,7 +161,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       setState(() {});
                     }),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Redo
                     _iconBtn(Icons.redo, () {
@@ -171,7 +171,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       setState(() {});
                     }),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Reset
                     _iconBtn(Icons.rotate_right, () {
@@ -181,7 +181,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       setState(() {});
                     }),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Rotate CCW
                     _iconBtn(
@@ -197,7 +197,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       },
                     ),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Rotate CW
                     _iconBtn(
@@ -213,7 +213,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       },
                     ),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Flip Vertical
                     _iconBtn(Icons.align_vertical_center, () {
@@ -229,7 +229,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       setState(() {});
                     }),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // Flip Horizontal
                     _iconBtn(
@@ -237,7 +237,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                       () => widget.editor.flip(),
                     ),
 
-                    const SizedBox(width: 8),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.02),
 
                     // ✕ Cancel
                     _iconBtn(Icons.close, () => widget.editor.close()),
@@ -245,7 +245,7 @@ class _CropBottomPanelState extends State<CropBottomPanel> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               // ── ROW 2: aspect ratio buttons ───────────────────────────────
               SingleChildScrollView(

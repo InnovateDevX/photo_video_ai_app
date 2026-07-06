@@ -78,8 +78,7 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
       category: 'Neon Light',
       assetPath: 'assets/effects/potrait/Neon Light/1.png',
       portraitPath: 'assets/effects/potrait/Neon Light/1.png',
-      squarePath:
-          'assets/effects/potrait/Neon Light/1.png',
+      squarePath: 'assets/effects/potrait/Neon Light/1.png',
       thumbnailPath: 'assets/effects/potrait/Neon Light/1.png',
       blendMode: ui.BlendMode.plus,
     ),
@@ -97,6 +96,7 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
     return ChangeNotifierProvider.value(
       value: _provider,
       child: Scaffold(
@@ -145,11 +145,11 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
 
             // Controls Area
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(w * 0.05),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.8),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(w * 0.03),
                 ),
               ),
               child: Column(
@@ -194,7 +194,7 @@ class _EffectEditorPageState extends State<EffectEditorPage> {
                     },
                   ),
 
-                  const SizedBox(height: 10),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
                   // Effect Selector
                   Consumer<EffectEditorProvider>(

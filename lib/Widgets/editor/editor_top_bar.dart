@@ -171,7 +171,7 @@ class EditorSubEditorTopBar extends StatelessWidget
                     onTap: onUndo!,
                     primaryText: primaryText,
                   ),
-                  const SizedBox(width: 20),
+                  SizedBox(width: MediaQuery.of(context).size.width * 0.05),
                   _TopBarBtn(
                     icon: Icons.redo,
                     onTap: onRedo!,

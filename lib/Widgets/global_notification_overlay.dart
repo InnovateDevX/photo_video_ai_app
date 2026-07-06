@@ -142,7 +142,7 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay>
                 },
                 child: Center(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                       child: Container(
@@ -154,7 +154,7 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay>
                           color: isDark
                               ? Colors.black.withValues(alpha: 0.7)
                               : Colors.white.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
                           border: Border.all(
                             color: (isDark ? Colors.white : Colors.black)
                                 .withValues(alpha: 0.1),
@@ -209,7 +209,7 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay>
                                       fontSize: sw * 0.038,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  SizedBox(height: MediaQuery.of(context).size.height * 0.0025),
                                   Text(
                                     _errorMessage ??
                                         (_currentAsset?.prompt ??
@@ -250,7 +250,7 @@ class _GlobalNotificationOverlayState extends State<GlobalNotificationOverlay>
                                     vertical: sh * 0.01,
                                   ),
                                   decoration: ProGradientDecoration(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.03),
                                   ),
                                   child: Text(
                                     'View',

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:localization/localization.dart';
@@ -91,10 +92,15 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.card_giftcard,
-                    color: AppColors.iconColor(isDark),
-                    size: width * 0.06,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.paywall);
+                    },
+                    child: Icon(
+                      Icons.card_giftcard,
+                      color: AppColors.iconColor(isDark),
+                      size: width * 0.06,
+                    ),
                   ),
                   SizedBox(width: width * 0.01),
                   ScaleTransition(
@@ -103,58 +109,71 @@ class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
                       onTap: () {
                         Navigator.pushNamed(context, AppRoutes.paywall);
                       },
-                      child: Container(
-                        height: height * 0.05,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(width * 0.05),
-                          border: Border.all(
-                            color: AppColors.creditsCardBorder(isDark),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                              alignment: Alignment.center,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: width * 0.03,
-                                vertical: height * 0.006,
-                              ),
-                              decoration: ProGradientDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  width * 0.05,
-                                ),
-                              ),
-                              child: Text(
-                                'pro'.i18n(),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize:
-                                      MediaQuery.of(context).size.width * 0.04,
-                                ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(width * 0.05),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                          child: Container(
+                            height: height * 0.05,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.white.withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(width * 0.05),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.15)
+                                    : Colors.white.withValues(alpha: 0.5),
+                                width: 1.2,
                               ),
                             ),
-                            SizedBox(width: width * 0.005),
-                            Icon(
-                              Icons.flash_on,
-                              size: width * 0.04,
-                              color: AppColors.textColor(isDark),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.only(right: width * 0.03),
-                              child: Text(
-                                '$credits',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  alignment: Alignment.center,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: width * 0.03,
+                                    vertical: height * 0.006,
+                                  ),
+                                  decoration: ProGradientDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      width * 0.05,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'pro'.i18n(),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize:
+                                          MediaQuery.of(context).size.width *
+                                          0.04,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: width * 0.005),
+                                Icon(
+                                  Icons.flash_on,
+                                  size: width * 0.04,
                                   color: AppColors.textColor(isDark),
-                                  fontSize: width * 0.035,
                                 ),
-                                maxLines: 1,
-                              ),
+                                Padding(
+                                  padding: EdgeInsets.only(right: width * 0.03),
+                                  child: Text(
+                                    '$credits',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textColor(isDark),
+                                      fontSize: width * 0.035,
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

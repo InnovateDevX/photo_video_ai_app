@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:gallery_saver_plus/gallery_saver.dart';
@@ -6,7 +7,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:localization/localization.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'background_generation_service.dart';
+import 'notification_service.dart';
+import 'local_storage_service.dart';
+import '../Models/generated_asset.dart';
 
 class MediaService {
   /// Downloads an image from a URL and saves it to the "Trail AI" gallery album.
@@ -134,17 +140,9 @@ class MediaService {
       String? filePath;
 
       if (!isLocal && imageUrl.startsWith('http')) {
-        final response = await http.get(Uri.parse(imageUrl));
-        if (response.statusCode == 200) {
-          final tempDir = await getTemporaryDirectory();
-          final file = File(
-            '${tempDir.path}/share_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          );
-          await file.writeAsBytes(response.bodyBytes);
-          filePath = file.path;
-        } else {
-          throw Exception('Failed to download image for sharing');
-        }
+        // Use cache manager to instantly retrieve if already downloaded
+        final file = await DefaultCacheManager().getSingleFile(imageUrl);
+        filePath = file.path;
       } else {
         filePath = imageUrl;
       }
@@ -176,17 +174,9 @@ class MediaService {
       String? filePath;
 
       if (!isLocal && videoUrl.startsWith('http')) {
-        final response = await http.get(Uri.parse(videoUrl));
-        if (response.statusCode == 200) {
-          final tempDir = await getTemporaryDirectory();
-          final file = File(
-            '${tempDir.path}/share_video_${DateTime.now().millisecondsSinceEpoch}.mp4',
-          );
-          await file.writeAsBytes(response.bodyBytes);
-          filePath = file.path;
-        } else {
-          throw Exception('Failed to download video for sharing');
-        }
+        // Use cache manager to instantly retrieve if already downloaded
+        final file = await DefaultCacheManager().getSingleFile(videoUrl);
+        filePath = file.path;
       } else {
         filePath = videoUrl;
       }
@@ -255,6 +245,89 @@ class MediaService {
     } catch (e) {
       debugPrint('❌ [MediaService] getCachedOrDownloadFile failed: $e');
       return await downloadToTempFile(imageUrl);
+    }
+  }
+
+  // ── Background Downloads with Progress Notifications ─────────────────────
+
+  /// Downloads an image in the background with a progress notification,
+  /// saves to app storage via LocalStorageService, and shows completion notification.
+  /// Survives app termination by offloading to the background isolate.
+  static void downloadImageInBackground(String imageUrl, {String prompt = ''}) {
+    _queueBackgroundDownload(
+      url: imageUrl,
+      category: 'image',
+      fileExtension: 'png',
+      prompt: prompt,
+    );
+  }
+
+  /// Downloads a video in the background with a progress notification,
+  /// saves to app storage via LocalStorageService, and shows completion notification.
+  /// Survives app termination by offloading to the background isolate.
+  static void downloadVideoInBackground(String videoUrl, {String prompt = ''}) {
+    _queueBackgroundDownload(
+      url: videoUrl,
+      category: 'video',
+      fileExtension: 'mp4',
+      prompt: prompt,
+    );
+  }
+
+  static Future<void> _queueBackgroundDownload({
+    required String url,
+    required String category,
+    required String fileExtension,
+    required String prompt,
+  }) async {
+    try {
+      if (!url.startsWith('http')) {
+        // Already a local file — just register it
+        final asset = GeneratedAsset(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          filePath: url,
+          category: category,
+          prompt: prompt,
+          createdAt: DateTime.now(),
+        );
+        await LocalStorageService().saveAsset(asset);
+        NotificationService().showGenerationCompleteNotification(
+          title: 'Trail AI Studio',
+          body: '✅ ${category == 'video' ? 'Video' : 'Image'} saved successfully!',
+          payload: asset.id,
+        );
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> pendingDownloads = prefs.getStringList('background_pending_downloads') ?? [];
+      
+      final downloadId = DateTime.now().millisecondsSinceEpoch.toString();
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+      
+      pendingDownloads.add(jsonEncode({
+        'id': downloadId,
+        'url': url,
+        'category': category,
+        'fileExtension': fileExtension,
+        'prompt': prompt,
+        'notificationId': notificationId,
+      }));
+      await prefs.setStringList('background_pending_downloads', pendingDownloads);
+      
+      debugPrint('📥 [MediaService] Queued background download: $url');
+
+      // Start background service to process the download
+      final service = FlutterBackgroundService();
+      if (!await service.isRunning()) {
+        await service.startService();
+      }
+    } catch (e) {
+      debugPrint('❌ [MediaService] Failed to queue background download: $e');
+      NotificationService().showGenerationCompleteNotification(
+        title: 'Trail AI Studio',
+        body: 'Failed to start downloading $category.',
+      );
     }
   }
 }

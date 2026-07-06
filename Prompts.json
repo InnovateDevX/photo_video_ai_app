@@ -1,0 +1,83 @@
+[
+    {
+        "category": "Abstract",
+        "count": 1,
+        "prompts": [
+            "Dynamic abstract tattoo design with swirling vortex patterns and intersecting sharp lines creating tension and energy. Fine line with subtle dotwork shading. Pure black ink. Professional abstract tattoo artwork, isolated on pure white background, high resolution.",
+            "Soft layered abstract forms resembling melting shapes and gentle gradients. Black and gray with smooth transitions. Dreamy and organic aesthetic. Professional abstract tattoo design, isolated on clean white background.",
+            "Bold geometric abstract with broken lines and floating fragments creating modern chaos. Strong blackwork contrast. Professional tattoo artwork, isolated on pure white background."
+        ]
+    },
+    {
+        "category": "Animal",
+        "count": 1,
+        "prompts": [
+            "Fierce tiger face in detailed fine line with striped texture and intense eyes. Pure black ink. Professional animal tattoo design, isolated on clean white background.",
+            "Graceful swan with elegant neck curve and feather details in soft sketch style. Professional tattoo artwork, isolated on pure white background.",
+            "Playful otter swimming in minimalist fine line with smooth water flow lines. Professional animal tattoo design, isolated on clean white background."
+        ]
+    },
+    {
+        "category": "Fantasy",
+        "count": 1,
+        "prompts": [
+            "Mystical wizard staff with glowing runes and energy swirls in fine line. Professional fantasy tattoo artwork, isolated on pure white background.",
+            "Elegant winged angel silhouette with soft halo and flowing robes. Professional tattoo design, isolated on clean white background.",
+            "Ancient glowing crystal with magical energy veins and floating particles. Professional fantasy tattoo artwork, isolated on pure white background."
+        ]
+    },
+    {
+        "category": "Geometric",
+        "count": 1,
+        "prompts": [
+            "Complex interlocking star and pentagram sacred geometry pattern. Fine line with precise intersections. Professional geometric tattoo design, isolated on clean white background.",
+            "Modern minimalist cube and shadow geometric illusion. Clean lines and subtle shading. Professional tattoo artwork, isolated on pure white background.",
+            "Radiating sunburst geometric pattern with sharp rays and central circle. Bold blackwork style. Professional geometric tattoo design, isolated on clean white background."
+        ]
+    },
+    {
+        "category": "Lettering",
+        "count": 1,
+        "prompts": [
+            "Elegant cursive 'Strength' with subtle strength symbol integrated. Fine line with flourishes. Professional lettering tattoo, isolated on pure white background.",
+            "Bold serif 'Psalm 23' with small cross accent. Clean and powerful. Professional religious lettering design, isolated on clean white background.",
+            "Flowing handwritten 'Let Go' with light decorative vines. Professional tattoo artwork, isolated on pure white background."
+        ]
+    },
+    {
+        "category": "Minimalist",
+        "count": 1,
+        "prompts": [
+            "Single continuous line mountain peak with tiny sun. Ultra-clean. Professional minimalist tattoo, isolated on pure white background.",
+            "Tiny delicate star constellation in simple dots and lines. Professional tattoo design, isolated on clean white background.",
+            "Elegant single leaf with stem in thin fine line. Professional minimalist artwork, isolated on pure white background."
+        ]
+    },
+    {
+        "category": "Nature",
+        "count": 1,
+        "prompts": [
+            "Detailed cherry blossom branch with soft petals in fine line. Professional nature tattoo design, isolated on clean white background.",
+            "Towering pine tree silhouette with layered branches. Professional tattoo artwork, isolated on pure white background.",
+            "Realistic seashell with intricate spiral details. Professional nature tattoo design, isolated on clean white background."
+        ]
+    },
+    {
+        "category": "Sketch",
+        "count": 1,
+        "prompts": [
+            "Loose pencil sketch of an old oak tree with textured bark. Professional sketch tattoo, isolated on pure white background.",
+            "Expressive sketch of a howling wolf head with dynamic lines. Professional tattoo artwork, isolated on clean white background.",
+            "Delicate hand-drawn sketch of a blooming peony flower. Professional sketch design, isolated on pure white background."
+        ]
+    },
+    {
+        "category": "Tribal",
+        "count": 1,
+        "prompts": [
+            "Bold tribal shark with traditional patterns and sharp teeth. Professional tribal tattoo design, isolated on clean white background.",
+            "Symmetrical tribal sun with radiating spikes and inner motifs. Professional tattoo artwork, isolated on pure white background.",
+            "Flowing tribal vine and leaf pattern with strong blackwork. Professional tribal design, isolated on clean white background."
+        ]
+    }
+]

@@ -307,7 +307,7 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                 decoration: const BoxDecoration(
                   color: Colors.white70,
                   shape: BoxShape.circle,
@@ -338,14 +338,14 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                     fontSize: sw * 0.05,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                 Text(
                   _description,
                   style: TextStyle(color: Colors.white, fontSize: sw * 0.038),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.025),
                 GestureDetector(
                   onTap: _proceedToTool,
                   child: Container(
@@ -366,7 +366,7 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                               fontSize: sw * 0.045,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: MediaQuery.of(context).size.width * 0.01),
                           const Icon(
                             Icons.flash_on,
                             color: Colors.white,

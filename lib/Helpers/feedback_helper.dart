@@ -13,7 +13,9 @@ class FeedbackHelper {
         return Dialog(
           backgroundColor: AppColors.backgroundColor(isDark),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(
+              MediaQuery.of(context).size.width * 0.06,
+            ),
             side: BorderSide(
               color: isDark ? Colors.white24 : Colors.grey.shade300,
               width: 1,
@@ -62,7 +64,9 @@ class FeedbackHelper {
                     width: double.infinity,
                     height: sh * 0.06,
                     decoration: ProGradientDecoration(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.07,
+                      ),
                     ),
                     child: Center(
                       child: Text(
@@ -84,10 +88,13 @@ class FeedbackHelper {
     );
   }
 
-  static void showThumbsDownDialog(BuildContext context, {required bool isDark}) {
+  static void showThumbsDownDialog(
+    BuildContext context, {
+    required bool isDark,
+  }) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
-    
+
     String selectedReason = '';
     TextEditingController commentsController = TextEditingController();
 
@@ -99,7 +106,9 @@ class FeedbackHelper {
             return Dialog(
               backgroundColor: AppColors.backgroundColor(isDark),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.06,
+                ),
                 side: BorderSide(
                   color: isDark ? Colors.white24 : Colors.grey.shade300,
                   width: 1,
@@ -143,22 +152,42 @@ class FeedbackHelper {
                         ),
                       ),
                       SizedBox(height: sh * 0.02),
-                      _buildReasonChip('Blurry / Low Resolution', selectedReason, isDark, sw, (val) {
-                        setState(() => selectedReason = val);
-                      }),
+                      _buildReasonChip(
+                        'Blurry / Low Resolution',
+                        selectedReason,
+                        isDark,
+                        sw,
+                        (val) {
+                          setState(() => selectedReason = val);
+                        },
+                      ),
                       SizedBox(height: sh * 0.01),
-                      _buildReasonChip('Unnatural / Distorted details', selectedReason, isDark, sw, (val) {
-                        setState(() => selectedReason = val);
-                      }),
+                      _buildReasonChip(
+                        'Unnatural / Distorted details',
+                        selectedReason,
+                        isDark,
+                        sw,
+                        (val) {
+                          setState(() => selectedReason = val);
+                        },
+                      ),
                       SizedBox(height: sh * 0.01),
-                      _buildReasonChip('Did not match prompt', selectedReason, isDark, sw, (val) {
-                        setState(() => selectedReason = val);
-                      }),
+                      _buildReasonChip(
+                        'Did not match prompt',
+                        selectedReason,
+                        isDark,
+                        sw,
+                        (val) {
+                          setState(() => selectedReason = val);
+                        },
+                      ),
                       SizedBox(height: sh * 0.01),
-                      _buildReasonChip('Other', selectedReason, isDark, sw, (val) {
+                      _buildReasonChip('Other', selectedReason, isDark, sw, (
+                        val,
+                      ) {
                         setState(() => selectedReason = val);
                       }),
-                      
+
                       SizedBox(height: sh * 0.02),
                       TextField(
                         controller: commentsController,
@@ -166,11 +195,17 @@ class FeedbackHelper {
                         maxLines: 3,
                         decoration: InputDecoration(
                           hintText: 'Additional details (optional)',
-                          hintStyle: TextStyle(color: AppColors.secondaryTextColor(isDark)),
+                          hintStyle: TextStyle(
+                            color: AppColors.secondaryTextColor(isDark),
+                          ),
                           filled: true,
-                          fillColor: isDark ? Colors.white12 : Colors.grey.shade100,
+                          fillColor: isDark
+                              ? Colors.white12
+                              : Colors.grey.shade100,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              MediaQuery.of(context).size.width * 0.03,
+                            ),
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: EdgeInsets.all(sw * 0.03),
@@ -178,26 +213,37 @@ class FeedbackHelper {
                       ),
                       SizedBox(height: sh * 0.025),
                       GestureDetector(
-                        onTap: selectedReason.isEmpty ? null : () {
-                          debugPrint('Negative Feedback submitted: $selectedReason - ${commentsController.text}');
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Thank you for helping us improve!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        },
+                        onTap: selectedReason.isEmpty
+                            ? null
+                            : () {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                debugPrint(
+                                  'Negative Feedback submitted: $selectedReason - ${commentsController.text}',
+                                );
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Thank you for helping us improve!',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              },
                         child: Container(
                           width: double.infinity,
                           height: sh * 0.06,
                           decoration: selectedReason.isEmpty
                               ? BoxDecoration(
                                   color: Colors.grey,
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width * 0.07,
+                                  ),
                                 )
                               : ProGradientDecoration(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width * 0.07,
+                                  ),
                                 ),
                           child: Center(
                             child: Text(
@@ -225,7 +271,7 @@ class FeedbackHelper {
   static void showFeedbackSheet(BuildContext context, {required bool isDark}) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
-    
+
     String selectedReason = '';
     TextEditingController commentsController = TextEditingController();
 
@@ -233,8 +279,10 @@ class FeedbackHelper {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.backgroundColor(isDark),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(MediaQuery.of(context).size.width * 0.06),
+        ),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -281,22 +329,40 @@ class FeedbackHelper {
                     ),
                   ),
                   SizedBox(height: sh * 0.02),
-                  _buildReasonChip('Inappropriate Content', selectedReason, isDark, sw, (val) {
-                    setState(() => selectedReason = val);
-                  }),
+                  _buildReasonChip(
+                    'Inappropriate Content',
+                    selectedReason,
+                    isDark,
+                    sw,
+                    (val) {
+                      setState(() => selectedReason = val);
+                    },
+                  ),
                   SizedBox(height: sh * 0.01),
-                  _buildReasonChip('Low Quality / Artifacts', selectedReason, isDark, sw, (val) {
-                    setState(() => selectedReason = val);
-                  }),
+                  _buildReasonChip(
+                    'Low Quality / Artifacts',
+                    selectedReason,
+                    isDark,
+                    sw,
+                    (val) {
+                      setState(() => selectedReason = val);
+                    },
+                  ),
                   SizedBox(height: sh * 0.01),
-                  _buildReasonChip('Did not follow instructions', selectedReason, isDark, sw, (val) {
-                    setState(() => selectedReason = val);
-                  }),
+                  _buildReasonChip(
+                    'Did not follow instructions',
+                    selectedReason,
+                    isDark,
+                    sw,
+                    (val) {
+                      setState(() => selectedReason = val);
+                    },
+                  ),
                   SizedBox(height: sh * 0.01),
                   _buildReasonChip('Other', selectedReason, isDark, sw, (val) {
                     setState(() => selectedReason = val);
                   }),
-                  
+
                   SizedBox(height: sh * 0.03),
                   TextField(
                     controller: commentsController,
@@ -304,11 +370,15 @@ class FeedbackHelper {
                     maxLines: 3,
                     decoration: InputDecoration(
                       hintText: 'Additional details (optional)',
-                      hintStyle: TextStyle(color: AppColors.secondaryTextColor(isDark)),
+                      hintStyle: TextStyle(
+                        color: AppColors.secondaryTextColor(isDark),
+                      ),
                       filled: true,
                       fillColor: isDark ? Colors.white12 : Colors.grey.shade100,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.03,
+                        ),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: EdgeInsets.all(sw * 0.04),
@@ -316,27 +386,36 @@ class FeedbackHelper {
                   ),
                   SizedBox(height: sh * 0.03),
                   GestureDetector(
-                    onTap: selectedReason.isEmpty ? null : () {
-                      // Here you would typically send the feedback to your backend
-                      debugPrint('Feedback submitted: $selectedReason - ${commentsController.text}');
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Thank you for your feedback!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    },
+                    onTap: selectedReason.isEmpty
+                        ? null
+                        : () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            // Here you would typically send the feedback to your backend
+                            debugPrint(
+                              'Feedback submitted: $selectedReason - ${commentsController.text}',
+                            );
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Thank you for your feedback!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          },
                     child: Container(
                       width: double.infinity,
                       height: sh * 0.065,
                       decoration: selectedReason.isEmpty
                           ? BoxDecoration(
                               color: Colors.grey,
-                              borderRadius: BorderRadius.circular(28),
+                              borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.07,
+                              ),
                             )
                           : ProGradientDecoration(
-                              borderRadius: BorderRadius.circular(28),
+                              borderRadius: BorderRadius.circular(
+                                MediaQuery.of(context).size.width * 0.07,
+                              ),
                             ),
                       child: Center(
                         child: Text(
@@ -371,22 +450,29 @@ class FeedbackHelper {
     return GestureDetector(
       onTap: () => onSelect(label),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: sw * 0.03, horizontal: sw * 0.04),
+        padding: EdgeInsets.symmetric(
+          vertical: sw * 0.03,
+          horizontal: sw * 0.04,
+        ),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? (isDark ? Colors.blue.withValues(alpha: 0.2) : Colors.blue.shade50)
+          color: isSelected
+              ? (isDark
+                    ? Colors.blue.withValues(alpha: 0.2)
+                    : Colors.blue.shade50)
               : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
           border: Border.all(
-            color: isSelected 
-                ? Colors.blue 
+            color: isSelected
+                ? Colors.blue
                 : (isDark ? Colors.white24 : Colors.grey.shade300),
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(sw * 0.03),
         ),
         child: Row(
           children: [
             Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
               color: isSelected ? Colors.blue : Colors.grey,
               size: sw * 0.05,
             ),

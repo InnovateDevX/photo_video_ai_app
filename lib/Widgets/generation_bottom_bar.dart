@@ -725,7 +725,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                         height: 32,
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.04),
                           gradient: value ? AppGradients.proGradient : null,
                           color: value ? null : Colors.white.withValues(alpha: 0.12),
                           border: Border.all(
@@ -993,7 +993,7 @@ class _GenerationBottomBarState extends State<GenerationBottomBar> {
                   SizedBox(width: screenWidth * 0.03),
                   // Video / Image pill
                   Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.005),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(screenWidth * 0.06),

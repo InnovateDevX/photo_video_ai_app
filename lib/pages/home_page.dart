@@ -164,15 +164,22 @@ class _HomepageState extends State<Homepage> {
     if (_isAutoScrolling || categories.isEmpty) return;
     final h = MediaQuery.of(context).size.height;
     final currentOffset = _mainScrollController.offset;
+    final maxOffset = _mainScrollController.position.maxScrollExtent;
 
-    // Estimate which category is near the top of the viewport
-    int candidateIndex = 0;
-    for (int i = 0; i < categories.length; i++) {
-      final sectionOffset = _estimatedCategoryOffset(i);
-      if (currentOffset >= sectionOffset - h * 0.15) {
-        candidateIndex = i;
-      } else {
-        break;
+    // If scrolled to the very bottom, select the last category
+    int candidateIndex;
+    if (currentOffset >= maxOffset - 10) {
+      candidateIndex = categories.length - 1;
+    } else {
+      // Estimate which category is near the top of the viewport
+      candidateIndex = 0;
+      for (int i = 0; i < categories.length; i++) {
+        final sectionOffset = _estimatedCategoryOffset(i);
+        if (currentOffset >= sectionOffset - h * 0.15) {
+          candidateIndex = i;
+        } else {
+          break;
+        }
       }
     }
 
@@ -254,7 +261,8 @@ class _HomepageState extends State<Homepage> {
       List<dynamic> parsed = [];
       bool shuffleCategories = false;
 
-      if (parsedJson is Map<String, dynamic> && parsedJson.containsKey('categories')) {
+      if (parsedJson is Map<String, dynamic> &&
+          parsedJson.containsKey('categories')) {
         parsed = parsedJson['categories'] as List<dynamic>;
         shuffleCategories = parsedJson['shuffle'] == true;
       } else if (parsedJson is List<dynamic>) {
@@ -395,155 +403,153 @@ class _HomepageState extends State<Homepage> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          controller: _mainScrollController,
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-          slivers: [
-            // --- Top Bar ---
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.only(top: h * 0.01, bottom: h * 0.02),
-                child: const TopBar(),
+      body: CustomScrollView(
+        controller: _mainScrollController,
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          // --- Top Bar ---
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + h * 0.01,
+                bottom: h * 0.02,
               ),
+              child: const TopBar(),
             ),
+          ),
 
-            // --- Trending Banner Carousel ---
-            SliverToBoxAdapter(
-              child: _trendingItems.isEmpty
-                  ? const SizedBox.shrink()
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          height: h * 0.22,
-                          child: PageView.builder(
-                            controller: _trendingPageController,
-                            onPageChanged: (i) =>
-                                setState(() => _trendingPage = i),
-                            itemCount: _trendingItems.length,
-                            itemBuilder: (context, index) {
-                              return AnimatedScale(
-                                scale: _trendingPage == index ? 1.0 : 0.93,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: w * 0.02,
+          // --- Trending Banner Carousel ---
+          SliverToBoxAdapter(
+            child: _trendingItems.isEmpty
+                ? const SizedBox.shrink()
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        height: h * 0.22,
+                        child: PageView.builder(
+                          controller: _trendingPageController,
+                          onPageChanged: (i) =>
+                              setState(() => _trendingPage = i),
+                          itemCount: _trendingItems.length,
+                          itemBuilder: (context, index) {
+                            return AnimatedScale(
+                              scale: _trendingPage == index ? 1.0 : 0.93,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: w * 0.02,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    w * 0.055,
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(
-                                      w * 0.055,
-                                    ),
-                                    child: trendingView2(
-                                      context,
-                                      _trendingItems,
-                                      index,
-                                      isTopCarousel: true,
-                                    ),
+                                  child: trendingView2(
+                                    context,
+                                    _trendingItems,
+                                    index,
+                                    isTopCarousel: true,
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: h * 0.012),
-                        // ── Dot Indicators ───────────────────────────────────
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(_trendingItems.length, (i) {
-                            final isActive = i == _trendingPage;
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              margin: EdgeInsets.symmetric(
-                                horizontal: w * 0.008,
-                              ),
-                              width: isActive ? w * 0.055 : w * 0.018,
-                              height: w * 0.018,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(w * 0.01),
-                                color: isActive
-                                    ? const Color(0xFFFF9800)
-                                    : (isDark
-                                          ? Colors.grey.shade600
-                                          : Colors.grey.shade300),
                               ),
                             );
-                          }),
+                          },
                         ),
-                      ],
-                    ),
-            ),
-
-            SliverToBoxAdapter(child: SizedBox(height: h * 0.01)),
-
-            // --- Quick AI Tools ---
-            SliverToBoxAdapter(child: _buildQuickAiTools(context, isDark)),
-
-            SliverToBoxAdapter(child: SizedBox(height: h * 0.025)),
-
-            // --- Sticky Category Chips ---
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyCategoryDelegate(
-                height: h * 0.065,
-                child: Container(
-                  color: AppColors.backgroundColor(isDark),
-                  alignment: Alignment.centerLeft,
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: _selectedCategoryIndex,
-                    builder: (context, selectedIndex, _) {
-                      return SingleChildScrollView(
-                        controller: _categoryTabScrollController,
-                        padding: EdgeInsets.only(left: w * 0.04, right: w * 0.1),
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: List.generate(categories.length, (index) {
-                            final chipKey = _chipKeys.putIfAbsent(
-                              categories[index],
-                              () => GlobalKey(),
-                            );
-                            return Padding(
-                              key: chipKey,
-                              padding: EdgeInsets.only(right: w * 0.025),
-                              child: categoryChip(
-                                label: categories[index],
-                                isSelected: selectedIndex == index,
-                                onTap: () => _onCategoryTapped(index),
-                              ),
-                            );
-                          }),
-                        ),
-                      );
-                    },
+                      ),
+                      SizedBox(height: h * 0.012),
+                      // ── Dot Indicators ───────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_trendingItems.length, (i) {
+                          final isActive = i == _trendingPage;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: EdgeInsets.symmetric(horizontal: w * 0.008),
+                            width: isActive ? w * 0.055 : w * 0.018,
+                            height: w * 0.018,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(w * 0.01),
+                              color: isActive
+                                  ? const Color(0xFFFF9800)
+                                  : (isDark
+                                        ? Colors.grey.shade600
+                                        : Colors.grey.shade300),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   ),
+          ),
+
+          SliverToBoxAdapter(child: SizedBox(height: h * 0.01)),
+
+          // --- Quick AI Tools ---
+          SliverToBoxAdapter(child: _buildQuickAiTools(context, isDark)),
+
+          SliverToBoxAdapter(child: SizedBox(height: h * 0.025)),
+
+          // --- Sticky Category Chips ---
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyCategoryDelegate(
+              height: h * 0.065,
+              child: Container(
+                color: AppColors.backgroundColor(isDark),
+                alignment: Alignment.centerLeft,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _selectedCategoryIndex,
+                  builder: (context, selectedIndex, _) {
+                    return SingleChildScrollView(
+                      controller: _categoryTabScrollController,
+                      padding: EdgeInsets.only(left: w * 0.04, right: w * 0.1),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: List.generate(categories.length, (index) {
+                          final chipKey = _chipKeys.putIfAbsent(
+                            categories[index],
+                            () => GlobalKey(),
+                          );
+                          return Padding(
+                            key: chipKey,
+                            padding: EdgeInsets.only(right: w * 0.025),
+                            child: categoryChip(
+                              label: categories[index],
+                              isSelected: selectedIndex == index,
+                              onTap: () => _onCategoryTapped(index),
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
+          ),
 
-            // --- Lazy Loaded Category Galleries ---
-            if (categories.isEmpty)
-              SliverToBoxAdapter(
-                child: Column(
-                  children: List.generate(
-                    3,
-                    (i) => _buildCategorySectionSkeleton(isDark, w, h),
-                  ),
+          // --- Lazy Loaded Category Galleries ---
+          if (categories.isEmpty)
+            SliverToBoxAdapter(
+              child: Column(
+                children: List.generate(
+                  3,
+                  (i) => _buildCategorySectionSkeleton(isDark, w, h),
                 ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final category = categories[index];
-                  return _buildCategorySection(category, isDark, h, w);
-                }, childCount: categories.length),
               ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final category = categories[index];
+                return _buildCategorySection(category, isDark, h, w);
+              }, childCount: categories.length),
+            ),
 
-            SliverToBoxAdapter(child: SizedBox(height: h * 0.15)),
-          ],
-        ),
+          SliverToBoxAdapter(child: SizedBox(height: h * 0.15)),
+        ],
       ),
     );
   }
@@ -923,6 +929,7 @@ Widget trendingView2(
         enablePlayPauseGesture: false,
         showOverlayControls: false,
         borderRadius: BorderRadius.circular(w * 0.05),
+        fit: BoxFit.cover,
         placeholder: ClipRRect(
           borderRadius: BorderRadius.circular(w * 0.05),
           child: (imageUrl != null && imageUrl.isNotEmpty)

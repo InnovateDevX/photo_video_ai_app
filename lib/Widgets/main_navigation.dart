@@ -61,33 +61,18 @@ class MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final size = MediaQuery.of(context).size;
+    final w = size.width;
+    final h = size.height;
+
     final navRow = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Expanded(
-          child: Center(
-            child: _buildNavItem('assets/iconoir_home.svg', 0, isDark),
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: _buildNavItem('assets/Group 48095580.svg', 1, isDark),
-          ),
-        ),
-        Expanded(child: Center(child: _buildCentralItem(isDark))),
-        Expanded(
-          child: Center(
-            child: _buildNavItem(
-              'assets/iconamoon_profile-light.svg',
-              3,
-              isDark,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: _buildNavItem('assets/weui_setting-outlined.svg', 4, isDark),
-          ),
-        ),
+        _buildNavItem('assets/iconoir_home.svg', 0, isDark),
+        _buildNavItem('assets/Group 48095580.svg', 1, isDark),
+        _buildCentralItem(isDark),
+        _buildNavItem('assets/iconamoon_profile-light.svg', 3, isDark),
+        _buildNavItem('assets/weui_setting-outlined.svg', 4, isDark),
       ],
     );
 
@@ -97,29 +82,19 @@ class MainNavigationState extends State<MainNavigation> {
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          bottom: (MediaQuery.of(context).padding.bottom > 0)
+          left: w * 0.09,
+          right: w * 0.09,
+          bottom: MediaQuery.of(context).padding.bottom > 0
               ? MediaQuery.of(context).padding.bottom
-              : 24.0,
+              : h * 0.03,
         ),
         child: Container(
-          height: 72,
+          height: h * 0.083, // Slightly larger height
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(36),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withValues(alpha: 0.6)
-                    : Colors.black.withValues(alpha: 0.1),
-                blurRadius: 30,
-                spreadRadius: 4,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(w * 0.09),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(36),
+            borderRadius: BorderRadius.circular(w * 0.09),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Container(
@@ -127,7 +102,7 @@ class MainNavigationState extends State<MainNavigation> {
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.08)
                       : Colors.white.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(36),
+                  borderRadius: BorderRadius.circular(w * 0.09),
                   border: Border.all(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.15)
@@ -145,38 +120,42 @@ class MainNavigationState extends State<MainNavigation> {
   }
 
   Widget _buildNavItem(String assetPath, int index, bool isDark) {
-    bool isSelected = _currentIndex == index;
-    final iconSize = 26.0;
+    final size = MediaQuery.of(context).size;
+    final w = size.width;
+
+    final bool isSelected = _currentIndex == index;
+
+    final iconSize = w * 0.07; // Increased icon size
+    final horizontalPadding = w * 0.032; // Increased padding
+    final verticalPadding = w * 0.022; // Increased padding
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark
                     ? Colors.white.withValues(alpha: 0.15)
                     : Colors.black.withValues(alpha: 0.08))
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(w * 0.06),
         ),
-        child: AnimatedScale(
-          scale: isSelected ? 1.1 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutBack,
-          child: SvgPicture.asset(
-            assetPath,
-            colorFilter: ColorFilter.mode(
-              isSelected
-                  ? (isDark ? Colors.white : Colors.black)
-                  : (isDark ? Colors.white54 : Colors.black54),
-              BlendMode.srcIn,
-            ),
-            width: iconSize,
-            height: iconSize,
+        child: SvgPicture.asset(
+          assetPath,
+          width: iconSize,
+          height: iconSize,
+          colorFilter: ColorFilter.mode(
+            isSelected
+                ? (isDark ? Colors.white : Colors.black)
+                : (isDark ? Colors.white54 : Colors.black54),
+            BlendMode.srcIn,
           ),
         ),
       ),
@@ -184,40 +163,18 @@ class MainNavigationState extends State<MainNavigation> {
   }
 
   Widget _buildCentralItem(bool isDark) {
-    final outerSize = 56.0;
-    final innerSize = 46.0;
-    final iconSize = 28.0;
+    final w = MediaQuery.of(context).size.width;
+
+    final circleSize = w * 0.135; // Increased circle size
+    final iconSize = w * 0.07; // Increased icon size
 
     return GestureDetector(
       onTap: _onCentralButtonTapped,
-      child: SizedBox(
-        width: outerSize,
-        height: outerSize,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: outerSize,
-              height: outerSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.03),
-              ),
-              child: Center(
-                child: Container(
-                  width: innerSize,
-                  height: innerSize,
-                  decoration: const ProGradientDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-            Icon(Icons.add, color: Colors.white, size: iconSize),
-          ],
-        ),
+      child: Container(
+        width: circleSize,
+        height: circleSize,
+        decoration: const ProGradientDecoration(shape: BoxShape.circle),
+        child: Icon(Icons.add, color: Colors.white, size: iconSize),
       ),
     );
   }
@@ -230,7 +187,7 @@ class MainNavigationState extends State<MainNavigation> {
       builder: (ctx) {
         final w = MediaQuery.of(ctx).size.width;
         return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(MediaQuery.of(context).size.width * 0.06)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
@@ -240,9 +197,11 @@ class MainNavigationState extends State<MainNavigation> {
                 w * 0.05,
                 w * 0.06,
               ),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Color.fromRGBO(0, 0, 0, 0.5),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(MediaQuery.of(context).size.width * 0.06),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -253,7 +212,7 @@ class MainNavigationState extends State<MainNavigation> {
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       color: Colors.white30,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.2475),
                     ),
                   ),
                   const Text(
@@ -264,12 +223,12 @@ class MainNavigationState extends State<MainNavigation> {
                       fontSize: 20,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                   const Text(
                     'Choose an image to edit',
                     style: TextStyle(color: Colors.white60, fontSize: 14),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.03),
                   Row(
                     children: [
                       Expanded(
@@ -289,7 +248,7 @@ class MainNavigationState extends State<MainNavigation> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
                     child: const Text(
@@ -359,7 +318,7 @@ class _SourceTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Colors.white, size: w * 0.08),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             Text(
               label,
               style: const TextStyle(

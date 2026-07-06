@@ -64,7 +64,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (Navigator.canPop(context)) {
                           Navigator.pop(context);
                         } else {
-                          final navState = context.findAncestorStateOfType<MainNavigationState>();
+                          final navState = context
+                              .findAncestorStateOfType<MainNavigationState>();
                           if (navState != null) {
                             navState.switchTab(0);
                           } else {
@@ -129,13 +130,47 @@ class _SettingsPageState extends State<SettingsPage> {
                         height: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'app_theme'.i18n(),
-                      trailing: Switch(
-                        value: darkTheme,
-                        onChanged: (v) => themeNotifier.toggleTheme(v),
-                        activeTrackColor: Colors.blue.shade300,
-                        thumbColor: WidgetStateProperty.all(Colors.white),
-                        inactiveTrackColor: Colors.grey.shade300,
+                      label: 'Dark Theme',
+                      trailing: GestureDetector(
+                        onTap: () => themeNotifier.toggleTheme(!darkTheme),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: w * 0.13,
+                          height: h * 0.04,
+                          decoration: darkTheme
+                              ? ProGradientDecoration(
+                                  borderRadius: BorderRadius.circular(h * 0.02),
+                                )
+                              : BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(h * 0.04),
+                                ),
+                          child: AnimatedAlign(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            alignment: darkTheme
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Padding(
+                              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.005),
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
 
@@ -156,7 +191,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (url.isNotEmpty) {
                           Share.share(url);
                         } else {
-                          debugPrint('Share App URL is not configured in Remote Config.');
+                          debugPrint(
+                            'Share App URL is not configured in Remote Config.',
+                          );
                         }
                       },
                     ),
@@ -280,10 +317,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        height: sh * 0.075,
         margin: EdgeInsets.only(bottom: sh * 0.015),
         padding: EdgeInsets.symmetric(
           horizontal: sw * 0.04,
-          vertical: sh * 0.015,
         ),
         decoration: BoxDecoration(
           color: AppColors.tileBackgroundColor(isDark),
@@ -390,7 +427,7 @@ class _CreditsCard extends StatelessWidget {
                             color: AppColors.creditsPillText(isDark),
                             size: w * 0.045,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: MediaQuery.of(context).size.width * 0.01),
                           Text(
                             '$credits',
                             style: TextStyle(

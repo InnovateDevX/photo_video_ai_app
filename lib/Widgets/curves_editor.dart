@@ -82,7 +82,7 @@ class _CurvesEditorState extends State<CurvesEditor> {
             );
           }).toList(),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: MediaQuery.of(context).size.width * 0.03),
         // ── Graph Area ──
         Expanded(
           child: AspectRatio(

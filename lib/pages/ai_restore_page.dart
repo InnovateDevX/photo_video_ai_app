@@ -233,6 +233,22 @@ class _AiRestorePageState extends State<AiRestorePage>
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (_pageState == _PageState.result && _generatedImageUrl != null) {
+      return AIResultScreen(
+        originalImage: _selectedImage,
+        resultImageUrl: _generatedImageUrl!,
+        onReEdit: () => setState(() => _pageState = _PageState.selection),
+        onTryAgain: () {
+          setState(() => _pageState = _PageState.selection);
+          Future.delayed(
+            const Duration(milliseconds: 100),
+            _generateRestore,
+          );
+        },
+        onBack: () => setState(() => _pageState = _PageState.selection),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       body: SafeArea(
@@ -272,19 +288,7 @@ class _AiRestorePageState extends State<AiRestorePage>
                     setState(() => _pageState = _PageState.selection);
                   },
                 ),
-                _PageState.result => AIResultScreen(
-                  originalImage: _selectedImage,
-                  resultImageUrl: _generatedImageUrl!,
-                  onReEdit: () =>
-                      setState(() => _pageState = _PageState.selection),
-                  onTryAgain: () {
-                    setState(() => _pageState = _PageState.selection);
-                    Future.delayed(
-                      const Duration(milliseconds: 100),
-                      _generateRestore,
-                    );
-                  },
-                ),
+                _PageState.result => const SizedBox.shrink(),
                 _PageState.selection => _buildSelectionBody(isDark),
               },
             ),

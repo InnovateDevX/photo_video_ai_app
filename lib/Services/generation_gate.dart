@@ -36,6 +36,10 @@ class GenerationGate {
     }
 
     // ── 2. Rewarded interstitial ad ──────────────────────────────────────────
+    if (!adService.showAds) {
+      return true; // Bypass ads seamlessly if disabled in remote config
+    }
+
     final adResult = await adService.showRewardedAd();
 
     if (adResult == null) {

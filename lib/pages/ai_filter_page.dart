@@ -183,6 +183,22 @@ class _AiFilterPageState extends State<AiFilterPage>
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (_pageState == _PageState.result && _generatedImageUrl != null) {
+      return AIResultScreen(
+        originalImage: _selectedImage,
+        resultImageUrl: _generatedImageUrl!,
+        onReEdit: () => setState(() => _pageState = _PageState.selection),
+        onTryAgain: () {
+          setState(() => _pageState = _PageState.selection);
+          Future.delayed(
+            const Duration(milliseconds: 100),
+            _generateFilter,
+          );
+        },
+        onBack: () => setState(() => _pageState = _PageState.selection),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor(isDark),
       body: SafeArea(
@@ -206,19 +222,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                     setState(() => _pageState = _PageState.selection);
                   },
                 ),
-                _PageState.result => AIResultScreen(
-                  originalImage: _selectedImage,
-                  resultImageUrl: _generatedImageUrl!,
-                  onReEdit: () =>
-                      setState(() => _pageState = _PageState.selection),
-                  onTryAgain: () {
-                    setState(() => _pageState = _PageState.selection);
-                    Future.delayed(
-                      const Duration(milliseconds: 100),
-                      _generateFilter,
-                    );
-                  },
-                ),
+                _PageState.result => const SizedBox.shrink(),
                 _PageState.selection => _buildSelectionBody(isDark),
               },
             ),
@@ -272,7 +276,7 @@ class _AiFilterPageState extends State<AiFilterPage>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
         decoration: BoxDecoration(
           color: AppColors.tileBackgroundColor(isDark),
           shape: BoxShape.circle,
@@ -323,12 +327,12 @@ class _AiFilterPageState extends State<AiFilterPage>
                                 size: 50,
                                 color: Colors.grey[400],
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                               Text(
                                 'tap_to_select_gallery'.i18n(),
                                 style: TextStyle(color: Colors.grey[500]),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                               GestureDetector(
                                 onTap: _pickImage,
                                 child: Container(
@@ -360,7 +364,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedImage = null),
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.015),
                           decoration: const BoxDecoration(
                             color: Colors.black54,
                             shape: BoxShape.circle,
@@ -380,7 +384,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                       child: Row(
                         children: [
                           _actionIcon(Icons.qr_code_scanner, isDark),
-                          const SizedBox(width: 8),
+                          SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                           _actionIcon(Icons.crop_original, isDark),
                         ],
                       ),
@@ -391,10 +395,10 @@ class _AiFilterPageState extends State<AiFilterPage>
             SizedBox(height: h * 0.02),
             // Suggestion
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +410,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                         color: Colors.orange,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.02),
                       Text(
                         'ai_suggestion'.i18n(),
                         style: TextStyle(
@@ -416,13 +420,13 @@ class _AiFilterPageState extends State<AiFilterPage>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.grey[800] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.02),
                     ),
                     child: Text(
                       'ai_filter_suggestion'.i18n(),
@@ -471,7 +475,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                                 height: 90,
                                 margin: const EdgeInsets.only(right: 12),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.04),
                                   border: Border.all(
                                     color: isSelected
                                         ? Colors.orange
@@ -480,7 +484,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                                   ),
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.035),
                                   child: style.thumbnailUrl.isNotEmpty
                                       ? CachedNetworkImage(
                                           imageUrl: style.thumbnailUrl,
@@ -505,7 +509,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                                         ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                               Padding(
                                 padding: const EdgeInsets.only(right: 12),
                                 child: SizedBox(
@@ -563,7 +567,7 @@ class _AiFilterPageState extends State<AiFilterPage>
 
   Widget _actionIcon(IconData icon, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.015),
       decoration: BoxDecoration(
         color: isDark ? Colors.black45 : Colors.white70,
         shape: BoxShape.circle,

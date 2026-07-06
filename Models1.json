@@ -1,0 +1,700 @@
+[
+    {
+        "id": "prunaai/z-image-turbo",
+        "name": "Z-Image Turbo",
+        "official": false,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/z-image-turbo/predictions",
+        "credit_used": 10,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/z-image-turbo%2Fslice%201.png?alt=media&token=284ffa5f-de71-4f7f-88b5-df863bad6446",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "go_fast": false,
+                "output_format": "jpg",
+                "guidance_scale": 0,
+                "output_quality": 80,
+                "num_inference_steps": 8
+            }
+        }
+    },
+    {
+        "id": "openai/gpt-image-2",
+        "name": "GPT Image 2",
+        "official": false,
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/openai/gpt-image-2/predictions",
+        "credit_used": 500,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/gpt-image-2.png?alt=media&token=98586771-f522-41a6-974f-842af913b245",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "input_images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "1:1",
+                "quality": "auto",
+                "user_id": "",
+                "background": "auto",
+                "moderation": "auto",
+                "output_format": "webp",
+                "openai_api_key": "",
+                "number_of_images": 1,
+                "output_compression": 90
+            }
+        }
+    },
+    {
+        "id": "stability-ai/stable-diffusion-3.5-large",
+        "name": "Stable Diffusion 3.5 Large",
+        "official": true,
+        "iseditable": false,
+        "owner": "stability-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/stability-ai/stable-diffusion-3.5-large/predictions",
+        "credit_used": 100,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/stable-diffusion-3.5-large.png?alt=media&token=f2418fc9-2c08-49d4-b5f9-ddcf5b9caa56",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "cfg": 5,
+                "seed": 0,
+                "output_format": "webp",
+                "negative_prompt": "",
+                "prompt_strength": 0.85
+            }
+        }
+    },
+    {
+        "id": "google/imagen-3",
+        "name": "Google Imagen 3",
+        "official": true,
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/imagen-3/predictions",
+        "credit_used": 60,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/imagen-3%20(1).png?alt=media&token=09f98adf-2817-4ba0-ab6a-8bd3018bfbad",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high"
+            }
+        }
+    },
+    {
+        "id": "google/nano-banana-pro",
+        "name": "Google Nano Banana Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-pro/predictions",
+        "credit_used": 40,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/nano-banana-pro.png?alt=media&token=c343bbeb-2c4f-472b-8219-0a0c00e7f85a",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "2K",
+                "image_input": [],
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high",
+                "allow_fallback_model": false
+            }
+        }
+    },
+    {
+        "id": "prunaai/p-image-edit",
+        "name": "P-Image Edit",
+        "official": true,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-image-edit/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/p-image-edit.png?alt=media&token=fb53fb78-11a6-440e-9708-8aa4bbe6c1f6",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "auto",
+                "seed": 0,
+                "no_op": false,
+                "turbo": true,
+                "images": [],
+                "disable_safety_checker": false
+            }
+        }
+    },
+    {
+        "id": "runwayml/gen4-image",
+        "name": "Runway Gen-4 Image",
+        "official": false,
+        "iseditable": false,
+        "owner": "runwayml",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/runwayml/gen4-image/predictions",
+        "credit_used": 30,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/gen4-image.png?alt=media&token=e03d506c-d28b-488d-86bb-b3df7fa82654",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "resolution": "1080p",
+                "aspect_ratio": "16:9",
+                "reference_tags": [],
+                "reference_images": []
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-kontext-pro",
+        "name": "FLUX Kontext Pro",
+        "official": true,
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-pro/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/flux-kontext-pro.png?alt=media&token=09d10e72-fb8d-4b0a-9143-ab8db174e0c2",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "square",
+                "seed": 0,
+                "input_image": "",
+                "output_format": "png",
+                "safety_tolerance": 2,
+                "prompt_upsampling": false
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-kontext-max",
+        "name": "FLUX Kontext Max",
+        "official": true,
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-max/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/flux-kontext-max.png?alt=media&token=bb64c651-8a44-448a-994d-5b21ff6d85b7",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "square",
+                "seed": 0,
+                "input_image": "",
+                "output_format": "png",
+                "safety_tolerance": 2,
+                "prompt_upsampling": false
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-pro",
+        "name": "FLUX Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-pro/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/flux-pro.png?alt=media&token=357a851d-9168-4c94-836c-b63edfdfcf13",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "1:1",
+                "seed": 0,
+                "steps": 25,
+                "width": 0,
+                "height": 0,
+                "guidance": 3,
+                "interval": 2,
+                "image_prompt": "",
+                "output_format": "webp",
+                "output_quality": 80,
+                "safety_tolerance": 2,
+                "prompt_upsampling": false
+            }
+        }
+    },
+    {
+        "id": "leonardoai/lucid-origin",
+        "name": "Lucid Origin",
+        "official": false,
+        "iseditable": false,
+        "owner": "leonardoai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/leonardoai/lucid-origin/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/lucid-origin.png?alt=media&token=4033918d-7f8c-48b8-bc85-173c266c24c6",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "style": "none",
+                "contrast": "medium",
+                "num_images": 1,
+                "aspect_ratio": "16:9",
+                "prompt_enhance": true,
+                "generation_mode": "standard"
+            }
+        }
+    },
+    {
+        "id": "ideogram-ai/ideogram-v2",
+        "name": "Ideogram 2.0",
+        "official": true,
+        "iseditable": true,
+        "owner": "ideogram-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2/predictions",
+        "credit_used": 4,
+        "icon_url": "https://github.com/ideogram-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "mask": "",
+                "seed": 0,
+                "image": "",
+                "resolution": "None",
+                "style_type": "None",
+                "aspect_ratio": "1:1",
+                "negative_prompt": "",
+                "magic_prompt_option": "Auto"
+            }
+        }
+    },
+    {
+        "id": "ideogram-ai/ideogram-v2a",
+        "name": "Ideogram 2.0 Alpha",
+        "official": true,
+        "iseditable": true,
+        "owner": "ideogram-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2a/predictions",
+        "credit_used": 5,
+        "icon_url": "https://github.com/ideogram-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "seed": 0,
+                "resolution": "None",
+                "style_type": "None",
+                "aspect_ratio": "1:1",
+                "magic_prompt_option": "Auto"
+            }
+        }
+    },
+    {
+        "id": "ideogram-ai/ideogram-v2-turbo",
+        "name": "Ideogram 2.0 Turbo",
+        "official": true,
+        "iseditable": true,
+        "owner": "ideogram-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2-turbo/predictions",
+        "credit_used": 3,
+        "icon_url": "https://github.com/ideogram-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "mask": "",
+                "seed": 0,
+                "image": "",
+                "resolution": "None",
+                "style_type": "None",
+                "aspect_ratio": "1:1",
+                "negative_prompt": "",
+                "magic_prompt_option": "Auto"
+            }
+        }
+    },
+    {
+        "id": "prunaai/p-image-lora",
+        "name": "P-Image LoRA",
+        "official": true,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-image-lora/predictions",
+        "credit_used": 10,
+        "icon_url": "https://github.com/prunaai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "lora_model": "{{lora_model}}",
+                "seed": 0,
+                "width": 0,
+                "height": 0,
+                "lora_scale": 0.5,
+                "aspect_ratio": "16:9",
+                "hf_api_token": "",
+                "lora_weights": "",
+                "prompt_upsampling": false,
+                "disable_safety_checker": false
+            }
+        }
+    },
+    {
+        "id": "comfyui/any-comfyui-workflow",
+        "name": "Any ComfyUI Workflow",
+        "official": false,
+        "iseditable": false,
+        "owner": "comfyui",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/comfyui/any-comfyui-workflow/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/any-comfyui-workflow.png?alt=media&token=295e60d0-35d3-4da6-86bf-f511295af7f0",
+        "request_body": {
+            "input": {
+                "file": "{{file}}",
+                "input_file": "",
+                "output_format": "webp",
+                "workflow_json": "",
+                "output_quality": 95,
+                "randomise_seeds": true,
+                "force_reset_cache": false,
+                "return_temp_files": false
+            }
+        }
+    },
+    {
+        "id": "tencent/hunyuan-image-3",
+        "name": "Hunyuan Image 3.0",
+        "official": true,
+        "iseditable": false,
+        "owner": "tencent",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/tencent/hunyuan-image-3/predictions",
+        "credit_used": 25,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hunyuan-image-3.png?alt=media&token=6b036bea-9cf5-4f4d-a54f-eedea95306bd",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "go_fast": true,
+                "aspect_ratio": "1:1",
+                "output_format": "webp",
+                "output_quality": 95,
+                "disable_safety_checker": false
+            }
+        }
+    },
+    {
+        "id": "prunaai/wan-2.2-image",
+        "name": "Wan 2.2 Image",
+        "official": true,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/wan-2.2-image/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/wan-2.2-image.png?alt=media&token=5dd2c5c3-5222-4df2-9358-b805bd8a8d4a",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "juiced": false,
+                "megapixels": 2,
+                "aspect_ratio": "16:9",
+                "output_format": "jpg",
+                "output_quality": 80,
+                "lora_scale_transformer": 1,
+                "lora_scale_transformer_2": 1,
+                "lora_weights_transformer": "",
+                "lora_weights_transformer_2": ""
+            }
+        }
+    },
+    {
+        "id": "prunaai/hidream-l1-full",
+        "name": "HiDream L1 Full",
+        "official": false,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/hidream-l1-full/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hidream-l1-full.png?alt=media&token=0c7c5ea7-ec59-4bf2-990f-cdcd5e354ef5",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "seed": -1,
+                "model_type": "full",
+                "resolution": "1024 × 1024 (Square)",
+                "speed_mode": "Lightly Juiced 🍊 (more consistent)",
+                "output_format": "webp",
+                "output_quality": 100
+            }
+        }
+    },
+    {
+        "id": "prunaai/hidream-l1-dev",
+        "name": "HiDream L1 Dev",
+        "official": false,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/hidream-l1-dev/predictions",
+        "credit_used": 10,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hidream-l1-dev.png?alt=media&token=d0e3a9f7-b89b-4f14-baea-159f9c389197",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "seed": -1,
+                "model_type": "dev",
+                "resolution": "1024 × 1024 (Square)",
+                "speed_mode": "Lightly Juiced 🍊 (more consistent)",
+                "output_format": "webp",
+                "output_quality": 100
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-dev",
+        "name": "FLUX Dev",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions",
+        "credit_used": 10,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "seed": 0,
+                "image": "",
+                "go_fast": true,
+                "guidance": 3.5,
+                "megapixels": "1",
+                "num_outputs": 1,
+                "aspect_ratio": "1:1",
+                "output_format": "webp",
+                "output_quality": 80,
+                "prompt_strength": 0.8,
+                "num_inference_steps": 28,
+                "disable_safety_checker": false
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-1.1-pro-ultra",
+        "name": "FLUX 1.1 Pro Ultra",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro-ultra/predictions",
+        "credit_used": 6,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "raw": false,
+                "seed": 0,
+                "image_prompt": "",
+                "output_format": "jpg",
+                "safety_tolerance": 2,
+                "image_prompt_strength": 0.1
+            }
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-schnell",
+        "name": "FLUX 1.1 Schnell",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+        "credit_used": 5,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "seed": 0,
+                "go_fast": true,
+                "megapixels": "1",
+                "num_outputs": 1,
+                "aspect_ratio": "1:1",
+                "output_format": "webp",
+                "output_quality": 80,
+                "num_inference_steps": 4,
+                "disable_safety_checker": false
+            }
+        }
+    },
+    {
+        "id": "wan-video/wan-2.7-image",
+        "name": "Wan 2.7 Image",
+        "official": true,
+        "iseditable": true,
+        "owner": "wan-video",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-image/predictions",
+        "credit_used": 4,
+        "icon_url": "https://github.com/wan-video.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "images": [
+                    "{{image}}"
+                ],
+                "size": "2K",
+                "seed": 0,
+                "num_outputs": 1,
+                "thinking_mode": true,
+                "image_set_mode": false
+            }
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4",
+        "name": "Recraft V4",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4/predictions",
+        "credit_used": 40,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "1024x1024",
+                "aspect_ratio": "Not set"
+            }
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4-pro",
+        "name": "Recraft V4 Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4-pro/predictions",
+        "credit_used": 250,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "2048x2048",
+                "aspect_ratio": "Not set"
+            }
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4-svg",
+        "name": "Recraft V4 SVG",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4-svg/predictions",
+        "credit_used": 80,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "1024x1024",
+                "aspect_ratio": "Not set"
+            }
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4-pro-svg",
+        "name": "Recraft V4 Pro SVG",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4-pro-svg/predictions",
+        "credit_used": 300,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "2048x2048",
+                "aspect_ratio": "Not set"
+            }
+        }
+    },
+    {
+        "id": "minimax/image-01",
+        "name": "MiniMax Image-01",
+        "official": false,
+        "iseditable": true,
+        "owner": "minimax",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/minimax/image-01/predictions",
+        "credit_used": 5,
+        "icon_url": "https://github.com/minimax.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "1:1",
+                "number_of_images": 1,
+                "prompt_optimizer": true,
+                "subject_reference": ""
+            }
+        }
+    }
+]
