@@ -11,20 +11,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:trail_ai_app/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp(initialUid: null));
+  testWidgets('App builds and shows splash screen', (
+    WidgetTester tester,
+  ) async {
+    // Build the app. MyApp now renders SplashScreen as its home route and
+    // performs all heavy initialization in the background.
+    await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify the splash screen renders.
+    expect(find.text('Trail AI Studio'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 }

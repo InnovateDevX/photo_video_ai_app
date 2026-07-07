@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeNotifier extends ValueNotifier<bool> {
-  ThemeNotifier() : super(false) {
+  ThemeNotifier() : super(true) {
     _loadTheme();
   }
 
@@ -10,7 +10,7 @@ class ThemeNotifier extends ValueNotifier<bool> {
 
   Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    value = prefs.getBool(_themeKey) ?? false;
+    value = prefs.getBool(_themeKey) ?? true;
   }
 
   Future<void> toggleTheme(bool isDark) async {

@@ -1,16 +1,12 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:trail_ai_app/repositories/user_repository.dart';
+import 'package:trail_ai_app/Core/user_session.dart';
 import 'credit_service.dart';
-
-/// Entitlement IDs — Must match what is set in RevenueCat Dashboard.
-const String kEntitlementPro = 'pro';
-const String kEntitlementUltra = 'ultra';
 
 class SubscriptionService {
   // ── Singleton ────────────────────────────────────────────────────────────────
@@ -25,171 +21,135 @@ class SubscriptionService {
   bool _isUltra = false;
   bool get isUltra => _isUltra;
 
-  Offerings? _offerings;
-  Offerings? get offerings => _offerings;
-
-  CustomerInfo? _customerInfo;
-  CustomerInfo? get customerInfo => _customerInfo;
+  /// The loaded product details (weekly, monthly) from Google Play.
+  final Map<String, ProductDetails> _products = {};
+  Map<String, ProductDetails> get products => _products;
 
   final StreamController<bool> _subscriptionStreamController =
       StreamController<bool>.broadcast();
-
   Stream<bool> get subscriptionStream => _subscriptionStreamController.stream;
+
+  StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
 
   // ── Local cache key ──────────────────────────────────────────────────────────
   static const String _localSubKey = 'is_subscribed';
 
   // ── Init ─────────────────────────────────────────────────────────────────────
 
-  /// Configuration. Needs to be called with API keys from Remote Config.
+  /// Initialize the in-app purchase connection and listen for purchase updates.
   Future<void> initialize() async {
-    final config = RemoteConfigService();
-    String apiKey = Platform.isIOS ? config.rcIosKey : config.rcAndroidKey;
+    debugPrint('🛒 [SubscriptionService] Initializing native IAP...');
 
-    if (apiKey.isEmpty) {
+    final bool available = await InAppPurchase.instance.isAvailable();
+    if (!available) {
       debugPrint(
-        '⚠️ [SubscriptionService] RevenueCat API Key is empty. Configuration skipped.',
+        '⚠️ [SubscriptionService] In-app purchases NOT available on this device.',
       );
       return;
     }
 
-    try {
-      await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.error);
-      debugPrint(
-        '🛒 [SubscriptionService] FULL API KEY FROM FIREBASE: [$apiKey]',
-      );
-      debugPrint(
-        '🛒 [SubscriptionService] API Key (first 5): ${apiKey.substring(0, 5.clamp(0, apiKey.length))}...',
-      );
-      PurchasesConfiguration configuration = PurchasesConfiguration(apiKey);
-      await Purchases.configure(configuration);
-      debugPrint('🛒 [SubscriptionService] Purchases configured successfully.');
+    // Load local cache
+    final prefs = await SharedPreferences.getInstance();
+    _isSubscribed = prefs.getBool(_localSubKey) ?? false;
+    debugPrint(
+      '🛒 [SubscriptionService] Local cache: subscribed=$_isSubscribed',
+    );
 
-      // Load local cache for instant UI
-      final prefs = await SharedPreferences.getInstance();
-      _isSubscribed = prefs.getBool(_localSubKey) ?? false;
-      _subscriptionStreamController.add(_isSubscribed);
-      debugPrint(
-        '🛒 [SubscriptionService] Local cache loaded - subscribed: $_isSubscribed',
-      );
+    // Listen for purchase updates
+    _purchaseSubscription = InAppPurchase.instance.purchaseStream.listen(
+      _handlePurchaseUpdates,
+      onError: (error) {
+        debugPrint('❌ [SubscriptionService] Purchase stream error: $error');
+      },
+    );
 
-      // 0. Force refresh cache (important if entitlements were just created)
-      debugPrint(
-        '🛒 [SubscriptionService] Invalidating cache to force-fetch latest metadata...',
-      );
-      await Purchases.invalidateCustomerInfoCache();
+    // Load product details from Google Play
+    await loadProducts();
 
-      // 1. Fetch Offerings (This often triggers a metadata sync)
-      // Wrapped in its own try-catch so a ConfigurationError doesn't kill the whole init
-      try {
-        debugPrint(
-          '🛒 [SubscriptionService] Pre-fetching offerings to sync metadata...',
-        );
-        _offerings = await Purchases.getOfferings();
-        debugPrint(
-          '🛒 [SubscriptionService] Offerings pre-fetched: ${_offerings?.current?.identifier}',
-        );
-      } catch (offeringsError) {
-        debugPrint(
-          '⚠️ [SubscriptionService] Offerings pre-fetch failed (non-fatal): $offeringsError',
-        );
-        // This is NOT fatal — the rest of init (customer info, listener) must still proceed
-      }
-
-      // 2. Fetch latest customer info
-      _customerInfo = await Purchases.getCustomerInfo();
-      _updateSubscriptionStatus(_customerInfo!);
-
-      // Listen for changes
-      Purchases.addCustomerInfoUpdateListener((customerInfo) {
-        debugPrint(
-          '🛒 [SubscriptionService] CustomerInfo updated listener triggered.',
-        );
-        _customerInfo = customerInfo;
-        _updateSubscriptionStatus(customerInfo);
-      });
-
-      debugPrint('🛒 [SubscriptionService] Initialization complete.');
-      debugPrint(
-        '🛒 [SubscriptionService] Current User ID: ${await Purchases.appUserID}',
-      );
-    } catch (e) {
-      debugPrint('❌ [SubscriptionService] Configuration failed: $e');
-    }
+    debugPrint('🛒 [SubscriptionService] Initialization complete.');
   }
 
-  /// Logs in the user to RevenueCat to sync billing history with the Firebase UID.
-  Future<void> logIn(String uid) async {
-    try {
-      LogInResult result = await Purchases.logIn(uid);
-      _customerInfo = result.customerInfo;
-      _updateSubscriptionStatus(_customerInfo!);
-      debugPrint('🛒 [SubscriptionService] User logged in: $uid');
-    } catch (e) {
-      debugPrint('❌ [SubscriptionService] LogIn failed: $e');
-    }
-  }
+  // ── Load Products ────────────────────────────────────────────────────────────
 
-  /// Load available offerings from RevenueCat.
-  Future<Offerings?> loadOfferings() async {
+  /// Fetches product details (prices in local currency) from Google Play.
+  Future<void> loadProducts() async {
     try {
-      debugPrint('🛒 [SubscriptionService] Loading offerings...');
-      _offerings = await Purchases.getOfferings();
-      if (_offerings != null) {
+      final config = RemoteConfigService();
+      final weeklyId = config.proWeekly;
+      final monthlyId = config.proMonthly;
+
+      final Set<String> ids = {};
+      if (weeklyId.isNotEmpty) ids.add(weeklyId);
+      if (monthlyId.isNotEmpty) ids.add(monthlyId);
+
+      if (ids.isEmpty) {
         debugPrint(
-          '🛒 [SubscriptionService] Offerings loaded. Current: ${_offerings?.current?.identifier}',
+          '⚠️ [SubscriptionService] No product IDs configured in Remote Config.',
         );
-        for (var o in _offerings!.all.values) {
-          debugPrint(
-            '   Offering: ${o.identifier} has ${o.availablePackages.length} packages',
-          );
-        }
-      } else {
-        debugPrint('⚠️ [SubscriptionService] Offerings came back null.');
+        return;
       }
-      return _offerings;
+
+      debugPrint('🛒 [SubscriptionService] Querying products: $ids');
+
+      final ProductDetailsResponse response =
+          await InAppPurchase.instance.queryProductDetails(ids);
+
+      if (response.error != null) {
+        debugPrint(
+          '❌ [SubscriptionService] Error querying products: ${response.error}',
+        );
+      }
+
+      if (response.notFoundIDs.isNotEmpty) {
+        debugPrint(
+          '⚠️ [SubscriptionService] Products NOT found: ${response.notFoundIDs}',
+        );
+      }
+
+      _products.clear();
+      for (final product in response.productDetails) {
+        _products[product.id] = product;
+        debugPrint(
+          '🛒 [SubscriptionService] Product loaded: ${product.id} → ${product.price}',
+        );
+      }
     } catch (e) {
-      debugPrint('❌ [SubscriptionService] Failed to load offerings: $e');
-      return null;
+      debugPrint('❌ [SubscriptionService] Failed to load products: $e');
     }
   }
 
   // ── Purchase ─────────────────────────────────────────────────────────────────
 
-  /// Initiates a purchase for a RevenueCat [Package].
-  Future<String?> buyPackage(Package package) async {
+  /// Initiates a subscription purchase for the given [ProductDetails].
+  /// Returns null on success, 'CANCELED' if user cancelled, or error string.
+  Future<String?> buyProduct(ProductDetails product) async {
     try {
       debugPrint(
-        '🛒 [SubscriptionService] Starting purchase for package: ${package.identifier} (${package.packageType})',
+        '🛒 [SubscriptionService] Starting purchase for: ${product.id} (${product.price})',
       );
-      PurchaseResult result = await Purchases.purchase(
-        PurchaseParams.package(package),
+      final PurchaseParam purchaseParam = PurchaseParam(
+        productDetails: product,
       );
-
-      debugPrint('🛒 [SubscriptionService] Purchase call completed.');
-      _customerInfo = result.customerInfo;
-      _updateSubscriptionStatus(result.customerInfo);
-      return null; // success
+      // Use buyNonConsumable for subscriptions
+      final bool success = await InAppPurchase.instance.buyNonConsumable(
+        purchaseParam: purchaseParam,
+      );
+      debugPrint(
+        '🛒 [SubscriptionService] buyNonConsumable returned: $success',
+      );
+      return null; // The actual result comes via the purchaseStream
     } catch (e) {
       debugPrint('❌ [SubscriptionService] Purchase error: $e');
-      if (e is PlatformException) {
-        debugPrint(
-          '   Code: ${e.code}, Message: ${e.message}, Details: ${e.details}',
-        );
-        if (e.code == '1') return 'CANCELED';
-      }
       return e.toString();
     }
   }
 
-  /// Restore purchases.
+  /// Restore previous purchases.
   Future<void> restorePurchases() async {
     try {
       debugPrint('🛒 [SubscriptionService] Restoring purchases...');
-      CustomerInfo customerInfo = await Purchases.restorePurchases();
-      debugPrint('🛒 [SubscriptionService] Restore complete.');
-      _customerInfo = customerInfo;
-      _updateSubscriptionStatus(customerInfo);
+      await InAppPurchase.instance.restorePurchases();
+      debugPrint('🛒 [SubscriptionService] Restore initiated.');
     } catch (e) {
       debugPrint('❌ [SubscriptionService] restorePurchases failed: $e');
     }
@@ -197,11 +157,90 @@ class SubscriptionService {
 
   // ── Internal ─────────────────────────────────────────────────────────────────
 
+  /// Handles incoming purchase updates from the native billing stream.
+  void _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      debugPrint(
+        '🛒 [SubscriptionService] Purchase update: '
+        'productID=${purchase.productID}, '
+        'status=${purchase.status}',
+      );
+
+      switch (purchase.status) {
+        case PurchaseStatus.purchased:
+        case PurchaseStatus.restored:
+          await _completePurchase(purchase);
+          break;
+        case PurchaseStatus.error:
+          debugPrint(
+            '❌ [SubscriptionService] Purchase error: ${purchase.error}',
+          );
+          if (purchase.pendingCompletePurchase) {
+            await InAppPurchase.instance.completePurchase(purchase);
+          }
+          break;
+        case PurchaseStatus.canceled:
+          debugPrint('🛒 [SubscriptionService] Purchase canceled by user.');
+          if (purchase.pendingCompletePurchase) {
+            await InAppPurchase.instance.completePurchase(purchase);
+          }
+          break;
+        case PurchaseStatus.pending:
+          debugPrint('🛒 [SubscriptionService] Purchase pending...');
+          break;
+      }
+    }
+  }
+
+  /// Completes a successful purchase: grants credits, updates Firestore, caches locally.
+  Future<void> _completePurchase(PurchaseDetails purchase) async {
+    try {
+      // 1. Complete the purchase with Google Play (REQUIRED)
+      if (purchase.pendingCompletePurchase) {
+        await InAppPurchase.instance.completePurchase(purchase);
+        debugPrint('🛒 [SubscriptionService] Purchase completed with store.');
+      }
+
+      // 2. Grant credits
+      final int creditsToGrant = _getCreditsForProduct(purchase.productID);
+      await CreditService().setCredits(creditsToGrant);
+      debugPrint(
+        '🛒 [SubscriptionService] Granted $creditsToGrant credits for: ${purchase.productID}',
+      );
+
+      // 3. Update subscription state
+      _isSubscribed = true;
+      _subscriptionStreamController.add(true);
+
+      // 4. Persist locally
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_localSubKey, true);
+
+      // 5. Update Firestore pro status
+      final uid = UserSession.instance.uid;
+      if (uid != null) {
+        await UserRepository().updateProStatus(
+          uid,
+          true,
+          productId: purchase.productID,
+        );
+        debugPrint(
+          '🛒 [SubscriptionService] Firestore isPro updated for uid=$uid',
+        );
+      }
+
+      debugPrint(
+        '🛒 [SubscriptionService] ✅ Purchase fully processed: ${purchase.productID}',
+      );
+    } catch (e) {
+      debugPrint('❌ [SubscriptionService] _completePurchase failed: $e');
+    }
+  }
+
   int _getCreditsForProduct(String productId) {
     try {
       final jsonStr = RemoteConfigService().rcCreditsMapJson;
       final Map<String, dynamic> map = jsonDecode(jsonStr);
-      // Try to find the exact productId in the map, otherwise fallback to 999999
       return (map[productId] as int?) ?? 999999;
     } catch (e) {
       debugPrint('⚠️ [SubscriptionService] Error parsing rc_credits_map: $e');
@@ -209,61 +248,8 @@ class SubscriptionService {
     }
   }
 
-  void _updateSubscriptionStatus(CustomerInfo customerInfo) async {
-    debugPrint('🛒 [SubscriptionService] Updating status.');
-    debugPrint(
-      '   - All Entitlements in RC: ${customerInfo.entitlements.all.keys}',
-    );
-    debugPrint(
-      '   - Active Entitlements in RC: ${customerInfo.entitlements.active.keys}',
-    );
-
-    // Check for entitlements
-    final EntitlementInfo? proEntitlement =
-        customerInfo.entitlements.active[kEntitlementPro];
-    final EntitlementInfo? ultraEntitlement =
-        customerInfo.entitlements.active[kEntitlementUltra];
-
-    final bool isPro = proEntitlement != null;
-    final bool isUltraTier = ultraEntitlement != null;
-
-    bool shouldBeSubscribed = isPro || isUltraTier;
-    debugPrint(
-      '🛒 [SubscriptionService] Status check: Pro=$isPro, Ultra=$isUltraTier -> shouldBeSubscribed=$shouldBeSubscribed',
-    );
-
-    if (shouldBeSubscribed != _isSubscribed || isUltraTier != _isUltra) {
-      _isSubscribed = shouldBeSubscribed;
-      _isUltra = isUltraTier;
-
-      // 1. Local cache
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_localSubKey, _isSubscribed);
-
-      // 2. Grant credits based on the product ID that unlocked the entitlement
-      if (_isSubscribed) {
-        // Use the product ID from the active entitlement to look up the credit reward
-        String? activeProductId =
-            ultraEntitlement?.productIdentifier ??
-            proEntitlement?.productIdentifier;
-
-        if (activeProductId != null) {
-          int creditsToGrant = _getCreditsForProduct(activeProductId);
-          await CreditService().setCredits(creditsToGrant);
-          debugPrint(
-            '🛒 [SubscriptionService] Granted $creditsToGrant credits for product: $activeProductId',
-          );
-        }
-      }
-
-      _subscriptionStreamController.add(_isSubscribed);
-      debugPrint(
-        '🛒 [SubscriptionService] Status Updated — Subscribed: $_isSubscribed, Ultra: $_isUltra',
-      );
-    }
-  }
-
   void dispose() {
+    _purchaseSubscription?.cancel();
     _subscriptionStreamController.close();
   }
 }

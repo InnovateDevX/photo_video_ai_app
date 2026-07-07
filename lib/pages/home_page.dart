@@ -24,7 +24,9 @@ import '../Services/credit_service.dart';
 import '../Services/data_service.dart';
 import '../Widgets/main_navigation.dart';
 import '../Widgets/ai_tools_grid.dart';
-import '../Widgets/reel_video_player.dart';
+// NOTE: ReelVideoPlayer is used in this file for the top trending carousel, 
+// but category lists show static thumbnails.
+import '../Widgets/reel_video_player.dart' show ReelVideoPlayer;
 
 // ── Per-category gallery state controller ────────────────────────────────────
 class _CategoryGalleryController {
@@ -914,17 +916,24 @@ Widget trendingView2(
       if (item.imageUrl.endsWith('.mp4')) {
         videoUrl = item.imageUrl;
       } else {
+        // Prefer the explicit thumbnail for video items in the list
         imageUrl = item.thumbnailUrl ?? item.imageUrl;
       }
     } else {
-      imageUrl = item.imageUrl;
+      // For non-video items, or video items that already have a videoUrl,
+      // prefer the thumbnail when one is provided.
+      imageUrl = (type == 'video' && item.thumbnailUrl != null)
+          ? item.thumbnailUrl!
+          : item.imageUrl;
     }
   }
 
+  // In category lists we ONLY show static thumbnails, but we play video in the
+  // top carousel.
   Widget buildMedia() {
-    if (videoUrl != null && videoUrl.isNotEmpty) {
+    if (isTopCarousel && videoUrl != null && videoUrl!.isNotEmpty) {
       return ReelVideoPlayer(
-        videoUrl: videoUrl,
+        videoUrl: videoUrl!,
         seamlessLoop: true,
         enablePlayPauseGesture: false,
         showOverlayControls: false,
@@ -932,15 +941,13 @@ Widget trendingView2(
         fit: BoxFit.cover,
         placeholder: ClipRRect(
           borderRadius: BorderRadius.circular(w * 0.05),
-          child: (imageUrl != null && imageUrl.isNotEmpty)
+          child: (imageUrl != null && imageUrl!.isNotEmpty)
               ? CachedNetworkImage(
-                  imageUrl: imageUrl,
+                  imageUrl: imageUrl!,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Shimmer.fromColors(
                     baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-                    highlightColor: isDark
-                        ? Colors.grey[700]!
-                        : Colors.grey[100]!,
+                    highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
                     child: Container(color: Colors.white),
                   ),
                   errorWidget: (context, url, error) =>
@@ -948,20 +955,18 @@ Widget trendingView2(
                 )
               : Shimmer.fromColors(
                   baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-                  highlightColor: isDark
-                      ? Colors.grey[700]!
-                      : Colors.grey[100]!,
+                  highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
                   child: Container(color: Colors.white),
                 ),
         ),
       );
     }
 
-    if (imageUrl != null && imageUrl.isNotEmpty) {
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(w * 0.05),
         child: CachedNetworkImage(
-          imageUrl: imageUrl,
+          imageUrl: imageUrl!,
           fit: BoxFit.cover,
           placeholder: (context, url) => Shimmer.fromColors(
             baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,

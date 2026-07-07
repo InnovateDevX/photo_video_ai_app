@@ -8,7 +8,9 @@ import 'package:trail_ai_app/Services/data_service.dart';
 import 'package:trail_ai_app/pages/generation_page.dart';
 import '../Core/colors.dart';
 import 'settings_page.dart';
-import '../Widgets/reel_video_player.dart';
+// NOTE: ReelVideoPlayer is intentionally NOT used in this file anymore —
+// the "See All" grid now shows only static thumbnails. Videos play only
+// inside the full-screen CategoryPreviewPage.
 
 class TrendingSeeAllPage extends StatefulWidget {
   final String? categoryName;
@@ -286,10 +288,15 @@ class _TrendingSeeAllCard extends StatelessWidget {
         if (item.imageUrl.endsWith('.mp4')) {
           videoUrl = item.imageUrl;
         } else {
+          // Prefer the explicit thumbnail for video items in the list
           imageUrl = item.thumbnailUrl ?? item.imageUrl;
         }
       } else {
-        imageUrl = item.imageUrl;
+        // For non-video items, or video items that already have a videoUrl,
+        // prefer the thumbnail when one is provided.
+        imageUrl = (type == 'video' && item.thumbnailUrl != null)
+            ? item.thumbnailUrl!
+            : item.imageUrl;
       }
     }
 
@@ -303,6 +310,8 @@ class _TrendingSeeAllCard extends StatelessWidget {
       );
     }
 
+    // In the "See All" grid we ONLY show static thumbnails. Video playback
+    // is reserved for the full-screen CategoryPreviewPage.
     Widget buildMedia() {
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -339,40 +348,9 @@ class _TrendingSeeAllCard extends StatelessWidget {
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(sw * 0.05),
-                child: (videoUrl != null && videoUrl.isNotEmpty)
-                    ? ReelVideoPlayer(
-                        videoUrl: videoUrl,
-                        seamlessLoop: true,
-                        enablePlayPauseGesture: false,
-                        borderRadius: BorderRadius.circular(sw * 0.05),
-                        placeholder: (imageUrl != null && imageUrl.isNotEmpty)
-                            ? CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Shimmer.fromColors(
-                                  baseColor: isDark
-                                      ? Colors.grey[850]!
-                                      : Colors.grey[300]!,
-                                  highlightColor: isDark
-                                      ? Colors.grey[700]!
-                                      : Colors.grey[100]!,
-                                  child: Container(color: Colors.white),
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error_outline),
-                              )
-                            : Shimmer.fromColors(
-                                baseColor: isDark
-                                    ? Colors.grey[850]!
-                                    : Colors.grey[300]!,
-                                highlightColor: isDark
-                                    ? Colors.grey[700]!
-                                    : Colors.grey[100]!,
-                                child: Container(color: Colors.white),
-                              ),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: imageUrl ?? '',
+                child: (imageUrl != null && imageUrl.isNotEmpty)
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Shimmer.fromColors(
                           baseColor: isDark
@@ -385,6 +363,12 @@ class _TrendingSeeAllCard extends StatelessWidget {
                         ),
                         errorWidget: (context, url, error) =>
                             const Icon(Icons.error_outline),
+                      )
+                    : Container(
+                        color: isDark ? Colors.grey[850] : Colors.grey[300],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey),
+                        ),
                       ),
               ),
             ),

@@ -73,8 +73,7 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   flutter_localization: ^0.4.0
   
-  purchases_flutter: ^10.0.1
-  purchases_ui_flutter: ^10.0.1
+  in_app_purchase: ^3.2.0
   video_thumbnail: ^0.5.3
   pro_image_editor:
     path: "D:/andriod_practice/photo editor package/pro_image_editor-stable"
@@ -128,6 +127,7 @@ flutter:
     - assets/masks/
     - assets/i18n/
     - assets/onboarding/
+    - assets/videos/
     # .env intentionally excluded from assets — secrets must NOT be bundled in the app package.
     # Note: Effect images are now lazy-loaded from Firebase Storage to reduce APK size
 

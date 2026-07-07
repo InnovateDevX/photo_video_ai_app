@@ -198,4 +198,52 @@ class UserRepository {
         .snapshots()
         .map((snap) => snap.data()?['credits'] as int?);
   }
+
+  // ── Pro Status ──────────────────────────────────────────────────────────
+
+  /// Updates the pro subscription status for [uid] in Firestore.
+  Future<void> updateProStatus(
+    String uid,
+    bool isPro, {
+    String? productId,
+    DateTime? expiresAt,
+  }) async {
+    debugPrint(
+      '💾 [UserRepository] updateProStatus(uid=$uid, isPro=$isPro, product=$productId)',
+    );
+    try {
+      final Map<String, dynamic> data = {
+        'isPro': isPro,
+        'proPurchasedAt': FieldValue.serverTimestamp(),
+      };
+      if (productId != null) data['proProductId'] = productId;
+      if (expiresAt != null) data['proExpiresAt'] = Timestamp.fromDate(expiresAt);
+
+      await _firestore.collection('users').doc(uid).set(
+        data,
+        SetOptions(merge: true),
+      );
+      debugPrint('💾 [UserRepository] Pro status updated ✅');
+    } catch (e, stack) {
+      debugPrint('❌ [UserRepository] updateProStatus FAILED: $e');
+      debugPrint('❌ [UserRepository] Stack: $stack');
+    }
+  }
+
+  /// Returns the current pro status for [uid].
+  Future<bool> getProStatus(String uid) async {
+    debugPrint('🔍 [UserRepository] getProStatus(uid=$uid)');
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        final isPro = doc.data()?['isPro'] as bool? ?? false;
+        debugPrint('🔍 [UserRepository] isPro: $isPro');
+        return isPro;
+      }
+    } catch (e) {
+      debugPrint('❌ [UserRepository] getProStatus FAILED: $e');
+    }
+    return false;
+  }
 }
+

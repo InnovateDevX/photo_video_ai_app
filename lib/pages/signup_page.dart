@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trail_ai_app/Services/auth_service.dart';
 import 'dart:async';
 import 'package:trail_ai_app/Core/user_session.dart';
-import 'package:trail_ai_app/Services/subscription_service.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/pages/edit_profile_page.dart';
 
@@ -36,7 +35,6 @@ class _SignupPageState extends State<SignupPage> {
       UserSession.instance.uid = user.uid;
 
       // ✅ Sync services with the new identity
-      unawaited(SubscriptionService().logIn(user.uid));
       unawaited(NotificationService().syncTokenNow());
 
       final doc = await FirebaseFirestore.instance

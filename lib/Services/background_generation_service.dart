@@ -83,9 +83,30 @@ class BackgroundGenerationService {
     );
   }
 
-
   Future<void> initializeBackgroundService() async {
     final service = FlutterBackgroundService();
+
+    // ── Guard: skip re-configuration on subsequent launches ───────────────
+    // If the foreground service is already running from a previous session,
+    // calling `configure()` again can hang on Android. Skip it and let the
+    // existing service keep polling; we only need to configure once per
+    // app install. This is the most common cause of the "stuck on splash
+    // screen on second launch" issue.
+    try {
+      final bool alreadyRunning = await service.isRunning();
+      if (alreadyRunning) {
+        debugPrint(
+          '✅ [BackgroundService] Already running from a previous session — '
+          'skipping configure() to avoid re-entrancy hang',
+        );
+        return;
+      }
+    } catch (e) {
+      debugPrint(
+        '⚠️ [BackgroundService] isRunning() check failed (continuing): $e',
+      );
+    }
+
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,

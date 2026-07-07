@@ -122,8 +122,7 @@ class AppInitializer {
       UserSession.instance.uid = uid;
       UserSession.instance.deviceId = deviceId;
 
-      // Sync identity with RevenueCat
-      unawaited(SubscriptionService().logIn(uid));
+
 
       // ── Step 4.5: Sync FCM Token ──────────────────────────────────────────
       // Now that UID is set, we can link the device token to the Firestore doc.
@@ -133,7 +132,7 @@ class AppInitializer {
       await DataService().initialize();
 
       // ── Step 6: Pre-cache demo images in background ───────────────────────
-      unawaited(_precacheDemoImages());
+      unawaited(_precacheAllImages());
 
       // ── Step 7: Stickers load on-demand (when user taps a category tab) ─────
       // No pre-loading needed anymore.
@@ -162,29 +161,50 @@ class AppInitializer {
     return RemoteConfigService().initialCredits;
   }
 
-  /// Pre-caches AI tool demo images from Remote Config JSON
-  Future<void> _precacheDemoImages() async {
+  /// Pre-caches AI tool demo images, category images, and trending images
+  Future<void> _precacheAllImages() async {
     try {
-      final jsonStr = RemoteConfigService().getString('tool_demos');
-      if (jsonStr.isEmpty || jsonStr == '{}' || jsonStr == '[]') return;
-
-      final Map<String, dynamic> configMap = jsonDecode(jsonStr);
       final Set<String> imageUrls = {};
 
-      for (var toolKey in configMap.keys) {
-        final toolData = configMap[toolKey];
-        if (toolData is Map<String, dynamic>) {
-          final String? url = toolData['imageUrl'] ?? toolData['imageurl'];
-          if (url != null && url.isNotEmpty) {
-            imageUrls.add(url);
+      // 1. Tool Demos
+      final jsonStr = RemoteConfigService().getString('tool_demos');
+      if (jsonStr.isNotEmpty && jsonStr != '{}' && jsonStr != '[]') {
+        final Map<String, dynamic> configMap = jsonDecode(jsonStr);
+        for (var toolKey in configMap.keys) {
+          final toolData = configMap[toolKey];
+          if (toolData is Map<String, dynamic>) {
+            final String? url = toolData['imageUrl'] ?? toolData['imageurl'];
+            if (url != null && url.isNotEmpty) {
+              imageUrls.add(url);
+            }
           }
+        }
+      }
+
+      // 2. Categories
+      for (final category in DataService().categoryData) {
+        for (final item in category.images) {
+          if (item.type == 'video' && item.thumbnailUrl != null && item.thumbnailUrl!.isNotEmpty) {
+            imageUrls.add(item.thumbnailUrl!);
+          } else if (item.imageUrl.isNotEmpty && !item.imageUrl.endsWith('.mp4')) {
+            imageUrls.add(item.imageUrl);
+          }
+        }
+      }
+
+      // 3. Trending
+      for (final item in DataService().trendingItems) {
+        if (item.type == 'video' && item.thumbnailUrl != null && item.thumbnailUrl!.isNotEmpty) {
+          imageUrls.add(item.thumbnailUrl!);
+        } else if (item.imageUrl.isNotEmpty && !item.imageUrl.endsWith('.mp4')) {
+          imageUrls.add(item.imageUrl);
         }
       }
 
       if (imageUrls.isEmpty) return;
 
       debugPrint(
-        '🖼️ [AppInitializer] Pre-caching ${imageUrls.length} demo images...',
+        '🖼️ [AppInitializer] Pre-caching ${imageUrls.length} images...',
       );
 
       final cacheManager = DefaultCacheManager();
@@ -192,7 +212,11 @@ class AppInitializer {
         // Use a safe async wrapper to prevent one failure from stopping the loop
         () async {
           try {
-            await cacheManager.downloadFile(url);
+            // Only fetch if it's not already in the cache (avoid redundant fetches)
+            final fileInfo = await cacheManager.getFileFromCache(url);
+            if (fileInfo == null) {
+              await cacheManager.downloadFile(url);
+            }
           } catch (e) {
             debugPrint('⚠️ [AppInitializer] Pre-cache failed for $url: $e');
           }

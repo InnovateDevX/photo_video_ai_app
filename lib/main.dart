@@ -6,96 +6,76 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:localization/localization.dart';
 import 'package:trail_ai_app/Core/routes.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
 import 'package:trail_ai_app/Core/theme_notifier.dart';
 import 'package:trail_ai_app/Core/locale_notifier.dart';
-import 'package:trail_ai_app/Core/app_initializer.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
-import 'package:trail_ai_app/Services/local_storage_service.dart';
-import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
-import 'package:trail_ai_app/Services/background_generation_service.dart';
 import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/pages/onboarding_page.dart';
-import 'firebase_options.dart';
+import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
+import 'package:trail_ai_app/pages/splash_screen.dart';
 
-void main() async {
-  await runZonedGuarded(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
-      SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.manual,
-        overlays: [SystemUiOverlay.top],
-      );
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarDividerColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
-          systemNavigationBarIconBrightness: Brightness.dark,
-          systemNavigationBarContrastEnforced: false,
-        ),
-      );
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+import 'package:trail_ai_app/Services/localization_service.dart';
 
-      // ── Firebase App Check (guards Firestore & Storage from bot abuse) ───
-      // await FirebaseAppCheck.instance.activate(
-      //   providerAndroid: kReleaseMode
-      //       ? PlayIntegrityAndroidProvider.new()
-      //       : DebugAndroidProvider.new(),
-      //   providerApple: kReleaseMode
-      //       ? DeviceCheckAppleProvider.new()
-      //       : DebugAppleProvider.new(),
-      // );
-
-      await GoogleSignIn.instance.initialize();
-      await MobileAds.instance.initialize();
-      await LocalStorageService().initialize();
-
-      FlutterError.onError =
-          FirebaseCrashlytics.instance.recordFlutterFatalError;
-
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-
-      await AdService().initialize();
-      await NotificationService().initialize();
-      final initializer = AppInitializer();
-      final uid = await initializer.initializeUser();
-
-      // Check if user has completed onboarding
-      final bool onboardingDone = await OnboardingPage.hasCompleted();
-
-      // Initialize background service and resume any pending generations
-      await BackgroundGenerationService().initializeBackgroundService();
-      BackgroundGenerationService().resumePendingGenerations();
-
-      runApp(MyApp(initialUid: uid, showOnboarding: !onboardingDone));
-    },
-    (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    },
+void main() {
+  // We intentionally do NOT await anything here.
+  //
+  // Historically, all heavy initialization (Firebase, Google Sign-In, Ads,
+  // FCM, the background service, the user initializer, …) was awaited here
+  // before runApp() was called. On the second app launch, one of those awaits
+  // would hang — most commonly FlutterBackgroundService.configure() when the
+  // foreground service from a previous session was still alive — and the
+  // user would be stuck on the Android system splash screen forever.
+  //
+  // The fix is to render a Flutter splash screen immediately, run every
+  // initialization step in the background with strict per-step timeouts, and
+  // navigate to the home/onboarding screen when done. The splash screen
+  // itself has a hard ceiling that guarantees the user is never stuck.
+  WidgetsFlutterBinding.ensureInitialized();
+  LocalizationService.init();
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.manual,
+    overlays: [SystemUiOverlay.top],
   );
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
+
+  // Route uncaught errors to Crashlytics without blocking startup. Crashlytics
+  // is initialized lazily; the first recordError call will initialize it.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    // Fire and forget — don't block UI on the crashlytics round-trip.
+    unawaited(
+      _safeRecordFatal(details.exception, details.stack ?? StackTrace.empty),
+    );
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('🛑 [PlatformDispatcher] Uncaught error: $error\n$stack');
+    unawaited(_safeRecordFatal(error, stack));
+    return true;
+  };
+
+  runApp(const MyApp());
+}
+
+Future<void> _safeRecordFatal(Object error, StackTrace stack) async {
+  try {
+    await FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+  } catch (_) {
+    // Crashlytics may not be initialized yet — that's fine, ignore.
+  }
 }
 
 class MyApp extends StatefulWidget {
-  final String? initialUid;
-  final bool showOnboarding;
-
-  const MyApp({
-    super.key,
-    required this.initialUid,
-    this.showOnboarding = false,
-  });
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -122,7 +102,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugPrint(
         '🚫 [MyApp] App lifecycle: $state — Cancelling active Replicate prediction',
       );
-      ReplicateService().cancelActivePrediction();
+      // Fire-and-forget; never block on this.
+      unawaited(_safeCancelActive());
+    }
+  }
+
+  Future<void> _safeCancelActive() async {
+    try {
+      await ReplicateService().cancelActivePrediction();
+    } catch (e) {
+      debugPrint('⚠️ [MyApp] cancelActivePrediction failed: $e');
     }
   }
 
@@ -185,9 +174,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               builder: (context, child) {
                 return GlobalNotificationOverlay(child: child!);
               },
-              initialRoute: widget.showOnboarding
-                  ? AppRoutes.onboarding
-                  : AppRoutes.home,
+              // Always start at the splash screen. The splash screen performs
+              // all initialization in the background and navigates to either
+              // OnboardingPage or MainNavigation when done (or after a hard
+              // 25s ceiling). This guarantees the user is never stuck.
+              home: const SplashScreen(),
               routes: getAppRoutes(),
             );
           },

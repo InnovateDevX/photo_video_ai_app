@@ -71,7 +71,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
   bool _keyboardVisible = false;
 
   /// Flag to prevent duplicate dialogs when Android back button is pressed
-  final bool _isHandlingBack = false;
+  bool _isHandlingBack = false;
 
   final List<EffectOverlay> _effects = const [
     // ── Butterfly ──────────────────────────────────────────────
@@ -637,7 +637,11 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     super.dispose();
   }
 
+  bool _isDialogShowing = false;
+
   void _showDiscardDialog() {
+    if (_isDialogShowing) return;
+    _isDialogShowing = true;
     final isDark = _isDark;
     final w = MediaQuery.of(context).size.width;
 
@@ -755,7 +759,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           ),
         ),
       ),
-    );
+    ).then((_) {
+      _isDialogShowing = false;
+    });
   }
 
   @override
@@ -795,11 +801,16 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
             if (didPop) return;
+            if (_isHandlingBack) return;
+            _isHandlingBack = true;
             if (_activeTool != EditorTool.none) {
               _cancelCurrentTool(subEditor: null);
             } else {
               _showDiscardDialog();
             }
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) _isHandlingBack = false;
+            });
           },
           child: Scaffold(
             backgroundColor: _isDark ? const Color(0xFF161616) : Colors.white,
@@ -1284,16 +1295,13 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                         }
                                       }
 
-                                      Widget finalContent = content;
-                                      if (_activeTool == EditorTool.frames) {
-                                        finalContent = ClipRect(
-                                          clipper: CenterRectClipper(
-                                            width: renderedSize.width,
-                                            height: renderedSize.height,
-                                          ),
-                                          child: finalContent,
-                                        );
-                                      }
+                                      Widget finalContent = ClipRect(
+                                        clipper: CenterRectClipper(
+                                          width: renderedSize.width,
+                                          height: renderedSize.height,
+                                        ),
+                                        child: content,
+                                      );
                                       return finalContent;
                                     },
                                   ),
@@ -2096,9 +2104,23 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         if (subEditor != null) {
           subEditor.setFill(true);
           subEditor.setMode(PaintMode.circle);
+          subEditor.setColor(_paintColor);
+          subEditor.setOpacity(_opacityValue);
+          subEditor.setStrokeWidth(_strokeValue * 50);
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _editorKey.currentState?.openPaintEditor().then((_) {
+            _editorKey.currentState?.openPaintEditor().then((paintEditorState) {
+              // Apply current UI slider values to the paint editor so shapes
+              // use the user's chosen stroke width, color, and opacity instead
+              // of the editor's much larger defaults.
+              final pe = _editorKey.currentState?.paintEditor.currentState;
+              if (pe != null) {
+                pe.setColor(_paintColor);
+                pe.setOpacity(_opacityValue);
+                pe.setStrokeWidth(_strokeValue * 50);
+                pe.setFill(true);
+                pe.setMode(PaintMode.circle);
+              }
               // Lock all paint layers so shapes cannot be moved/resized after closing
               _lockAllPaintLayers();
               _resetStateAfterToolClosed();

@@ -514,7 +514,8 @@ class _GenerationPageState extends State<GenerationPage> {
       int? height;
       String? aspectRatio;
 
-      if (_selectedModel!.supportsAspectRatio || _selectedModel!.supportsDimensions) {
+      if (_selectedModel!.supportsAspectRatio ||
+          _selectedModel!.supportsDimensions) {
         aspectRatio = _selectedAspectRatio;
       }
 
@@ -568,7 +569,8 @@ class _GenerationPageState extends State<GenerationPage> {
       int? height;
       String? aspectRatio;
 
-      if (_selectedModel!.supportsAspectRatio || _selectedModel!.supportsDimensions) {
+      if (_selectedModel!.supportsAspectRatio ||
+          _selectedModel!.supportsDimensions) {
         aspectRatio = _selectedAspectRatio;
       }
 
@@ -1710,6 +1712,11 @@ class _GenerationPageState extends State<GenerationPage> {
       screenHeight: screenHeight,
       isDark: isDark,
       category: _selectedCategory,
+      onPromptTap: (prompt) {
+        setState(() {
+          _promptController.text = prompt;
+        });
+      },
     );
   }
 }
@@ -1719,12 +1726,14 @@ class _SlideshowPlaceholder extends StatefulWidget {
   final double screenHeight;
   final bool isDark;
   final String category;
+  final ValueChanged<String>? onPromptTap;
 
   const _SlideshowPlaceholder({
     required this.screenWidth,
     required this.screenHeight,
     required this.isDark,
     required this.category,
+    this.onPromptTap,
   });
 
   @override
@@ -1824,61 +1833,64 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
 
     final currentImage = _images[_currentIndex];
 
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(seconds: 1),
-              child: Container(
-                key: ValueKey<String>(currentImage.imageUrl),
-                width: widget.screenWidth * 0.85,
-                height: widget.screenWidth * 0.85,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                    MediaQuery.of(context).size.width * 0.06,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
+    return GestureDetector(
+      onTap: () => widget.onPromptTap?.call(currentImage.prompt),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(seconds: 1),
+                child: Container(
+                  key: ValueKey<String>(currentImage.imageUrl),
+                  width: widget.screenWidth * 0.85,
+                  height: widget.screenWidth * 0.85,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      MediaQuery.of(context).size.width * 0.06,
                     ),
-                  ],
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(currentImage.imageUrl),
-                    fit: BoxFit.cover,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(currentImage.imageUrl),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(height: widget.screenHeight * 0.03),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              child: Padding(
-                key: ValueKey<String>(currentImage.prompt),
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.screenWidth * 0.1,
-                ),
-                child: Text(
-                  currentImage.prompt.isNotEmpty
-                      ? currentImage.prompt
-                      : '${'enter_prompt_hint'.i18n()} ${widget.category}',
-                  textAlign: TextAlign.center,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.secondaryTextColor(widget.isDark),
-                    fontSize: widget.screenWidth * 0.038,
-                    fontStyle: FontStyle.italic,
-                    height: 1.4,
+              SizedBox(height: widget.screenHeight * 0.03),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: Padding(
+                  key: ValueKey<String>(currentImage.prompt),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: widget.screenWidth * 0.1,
+                  ),
+                  child: Text(
+                    currentImage.prompt.isNotEmpty
+                        ? currentImage.prompt
+                        : '${'enter_prompt_hint'.i18n()} ${widget.category}',
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.secondaryTextColor(widget.isDark),
+                      fontSize: widget.screenWidth * 0.038,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
