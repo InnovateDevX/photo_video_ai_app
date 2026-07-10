@@ -42,7 +42,14 @@ class _SignupPageState extends State<SignupPage> {
           .doc(user.uid)
           .get();
       if (!mounted) return;
-      if (!doc.exists || doc.data()?['profile']?['username'] == null) {
+
+      final data = doc.data();
+      final hasUsername =
+          data != null &&
+          data['profile'] is Map &&
+          data['profile']['username'] != null;
+
+      if (!doc.exists || !hasUsername) {
         // Needs profile setup
         Navigator.pushReplacement(
           context,
@@ -71,6 +78,8 @@ class _SignupPageState extends State<SignupPage> {
 
     setState(() => _isLoading = true);
     try {
+      // Prepare for login - reset old subscriptions
+      await _authService.prepareForLogin();
       await _authService.signUpWithEmail(email, password);
       await _handlePostLogin();
     } catch (e) {
@@ -83,6 +92,8 @@ class _SignupPageState extends State<SignupPage> {
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
     try {
+      // Prepare for login - reset old subscriptions
+      await _authService.prepareForLogin();
       final credential = await _authService.signInWithGoogle();
       if (credential != null) {
         await _handlePostLogin();

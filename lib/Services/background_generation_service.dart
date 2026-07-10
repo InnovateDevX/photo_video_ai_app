@@ -548,6 +548,8 @@ class BackgroundGenerationService {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         await file.writeAsBytes(response.bodyBytes);
+        
+
         final asset = GeneratedAsset(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           filePath: file.path,

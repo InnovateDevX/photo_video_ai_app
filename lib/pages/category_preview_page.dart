@@ -9,7 +9,8 @@ import 'package:trail_ai_app/Models/reel.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:trail_ai_app/Services/data_service.dart';
 import 'package:trail_ai_app/Core/colors.dart';
-
+import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 class CategoryPreviewPage extends StatefulWidget {
   final List<dynamic> items;
   final int initialIndex;
@@ -26,11 +27,34 @@ class CategoryPreviewPage extends StatefulWidget {
 
 class _CategoryPreviewPageState extends State<CategoryPreviewPage> {
   late PageController _pageController;
+  bool _hasSwiped = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.initialIndex);
+    _checkSwipeStatus();
+  }
+
+  Future<void> _checkSwipeStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _hasSwiped = prefs.getBool('has_swiped_category_preview') ?? false;
+      });
+    }
+  }
+
+  void _onPageChanged(int index) async {
+    if (!_hasSwiped) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_swiped_category_preview', true);
+      if (mounted) {
+        setState(() {
+          _hasSwiped = true;
+        });
+      }
+    }
   }
 
   @override
@@ -48,9 +72,10 @@ class _CategoryPreviewPageState extends State<CategoryPreviewPage> {
         controller: _pageController,
         physics: const BouncingScrollPhysics(),
         itemCount: widget.items.length,
+        onPageChanged: _onPageChanged,
         itemBuilder: (context, index) {
           final item = widget.items[index];
-          return _PreviewPageItem(item: item);
+          return _PreviewPageItem(item: item, hideSwipeText: _hasSwiped);
         },
       ),
     );
@@ -59,8 +84,9 @@ class _CategoryPreviewPageState extends State<CategoryPreviewPage> {
 
 class _PreviewPageItem extends StatefulWidget {
   final dynamic item;
+  final bool hideSwipeText;
 
-  const _PreviewPageItem({required this.item});
+  const _PreviewPageItem({required this.item, this.hideSwipeText = false});
 
   @override
   State<_PreviewPageItem> createState() => _PreviewPageItemState();
@@ -78,11 +104,38 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
   String? type;
   bool isEditable = false;
   bool imageEditMode = false;
+  List<String>? imageUrls;
+  late PageController _imagePageController;
+  Timer? _slideshowTimer;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _imagePageController = PageController();
     _resolveItemProperties();
+  }
+
+  @override
+  void dispose() {
+    _slideshowTimer?.cancel();
+    _imagePageController.dispose();
+    super.dispose();
+  }
+
+  void _startSlideshow() {
+    if (imageUrls != null && imageUrls!.length > 1) {
+      _slideshowTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+        if (mounted && _imagePageController.hasClients) {
+          int nextIndex = (_currentImageIndex + 1) % imageUrls!.length;
+          _imagePageController.animateToPage(
+            nextIndex,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
   }
 
   Future<void> _resolveItemProperties() async {
@@ -121,6 +174,11 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
       } else {
         imageUrl = item.imageUrl;
         videoUrl = item.videoUrl;
+      }
+      
+      imageUrls = item.imageUrls;
+      if (imageUrls != null && imageUrls!.length > 1) {
+        _startSlideshow();
       }
 
       if (reelId != null) {
@@ -169,7 +227,6 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = AppColors.textColor(isDark);
     final secondaryTextColor = AppColors.secondaryTextColor(isDark);
-    final iconColor = AppColors.iconColor(isDark);
 
     if (_isLoading) {
       return Center(
@@ -246,43 +303,81 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                   seamlessLoop: true,
                   mute: false,
                   fit: BoxFit.contain,
+                  alignment: Alignment.center,
                   placeholder: (imageUrl != null && imageUrl!.isNotEmpty)
-                      ? SafeArea(
-                          bottom: false,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: h * 0.02),
-                            child: CachedNetworkImage(
-                              imageUrl: imageUrl!,
-                              fit: BoxFit.contain,
-                              alignment: Alignment.topCenter,
-                              placeholder: (context, url) => Center(
-                                child: CircularProgressIndicator(color: textColor),
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  Icon(Icons.error_outline, color: textColor),
-                            ),
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl!,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                          placeholder: (context, url) => Center(
+                            child: CircularProgressIndicator(color: textColor),
                           ),
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.error_outline, color: textColor),
                         )
                       : Center(
                           child: CircularProgressIndicator(color: textColor),
                         ),
                 )
-              else if (imageUrl != null && imageUrl!.isNotEmpty)
-                SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: EdgeInsets.only(top: h * 0.02),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl!,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.topCenter,
-                      placeholder: (context, url) => Center(
-                        child: CircularProgressIndicator(color: textColor),
-                      ),
-                      errorWidget: (context, url, error) =>
-                          Icon(Icons.error_outline, color: textColor),
+              else if (imageUrls != null && imageUrls!.length > 1)
+                Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PageView.builder(
+                      controller: _imagePageController,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: imageUrls!.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        return CachedNetworkImage(
+                          imageUrl: imageUrls![index],
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                          placeholder: (context, url) => Center(
+                            child: CircularProgressIndicator(color: textColor),
+                          ),
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.error_outline, color: textColor),
+                        );
+                      },
                     ),
+                    Positioned(
+                      bottom: 10,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(imageUrls!.length, (index) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                            width: _currentImageIndex == index ? 8.0 : 6.0,
+                            height: _currentImageIndex == index ? 8.0 : 6.0,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentImageIndex == index
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : (isDark ? Colors.white38 : Colors.black38),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                )
+              else if (imageUrl != null && imageUrl!.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: imageUrl!,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                  placeholder: (context, url) => Center(
+                    child: CircularProgressIndicator(color: textColor),
                   ),
+                  errorWidget: (context, url, error) =>
+                      Icon(Icons.error_outline, color: textColor),
                 )
               else
                 Center(child: Icon(Icons.broken_image, color: textColor)),
@@ -299,7 +394,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        isDark ? Colors.black.withOpacity(0.6) : Colors.white.withOpacity(0.9),
+                        isDark ? Colors.black.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.9),
                         Colors.transparent
                       ],
                     ),
@@ -308,7 +403,8 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
               ),
 
               // Swipe Text Box
-              Positioned(
+              if (!widget.hideSwipeText)
+                Positioned(
                 top: MediaQuery.of(context).padding.top + 15,
                 left: 0,
                 right: 0,
@@ -316,7 +412,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withOpacity(0.4) : Colors.white.withOpacity(0.7),
+                      color: isDark ? Colors.black.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
                       border: Border.all(color: isDark ? Colors.white24 : Colors.black12, width: 1),
                     ),
@@ -373,41 +469,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                 ),
                 SizedBox(height: h * 0.008),
               ],
-              if (prompt != null && prompt!.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(w * 0.03),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.black.withOpacity(0.6) : Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(w * 0.02),
-                    border: Border.all(
-                      color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Prompt',
-                        style: TextStyle(
-                          color: secondaryTextColor,
-                          fontSize: w * 0.035,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: h * 0.005),
-                      Text(
-                        useTwoStage ? (videoPrompt ?? prompt!) : prompt!,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: textColor, fontSize: w * 0.04),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: h * 0.042),
-              ] else
-                SizedBox(height: h * 0.02),
+              SizedBox(height: h * 0.02),
               SafeArea(
                 top: false,
                 child: SizedBox(
@@ -449,7 +511,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                       );
                     },
                     child: Text(
-                      'Try this style ⚡ $creditCost',
+                      'Try this style',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: w * 0.045,

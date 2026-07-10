@@ -8,8 +8,12 @@ import 'package:trail_ai_app/Services/ad_service.dart';
 import 'package:trail_ai_app/Services/notification_service.dart';
 import 'package:trail_ai_app/Services/local_storage_service.dart';
 import 'package:trail_ai_app/Services/background_generation_service.dart';
+import 'package:trail_ai_app/Services/data_service.dart';
 import 'package:trail_ai_app/pages/onboarding_page.dart';
 import 'package:trail_ai_app/Widgets/main_navigation.dart';
+import 'package:trail_ai_app/Widgets/main_navigation_with_paywall.dart';
+import 'package:trail_ai_app/Services/subscription_service.dart';
+
 
 /// Result of the initialization process.
 class InitializationResult {
@@ -41,6 +45,7 @@ const Duration _notificationTimeout = Duration(seconds: 6);
 const Duration _userInitTimeout = Duration(seconds: 12);
 const Duration _onboardingCheckTimeout = Duration(seconds: 3);
 const Duration _bgServiceTimeout = Duration(seconds: 6);
+const Duration _dataServiceTimeout = Duration(seconds: 8);
 
 /// A robust splash screen that:
 ///   1) Renders the splash UI immediately (so the Android native splash
@@ -71,7 +76,20 @@ class _SplashScreenState extends State<SplashScreen> {
 
   /// Runs initialization with a hard ceiling so the splash can NEVER hang.
   Future<void> _runInitialization() async {
+    final stopwatch = Stopwatch()..start();
+
     final InitializationResult result = await _initializeWithTimeout();
+
+    // Enforce a minimum splash screen display time of 2 seconds
+    // to give background precaching tasks enough time to complete.
+    final elapsedMs = stopwatch.elapsedMilliseconds;
+    const minSplashDurationMs = 2000;
+    if (elapsedMs < minSplashDurationMs) {
+      await Future.delayed(
+        Duration(milliseconds: minSplashDurationMs - elapsedMs),
+      );
+    }
+
     if (!mounted) return;
     _navigateToNext(result);
   }
@@ -198,7 +216,20 @@ class _SplashScreenState extends State<SplashScreen> {
       onboardingDone = true;
     }
 
-    // ── Step 9: Background service (fire-and-forget) ──────────────────────
+    // ── Step 9: Pre-load Homepage data (categories, trending) ─────────────
+    // This ensures the Homepage is ready instantly when paywall is dismissed.
+    try {
+      _updateStatus('Loading content…');
+      await DataService().initialize().timeout(_dataServiceTimeout);
+    } on TimeoutException {
+      errors.add('DataService timeout');
+      debugPrint('⚠️ [SplashScreen] DataService timed out (non-fatal)');
+    } catch (e) {
+      errors.add('DataService: $e');
+      debugPrint('❌ [SplashScreen] DataService failed (non-fatal): $e');
+    }
+
+    // ── Step 10: Background service (fire-and-forget) ─────────────────────
     // We do NOT await this in the splash — it's a long-running service that
     // can take several seconds on first launch. Run it in the background so
     // it can never block the splash.
@@ -253,18 +284,34 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('⚠️ [SplashScreen] Init errors: ${result.errors}');
     }
 
-    // Always navigate — never leave the user stuck.
-    // The UID is already published to UserSession.instance.uid by
-    // AppInitializer.initializeUser(), so MainNavigation does not need it.
     if (result.showOnboarding) {
+      // First time user: always show onboarding first
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const OnboardingPage()),
       );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const MainNavigation()),
-      );
+      return;
     }
+
+    // Check if the user is a paid user (subscribed)
+    final bool isPaid = SubscriptionService().isSubscribed;
+
+    if (!isPaid) {
+      // Use the wrapper that shows MainNavigation with Paywall as overlay
+      // This ensures Homepage is fully loaded first, then paywall appears on top
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => const MainNavigationWithPaywall(),
+        ),
+      );
+      return;
+    }
+
+    // Always navigate — never leave the user stuck.
+    // The UID is already published to UserSession.instance.uid by
+    // AppInitializer.initializeUser(), so MainNavigation does not need it.
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const MainNavigation()),
+    );
   }
 
   @override
@@ -285,7 +332,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 'assets/images/app_logo.png',
                 width: 120,
                 height: 120,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(

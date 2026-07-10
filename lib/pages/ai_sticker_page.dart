@@ -11,7 +11,7 @@ import 'package:trail_ai_app/Services/content_safety_service.dart';
 import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
 import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/generation_gate.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
 import 'package:trail_ai_app/pages/ai_background_page.dart';
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
@@ -41,6 +41,7 @@ class _AiStickerPageState extends State<AiStickerPage>
   _PageState _pageState = _PageState.selection;
   String? _generatedImageUrl;
   bool _isNsfw = false;
+  bool _isCancelled = false;
 
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
@@ -166,14 +167,18 @@ class _AiStickerPageState extends State<AiStickerPage>
     }
 
     try {
+      _isCancelled = false;
       final userText = _promptController.text.trim();
       final url = await _replicateService.generateContent(
         modelConfig: model,
         prompt: userText.isNotEmpty ? userText : "the subject",
         extraVariables: {
           'STYLE': _selectedTheme,
+          'style': _selectedTheme,
           'MOOD': _selectedMood,
+          'mood': _selectedMood,
           'PROMPT': userText.isNotEmpty ? userText : "the subject",
+          'prompt': userText.isNotEmpty ? userText : "the subject",
         },
         referenceImage: _isTextMode ? null : _selectedImage,
       );
@@ -202,6 +207,11 @@ class _AiStickerPageState extends State<AiStickerPage>
       if (mounted) {
         _progressController.stop();
 
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
+
         if (e is NsfwContentException) {
           if (e.url != null) {
             setState(() {
@@ -220,6 +230,7 @@ class _AiStickerPageState extends State<AiStickerPage>
           setState(() => _pageState = _PageState.selection);
           ErrorDialogHelper.showTimeoutDialog(context);
         } else {
+          debugPrint('❌ [AiStickerPage] Generation failed: $e');
           setState(() => _pageState = _PageState.selection);
           ErrorDialogHelper.showErrorDialog(
             context,
@@ -307,6 +318,115 @@ class _AiStickerPageState extends State<AiStickerPage>
     );
   }
 
+  Future<void> _showCancelWarningDialog(
+    BuildContext context,
+    bool isDark,
+    double sw,
+    double sh,
+  ) async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: EdgeInsets.all(sw * 0.06),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundColor(isDark),
+            borderRadius: BorderRadius.circular(sw * 0.05),
+            border: Border.all(
+              color: AppColors.creditsCardBorder(isDark),
+              width: sw * 0.002,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red,
+                size: sw * 0.12,
+              ),
+              SizedBox(height: sh * 0.02),
+              Text(
+                'Cancel Generation?',
+                style: TextStyle(
+                  color: AppColors.textColor(isDark),
+                  fontWeight: FontWeight.bold,
+                  fontSize: sw * 0.045,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: sh * 0.015),
+              Text(
+                'Are you sure you want to cancel? Your credits have already been deducted.',
+                style: TextStyle(
+                  color: AppColors.secondaryTextColor(isDark),
+                  fontSize: sw * 0.035,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: sh * 0.03),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx, 'cancel'),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: sh * 0.015),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(sw * 0.03),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Yes, Cancel',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: sw * 0.04,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: sh * 0.015),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: sh * 0.015),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, 'wait'),
+                    child: Text(
+                      'Continue Waiting',
+                      style: TextStyle(
+                        color: AppColors.secondaryTextColor(isDark),
+                        fontWeight: FontWeight.w600,
+                        fontSize: sw * 0.038,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result == 'cancel' && mounted) {
+      _replicateService.cancelActivePrediction();
+      _progressController.stop();
+      setState(() {
+        _pageState = _PageState.selection;
+        _isCancelled = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -329,69 +449,79 @@ class _AiStickerPageState extends State<AiStickerPage>
         onReEdit: () => setState(() => _pageState = _PageState.selection),
         onTryAgain: () {
           setState(() => _pageState = _PageState.selection);
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            _generateSticker,
-          );
+          Future.delayed(const Duration(milliseconds: 100), _generateSticker);
         },
         onBack: () => setState(() => _pageState = _PageState.selection),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (_pageState == _PageState.selection) const TopBar(),
-            _buildTopBar(
-              isDark: isDark,
-              title: switch (_pageState) {
-                _PageState.loading => 'generating'.i18n(),
-                _PageState.result => 'sticker_ready'.i18n(),
-                _PageState.selection => 'sticker_title'.i18n(),
-              },
-              subtitle: switch (_pageState) {
-                _PageState.loading => 'sticker_text_desc'.i18n(),
-                _PageState.result => 'big_sticker_preview'.i18n(),
-                _PageState.selection =>
-                  _isTextMode
-                      ? 'sticker_text_desc'.i18n()
-                      : 'sticker_image_desc'.i18n(),
-              },
-              onBack: switch (_pageState) {
-                _PageState.loading => () {
-                  _progressController.stop();
-                  setState(() => _pageState = _PageState.selection);
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          final sw = MediaQuery.of(context).size.width;
+          final sh = MediaQuery.of(context).size.height;
+          _showCancelWarningDialog(context, isDark, sw, sh);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+
+              _buildTopBar(
+                isDark: isDark,
+                title: switch (_pageState) {
+                  _PageState.loading => 'generating'.i18n(),
+                  _PageState.result => 'sticker_ready'.i18n(),
+                  _PageState.selection => 'sticker_title'.i18n(),
                 },
-                _PageState.result => () => setState(
-                  () => _pageState = _PageState.selection,
-                ),
-                _PageState.selection => null,
-              },
-            ),
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => AILoadingScreen(
-                  selectedImage: _isTextMode ? null : _selectedImage,
-                  progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.stickerAiTips
-                      .map((e) => e.i18n())
-                      .toList(),
-                  processingTitle: 'processing_title'.i18n(),
-                  applyingText: 'generating_sticker'.i18n(),
-                  waitText: 'take_few_seconds'.i18n(),
-                  customLogoAsset: 'assets/images/Sticker_logo.webp',
-                  onCancel: () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
+                subtitle: switch (_pageState) {
+                  _PageState.loading => 'sticker_text_desc'.i18n(),
+                  _PageState.result => 'big_sticker_preview'.i18n(),
+                  _PageState.selection =>
+                    _isTextMode
+                        ? 'sticker_text_desc'.i18n()
+                        : 'sticker_image_desc'.i18n(),
+                },
+                onBack: switch (_pageState) {
+                  _PageState.loading => () {
+                    final sw = MediaQuery.of(context).size.width;
+                    final sh = MediaQuery.of(context).size.height;
+                    _showCancelWarningDialog(context, isDark, sw, sh);
                   },
-                ),
-                _PageState.result => const SizedBox.shrink(),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+                  _PageState.result => () => setState(
+                    () => _pageState = _PageState.selection,
+                  ),
+                  _PageState.selection => null,
+                },
+              ),
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => AILoadingScreen(
+                    selectedImage: _isTextMode ? null : _selectedImage,
+                    progressAnimation: _progressAnimation,
+                    aiTips: AppStrings.stickerAiTips
+                        .map((e) => e.i18n())
+                        .toList(),
+                    processingTitle: 'processing_title'.i18n(),
+                    applyingText: 'generating_sticker'.i18n(),
+                    waitText: 'take_few_seconds'.i18n(),
+                    customLogoAsset: 'assets/images/Sticker_logo.webp',
+                    onCancel: () {
+                      final sw = MediaQuery.of(context).size.width;
+                      final sh = MediaQuery.of(context).size.height;
+                      _showCancelWarningDialog(context, isDark, sw, sh);
+                    },
+                  ),
+                  _PageState.result => const SizedBox.shrink(),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

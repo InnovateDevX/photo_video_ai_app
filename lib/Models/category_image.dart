@@ -17,6 +17,9 @@ class CategoryImage {
   /// Optional thumbnail URL for videos
   final String? thumbnailUrl;
 
+  /// Optional list of image URLs for slideshow
+  final List<String>? imageUrls;
+
   /// The name of the category (used when type is 'category')
   final String? categoryName;
 
@@ -36,6 +39,7 @@ class CategoryImage {
     this.thumbnailUrl,
     this.categoryName,
     this.isEditable = false,
+    this.imageUrls,
   });
 
   factory CategoryImage.fromJson(Map<String, dynamic> json) {
@@ -44,9 +48,34 @@ class CategoryImage {
     final determinedType = json['type'] as String? ?? 
         ((parsedVideoUrl != null || parsedReelId != null) ? 'video' : 'image');
 
+    List<String>? parsedImageUrls;
+    String parsedImageUrl = '';
+
+    final dynamic imageUrlData = json['imageUrl'];
+    if (imageUrlData is List) {
+      parsedImageUrls = imageUrlData.map((e) => e.toString()).toList();
+      if (parsedImageUrls.isNotEmpty) {
+        parsedImageUrl = parsedImageUrls.first;
+      }
+    } else if (imageUrlData is String) {
+      parsedImageUrl = imageUrlData;
+      parsedImageUrls = [imageUrlData];
+    } else if (json['imageUrls'] is List) {
+      parsedImageUrls = (json['imageUrls'] as List).map((e) => e.toString()).toList();
+      if (parsedImageUrls.isNotEmpty) {
+        parsedImageUrl = parsedImageUrls.first;
+      }
+    } else {
+      parsedImageUrl = json['imageUrl'] as String? ?? '';
+      if (parsedImageUrl.isNotEmpty) {
+        parsedImageUrls = [parsedImageUrl];
+      }
+    }
+
     return CategoryImage(
       title: json['title'] as String? ?? '',
-      imageUrl: json['imageUrl'] as String? ?? '',
+      imageUrl: parsedImageUrl,
+      imageUrls: parsedImageUrls,
       videoUrl: parsedVideoUrl,
       modelUsed: json['modelUsed'] as String? ?? '',
       prompt: json['prompt'] as String? ?? '',
@@ -74,6 +103,7 @@ class CategoryImage {
       if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
       if (categoryName != null) 'categoryName': categoryName,
       'isEditable': isEditable,
+      if (imageUrls != null) 'imageUrls': imageUrls,
     };
   }
 }

@@ -14,7 +14,8 @@ import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
 import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
+import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -38,6 +39,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
 
   _PageState _pageState = _PageState.selection;
   String? _generatedImageUrl;
+  bool _isCancelled = false;
 
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
@@ -115,8 +117,6 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
       return;
     }
 
-
-
     setState(() => _pageState = _PageState.loading);
     _progressController.forward(from: 0);
 
@@ -133,6 +133,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
     }
 
     try {
+      _isCancelled = false;
       final url = await _replicateService.generateContent(
         modelConfig: model,
         prompt: _selectedStyle == 'Blur'
@@ -160,14 +161,34 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
 
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
+
         if (e is NsfwContentException) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
           );
         }
       }
+    }
+  }
+
+  Future<void> _showCancelWarningDialog() async {
+    final shouldCancel = await showCancelDialog(context);
+    if (shouldCancel && mounted) {
+      _replicateService.cancelActivePrediction();
+      _progressController.stop();
+      setState(() {
+        _pageState = _PageState.selection;
+        _isCancelled = true;
+      });
     }
   }
 
@@ -215,7 +236,9 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
           _circleBtn(
             isDark: isDark,
             icon: Icons.close,
-            onTap: () => Navigator.pop(context),
+            onTap: _pageState == _PageState.loading
+                ? _showCancelWarningDialog
+                : () => Navigator.pop(context),
           ),
         ],
       ),
@@ -264,51 +287,56 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const TopBar(),
-            _buildTopBar(
-              isDark: isDark,
-              title: 'background_ai_title'.i18n(),
-              subtitle: switch (_pageState) {
-                _PageState.loading => 'generating_background'.i18n(),
-                _PageState.result => 'background_ai_result_title'.i18n(),
-                _PageState.selection =>
-                  "blur_background".i18n(), // Or key 'blur_background'
-              },
-              onBack: switch (_pageState) {
-                _PageState.loading => () {
-                  _progressController.stop();
-                  setState(() => _pageState = _PageState.selection);
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          _showCancelWarningDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+
+              _buildTopBar(
+                isDark: isDark,
+                title: 'background_ai_title'.i18n(),
+                subtitle: switch (_pageState) {
+                  _PageState.loading => 'generating_background'.i18n(),
+                  _PageState.result => 'background_ai_result_title'.i18n(),
+                  _PageState.selection =>
+                    "blur_background".i18n(), // Or key 'blur_background'
                 },
-                _PageState.result => () => setState(
-                  () => _pageState = _PageState.selection,
-                ),
-                _PageState.selection => null,
-              },
-            ),
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => AILoadingScreen(
-                  selectedImage: _selectedImage,
-                  progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.outfitAiTips.map((e) => e.i18n()).toList(),
-                  processingTitle: 'processing_title'.i18n(),
-                  applyingText: 'generating_background'.i18n(),
-                  waitText: 'take_few_seconds'.i18n(),
-                  onCancel: () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
-                  },
-                ),
-                _PageState.result => const SizedBox.shrink(),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+                onBack: switch (_pageState) {
+                  _PageState.loading => _showCancelWarningDialog,
+                  _PageState.result => () => setState(
+                    () => _pageState = _PageState.selection,
+                  ),
+                  _PageState.selection => null,
+                },
+              ),
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => AILoadingScreen(
+                    selectedImage: _selectedImage,
+                    progressAnimation: _progressAnimation,
+                    aiTips: AppStrings.outfitAiTips
+                        .map((e) => e.i18n())
+                        .toList(),
+                    processingTitle: 'processing_title'.i18n(),
+                    applyingText: 'generating_background'.i18n(),
+                    waitText: 'take_few_seconds'.i18n(),
+                    onCancel: _showCancelWarningDialog,
+                  ),
+                  _PageState.result => const SizedBox.shrink(),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

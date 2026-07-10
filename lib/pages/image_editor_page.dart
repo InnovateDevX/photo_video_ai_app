@@ -73,6 +73,19 @@ class _ImageEditorViewState extends State<_ImageEditorView>
   /// Flag to prevent duplicate dialogs when Android back button is pressed
   bool _isHandlingBack = false;
 
+  /// Flag to show a loading overlay while shapes/doodles are being baked
+  /// (rasterized) into the base image after the paint editor closes.
+  bool _isBakingPaint = false;
+
+  /// Captures the paint editor's body size at the moment the user taps the
+  /// tick button. The paint editor has a different body size than the main
+  /// editor (because it has its own app bar / bottom panel), so the bake
+  /// function needs the *paint* editor's body to convert the layer's
+  /// body-space offset into the image's pixel space correctly.
+  /// Set in [_confirmCurrentTool] right before `subEditor.done()` and
+  /// consumed/cleared inside [_bakePaintLayersIntoImage].
+  Size? _paintEditorBodySize;
+
   final List<EffectOverlay> _effects = const [
     // ── Butterfly ──────────────────────────────────────────────
     EffectOverlay(
@@ -256,7 +269,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     return null;
   }
 
-  void _confirmCurrentTool({dynamic subEditor}) {
+  Future<void> _confirmCurrentTool({dynamic subEditor}) async {
     final ed = _editorKey.currentState;
     debugPrint(
       '[Confirm] _confirmCurrentTool called. activeTool=$_activeTool, activeSubTool=$_activeSubTool, ed=$ed',
@@ -267,7 +280,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       _lockAllWidgetLayers();
       _stickerPickerKey.currentState?.clearSelection();
       _unconfirmedStickers.clear();
-      // Do NOT close the panel
+      _resetStateAfterToolClosed();
       return;
     }
 
@@ -279,8 +292,17 @@ class _ImageEditorViewState extends State<_ImageEditorView>
         _activeTool == EditorTool.filters ||
         _activeTool == EditorTool.retouch;
 
+    // NOTE: We must capture the paint editor's body size BEFORE calling
+    // `subEditor.done()` (or `paintEditor.currentState?.done()`), because
+    // the paint editor is destroyed during `done()` and the body size is
+    // only valid while it's still mounted.  The bake function (which runs
+    // from the `.then(...)` of `openPaintEditor()`) needs this size to map
+    // the layer's body-space offset into the image's pixel space.
+    // Implementation is in [_capturePaintEditorBodySize].
+
     if (subEditor != null && isPackageTool) {
       try {
+        _capturePaintEditorBodySize(subEditor, ed);
         subEditor.done();
       } catch (e) {
         debugPrint('Error confirming subEditor: $e');
@@ -288,6 +310,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       return;
     } else if (isPackageTool) {
       if (_activeTool == EditorTool.shape || _activeTool == EditorTool.doodle) {
+        // Lock all paint layers before calling done to prevent movement after tick
+        _lockAllPaintLayers();
+        _capturePaintEditorBodySize(subEditor, ed);
         ed.paintEditor.currentState?.done();
       } else if (_activeTool == EditorTool.crop) {
         ed.cropRotateEditor.currentState?.done();
@@ -459,6 +484,35 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     });
     // Reset zoom/pan when closing tool
     _editorKey.currentState?.interactiveViewer.currentState?.reset();
+  }
+
+  /// Captures the paint editor's body size at the moment the user taps
+  /// the tick button. The paint editor has a different body size than
+  /// the main editor (because it has its own app bar / bottom panel),
+  /// so the bake function (see [_bakePaintLayersIntoImage]) needs the
+  /// *paint* editor's body to convert the layer's body-space offset
+  /// into the image's pixel space correctly.
+  ///
+  /// Must be called BEFORE `subEditor.done()` (or
+  /// `paintEditor.currentState?.done()`), because the paint editor is
+  /// destroyed during `done()` and the body size is only valid while
+  /// it's still mounted.
+  void _capturePaintEditorBodySize(dynamic subEditor, ProImageEditorState ed) {
+    if (_activeTool != EditorTool.shape && _activeTool != EditorTool.doodle) {
+      _paintEditorBodySize = null;
+      return;
+    }
+    try {
+      // Prefer reading the live subEditor (when the bottom panel is the
+      // source of the tick) — it carries the freshest constraints.
+      final dynamic state = subEditor ?? ed.paintEditor.currentState;
+      final dynamic body = state?.editorBodySize;
+      if (body is Size && body.width > 0 && body.height > 0) {
+        _paintEditorBodySize = body;
+      }
+    } catch (_) {
+      // The field is only present on PaintEditorState; ignore on others.
+    }
   }
 
   /// Locks every TextLayer in the editor so it cannot be moved, scaled,
@@ -872,6 +926,24 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                       ),
                     ),
                   ),
+                // Show a dedicated overlay while we rasterize paint layers
+                // into the background image.  We don't reuse state.isProcessing
+                // because the bake runs locally on the page state, not via
+                // the bloc, and we want the indicator up the moment the
+                // paint editor closes so the user gets immediate feedback.
+                if (_isBakingPaint)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        color: Colors.black.withAlpha(100),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: AppEditorConstants.accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -885,9 +957,12 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     return AnimatedBuilder(
       animation: _panelCtrl,
       builder: (animCtx, _) {
-        final collapsedH =
-            _calcPanelHeight(animCtx, expanded: false) +
-            MediaQuery.of(animCtx).padding.bottom;
+        final isPaintTool =
+            _activeTool == EditorTool.shape || _activeTool == EditorTool.doodle;
+        final collapsedH = isPaintTool
+            ? 0.0
+            : _calcPanelHeight(animCtx, expanded: false) +
+                  MediaQuery.of(animCtx).padding.bottom;
         // When a tool panel is open we compress the image area from
         // both sides: the panel already occupies the bottom, and we now add
         // a top inset so the image fits entirely in the space between the
@@ -926,6 +1001,11 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                   });
                 }
               },
+              mainEditorCallbacks: MainEditorCallbacks(
+                onAfterViewInit: () {
+                  _editorKey.currentState?.isPopScopeDisabled = true;
+                },
+              ),
             ),
             configs: ProImageEditorConfigs(
               designMode: ImageEditorDesignMode.material,
@@ -976,9 +1056,13 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                 ),
               ),
               mainEditor: MainEditorConfigs(
-                enableZoom: _activeTool == EditorTool.frames,
+                enableZoom:
+                    _activeTool == EditorTool.frames ||
+                    _activeTool == EditorTool.selective,
                 editorMinScale: _activeTool == EditorTool.frames ? 0.1 : 1.0,
-                boundaryMargin: _activeTool == EditorTool.frames
+                boundaryMargin:
+                    _activeTool == EditorTool.frames ||
+                        _activeTool == EditorTool.selective
                     ? const EdgeInsets.all(double.infinity)
                     : EdgeInsets.zero,
                 style: MainEditorStyle(
@@ -1053,6 +1137,8 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                 else
                                   Builder(
                                     builder: (builderCtx) {
+                                      Widget previewContent = content;
+
                                       if (_activeTool == EditorTool.selective) {
                                         final selMatrix = EffectEngine()
                                             .buildColorMatrix(
@@ -1064,9 +1150,9 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                               (state.circleHue - 0.5) * 360,
                                             );
 
-                                        return Stack(
+                                        previewContent = Stack(
                                           children: [
-                                            content,
+                                            previewContent,
                                             Positioned.fill(
                                               child: ClipPath(
                                                 clipper: _CircleClipper(
@@ -1118,10 +1204,10 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                           _activeSubTool ==
                                               EditorSubTool.curves) {
                                         if (_curvesPreviewImage != null) {
-                                          return Stack(
+                                          previewContent = Stack(
                                             fit: StackFit.expand,
                                             children: [
-                                              content,
+                                              previewContent,
                                               Positioned.fill(
                                                 child: RawImage(
                                                   image: _curvesPreviewImage,
@@ -1130,19 +1216,20 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                               ),
                                             ],
                                           );
+                                        } else {
+                                          previewContent = const Center(
+                                            child: CircularProgressIndicator(),
+                                          );
                                         }
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
                                       }
 
                                       // ── Live preview for HSL per-pixel tool ──
                                       if (_activeSubTool == EditorSubTool.hsl &&
                                           _hslPreviewImage != null) {
-                                        return Stack(
+                                        previewContent = Stack(
                                           fit: StackFit.expand,
                                           children: [
-                                            content,
+                                            previewContent,
                                             Positioned.fill(
                                               child: RawImage(
                                                 image: _hslPreviewImage,
@@ -1156,11 +1243,11 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                       // ── Live preview for matrix tools ──
                                       final matrix = _getLiveMatrix();
                                       if (matrix != null) {
-                                        return ColorFiltered(
+                                        previewContent = ColorFiltered(
                                           colorFilter: ColorFilter.matrix(
                                             matrix,
                                           ),
-                                          child: content,
+                                          child: previewContent,
                                         );
                                       }
 
@@ -1170,10 +1257,10 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                         if (_activeSubTool ==
                                                 EditorSubTool.vignette &&
                                             _adjustValue > 0) {
-                                          return Stack(
+                                          previewContent = Stack(
                                             fit: StackFit.expand,
                                             children: [
-                                              content,
+                                              previewContent,
                                               Positioned.fill(
                                                 child: IgnorePointer(
                                                   child: DecoratedBox(
@@ -1206,18 +1293,18 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                             _adjustValue > 0) {
                                           final contrastBoost =
                                               _adjustValue * 0.45;
-                                          final matrix = EffectEngine()
+                                          final sharpenMatrix = EffectEngine()
                                               .buildColorMatrix(
                                                 0.02,
                                                 contrastBoost,
                                                 -_adjustValue * 0.05,
                                                 0,
                                               );
-                                          return ColorFiltered(
+                                          previewContent = ColorFiltered(
                                             colorFilter: ColorFilter.matrix(
-                                              matrix,
+                                              sharpenMatrix,
                                             ),
-                                            child: content,
+                                            child: previewContent,
                                           );
                                         }
 
@@ -1226,7 +1313,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                                 EditorSubTool.grain &&
                                             _adjustValue > 0) {
                                           if (_grainPreviewImage != null) {
-                                            return LayoutBuilder(
+                                            previewContent = LayoutBuilder(
                                               builder: (context, constraints) {
                                                 final fitted = applyBoxFit(
                                                   BoxFit.contain,
@@ -1254,8 +1341,6 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                                 );
                                               },
                                             );
-                                          } else {
-                                            return content;
                                           }
                                         }
 
@@ -1264,13 +1349,13 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                                 EditorSubTool.denoise &&
                                             _adjustValue > 0) {
                                           final sigma = _adjustValue * 1.5;
-                                          return ImageFiltered(
+                                          previewContent = ImageFiltered(
                                             imageFilter: ui.ImageFilter.blur(
                                               sigmaX: sigma,
                                               sigmaY: sigma,
                                               tileMode: ui.TileMode.decal,
                                             ),
-                                            child: content,
+                                            child: previewContent,
                                           );
                                         }
 
@@ -1279,18 +1364,18 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                             _adjustValue > 0) {
                                           final contrastBoost =
                                               _adjustValue * 0.18;
-                                          final matrix = EffectEngine()
+                                          final clarityMatrix = EffectEngine()
                                               .buildColorMatrix(
                                                 0,
                                                 contrastBoost,
                                                 -_adjustValue * 0.02,
                                                 0,
                                               );
-                                          return ColorFiltered(
+                                          previewContent = ColorFiltered(
                                             colorFilter: ColorFilter.matrix(
-                                              matrix,
+                                              clarityMatrix,
                                             ),
-                                            child: content,
+                                            child: previewContent,
                                           );
                                         }
                                       }
@@ -1300,7 +1385,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                           width: renderedSize.width,
                                           height: renderedSize.height,
                                         ),
-                                        child: content,
+                                        child: previewContent,
                                       );
                                       return finalContent;
                                     },
@@ -1412,20 +1497,10 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                     builder: (context) => Builder(
                       builder: (innerContext) {
                         if (_keyboardVisible) return const SizedBox.shrink();
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildSubEditorPanelOverlay(
-                              editor,
-                              rebuildStream,
-                              usePositioned: false,
-                            ),
-                            _buildTextEditorBottomBar(
-                              editor,
-                              isDark,
-                              innerContext,
-                            ),
-                          ],
+                        return _buildSubEditorPanelOverlay(
+                          editor,
+                          rebuildStream,
+                          usePositioned: false,
                         );
                       },
                     ),
@@ -1642,7 +1717,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       } else if (_activeTool == EditorTool.text) {
         h = screenH * (isExpanded ? 0.55 : 0.40);
       } else if (_activeTool == EditorTool.sticker) {
-        h = screenH * (isExpanded ? 0.48 : 0.30);
+        h = screenH * (isExpanded ? 0.55 : 0.45);
       } else {
         h = screenH * 0.35;
       }
@@ -1711,56 +1786,38 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             if (_activeTool != EditorTool.none &&
                 _activeTool != EditorTool.text &&
                 _activeTool != EditorTool.crop &&
-                _activeTool != EditorTool.filters) ...[
+                _activeTool != EditorTool.filters &&
+                _activeTool != EditorTool.selective) ...[
               SizedBox(height: MediaQuery.of(context).size.height * 0.01),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  EditorActionBtn(
-                    icon: Icons.undo,
-                    onTap: () {
-                      // Sub-editors (doodle/shape) have their own history —
-                      // use it directly. Custom tools (adjust, bg, effect,
-                      // selective) use the BLoC image history.
-                      try {
-                        if (subEditor != null) {
+                  if (subEditor != null) ...[
+                    EditorActionBtn(
+                      icon: Icons.undo,
+                      onTap: () {
+                        try {
                           (subEditor as dynamic).undoAction();
-                        } else {
-                          final ed = _editorKey.currentState;
-                          if (ed != null) {
-                            context.read<ImageEditorBloc>().add(
-                              ImageEditorUndo(ed),
-                            );
-                          }
+                        } catch (_) {
+                          // Action not supported by this sub-editor
                         }
-                      } catch (_) {
-                        // Action not supported by this sub-editor
-                      }
-                    },
-                    isDark: isDark,
-                  ),
-                  SizedBox(width: AppEditorConstants.w(context, 0.04)),
-                  EditorActionBtn(
-                    icon: Icons.redo,
-                    onTap: () {
-                      try {
-                        if (subEditor != null) {
+                      },
+                      isDark: isDark,
+                    ),
+                    SizedBox(width: AppEditorConstants.w(context, 0.04)),
+                    EditorActionBtn(
+                      icon: Icons.redo,
+                      onTap: () {
+                        try {
                           (subEditor as dynamic).redoAction();
-                        } else {
-                          final ed = _editorKey.currentState;
-                          if (ed != null) {
-                            context.read<ImageEditorBloc>().add(
-                              ImageEditorRedo(ed),
-                            );
-                          }
+                        } catch (_) {
+                          // Action not supported by this sub-editor
                         }
-                      } catch (_) {
-                        // Action not supported by this sub-editor
-                      }
-                    },
-                    isDark: isDark,
-                  ),
-                  SizedBox(width: AppEditorConstants.w(context, 0.04)),
+                      },
+                      isDark: isDark,
+                    ),
+                    SizedBox(width: AppEditorConstants.w(context, 0.04)),
+                  ],
                   EditorActionBtn(
                     icon: Icons.rotate_right,
                     onTap: () {
@@ -1800,17 +1857,35 @@ class _ImageEditorViewState extends State<_ImageEditorView>
                                 AppEditorConstants.defaultSliderValue;
                           }
 
-                          // Restore original background image via BLoC
-                          final ed = _editorKey.currentState;
-                          if (ed != null) {
-                            context.read<ImageEditorBloc>().add(
-                              ImageEditorReset(ed),
-                            );
+                          if (_activeTool == EditorTool.sticker) {
+                            final ed = _editorKey.currentState;
+                            if (ed != null) {
+                              final layersToRemove = ed.activeLayers
+                                  .where(
+                                    (l) =>
+                                        l is WidgetLayer &&
+                                        l.interaction.enableMove,
+                                  )
+                                  .toList();
+                              for (var layer in layersToRemove) {
+                                ed.removeLayer(layer);
+                              }
+                              _unconfirmedStickers.clear();
+                              _stickerPickerKey.currentState?.clearSelection();
+                            }
                           }
                         } else {
                           // For sub-editors (doodle/shape), call their reset
+                          // or fallback to undoing all actions if reset is not supported
                           try {
-                            (subEditor as dynamic).reset();
+                            final dynamic ed = subEditor;
+                            try {
+                              ed.reset();
+                            } on NoSuchMethodError {
+                              while (ed.canUndo == true) {
+                                ed.undoAction();
+                              }
+                            }
                           } catch (_) {
                             // Method not supported
                           }
@@ -2088,8 +2163,13 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           subEditor.setMode(PaintMode.freeStyle);
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _editorKey.currentState?.openPaintEditor().then((_) {
-              // Lock all paint layers so doodles cannot be moved/resized after closing
+            _editorKey.currentState?.openPaintEditor().then((_) async {
+              // After the paint editor closes, bake the new paint layers
+              // into the background image so they become permanent raster
+              // pixels and don't shift/resize when the editor layout
+              // changes (e.g. when the bottom panel collapses).
+              await _bakePaintLayersIntoImage();
+              // Lock any leftover paint layers (defensive) and reset state.
               _lockAllPaintLayers();
               _resetStateAfterToolClosed();
             });
@@ -2109,19 +2189,13 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           subEditor.setStrokeWidth(_strokeValue * 50);
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _editorKey.currentState?.openPaintEditor().then((paintEditorState) {
-              // Apply current UI slider values to the paint editor so shapes
-              // use the user's chosen stroke width, color, and opacity instead
-              // of the editor's much larger defaults.
-              final pe = _editorKey.currentState?.paintEditor.currentState;
-              if (pe != null) {
-                pe.setColor(_paintColor);
-                pe.setOpacity(_opacityValue);
-                pe.setStrokeWidth(_strokeValue * 50);
-                pe.setFill(true);
-                pe.setMode(PaintMode.circle);
-              }
-              // Lock all paint layers so shapes cannot be moved/resized after closing
+            _editorKey.currentState?.openPaintEditor().then((_) async {
+              // After the paint editor closes, bake the new shape layers
+              // into the background image so they become permanent raster
+              // pixels and don't shift/resize when the editor layout
+              // changes (e.g. when the bottom panel collapses).
+              await _bakePaintLayersIntoImage();
+              // Lock any leftover paint layers (defensive) and reset state.
               _lockAllPaintLayers();
               _resetStateAfterToolClosed();
             });
@@ -2405,6 +2479,30 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                EditorActionBtn(
+                  icon: Icons.restore,
+                  isDark: _isDark,
+                  onTap: () {
+                    final bloc = context.read<ImageEditorBloc>();
+                    final sz = MediaQuery.of(context).size;
+                    bloc.add(
+                      const ImageEditorUpdateCircleFilters(
+                        blur: 0,
+                        brightness: 0.5,
+                        contrast: 0.5,
+                        saturation: 0.5,
+                        hue: 0.5,
+                      ),
+                    );
+                    bloc.add(
+                      ImageEditorUpdateCircle(
+                        center: Offset(sz.width / 2, sz.height / 2),
+                        radius: 100,
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                 _buildModeToggle(
                   label: 'Inside',
                   active: state.editInsideCircle,
@@ -3021,6 +3119,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             try {
               subEditor.primaryColor = c.withValues(alpha: _textOpacity);
             } catch (_) {}
+            _updateTextStyle(subEditor);
           },
           isDark: isDark,
         ),
@@ -3032,6 +3131,7 @@ class _ImageEditorViewState extends State<_ImageEditorView>
             try {
               subEditor.primaryColor = _textColor.withValues(alpha: v);
             } catch (_) {}
+            _updateTextStyle(subEditor);
           },
           isDark: isDark,
         ),
@@ -3175,6 +3275,8 @@ class _ImageEditorViewState extends State<_ImageEditorView>
       decoration: _isUnderlined
           ? TextDecoration.underline
           : TextDecoration.none,
+      decorationColor: _textColor.withValues(alpha: _textOpacity),
+      color: _textColor.withValues(alpha: _textOpacity),
     );
     try {
       subEditor.setTextStyle(style);
@@ -3193,114 +3295,230 @@ class _ImageEditorViewState extends State<_ImageEditorView>
     }
   }
 
-  /// Builds the bottom bar for the text editor with done and cancel buttons.
-  Widget _buildTextEditorBottomBar(
-    dynamic editor,
-    bool isDark,
-    BuildContext context,
-  ) {
-    // Use _keyboardVisible (from WidgetsBindingObserver.didChangeMetrics) instead
-    // of MediaQuery.viewInsets which gets consumed by the package's Scaffold.
-    if (_keyboardVisible) {
-      return const SizedBox.shrink();
+  /// Bakes all current [PaintLayer]s (shapes/doodles) into the background
+  /// image as rasterized pixels, then removes those layers from the editor
+  /// stack. This is what prevents the shapes from "shifting" or "resizing"
+  /// when the editor's container resizes after the paint editor closes.
+  ///
+  /// **Why this version uses the library's own path builders.** The
+  /// library's `PaintLayer.offset` and `PaintLayer.size` are expressed in
+  /// **body coordinates** (the main editor's body), and the base image
+  /// is fit with `BoxFit.contain` inside that body. So to map a layer
+  /// into the base image's pixel space we:
+  ///   1. Compute the image's rect inside the body using `BoxFit.contain`
+  ///      math (the same math the editor uses).
+  ///   2. Compute the body-to-image scale (`imageSize / imageRectSize`).
+  ///   3. Translate the layer's center from body coords into the body-
+  ///      local image-rect, then scale by the body-to-image scale.
+  ///   4. Draw the layer's path via the library's own
+  ///      [PathBuilderBase.fromMode] (so we honor the triangle custom
+  ///      builder, opacity, eraser, freeStyle collection, etc.) at the
+  ///      computed image-space position and size, using the
+  ///      `bodyToImageScale` as the builder's scale factor.
+  ///
+  /// We deliberately avoid `ed.captureEditorImage()` because that method
+  /// itself calls `Navigator.pop` when it sees `isSubEditorOpen`, and
+  /// the `.then(...)` callback fires before the paint editor's close
+  /// animation finishes — that double-pop takes the user back to the
+  /// Home page.
+  Future<void> _bakePaintLayersIntoImage() async {
+    final ed = _editorKey.currentState;
+    if (ed == null) return;
+
+    final paintLayers = ed.activeLayers.whereType<PaintLayer>().toList();
+    if (paintLayers.isEmpty) {
+      debugPrint('[BakePaint] No paint layers to bake.');
+      return;
     }
 
-    return Container(
-      padding: EdgeInsets.only(
-        left: AppEditorConstants.w(context, 0.04),
-        right: AppEditorConstants.w(context, 0.04),
-        bottom: MediaQuery.of(context).padding.bottom + 8,
-        top: 8,
-      ),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppEditorConstants.darkPanelBg
-            : AppEditorConstants.lightPanelBg,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? Colors.white12 : Colors.black12,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TextButton(
-            onPressed: () {
-              try {
-                editor.close();
-              } catch (_) {
-                Navigator.pop(context);
-              }
-            },
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: AppEditorConstants.primaryText(isDark),
-                fontSize: 16,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              try {
-                editor.done();
-              } catch (_) {
-                // Try alternative method
-                try {
-                  editor.save();
-                } catch (_) {}
-              }
-            },
-            child: Text(
-              'Done',
-              style: TextStyle(
-                color: AppEditorConstants.accent,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+    if (!mounted) return;
+    setState(() => _isBakingPaint = true);
 
-class _CircleClipper extends CustomClipper<Path> {
-  final Offset center;
-  final double radius;
-  final bool editInside;
+    ui.Image? baseUiImage;
+    try {
+      final currentImage = ed.stateManager.activeBackgroundImage;
+      if (currentImage == null) {
+        debugPrint('[BakePaint] No background image available.');
+        return;
+      }
 
-  _CircleClipper({
-    required this.center,
-    required this.radius,
-    required this.editInside,
-  });
+      // Decode the base image.
+      final baseBytes = await currentImage.safeByteArray();
+      final baseCodec = await ui.instantiateImageCodec(baseBytes);
+      final baseFrame = await baseCodec.getNextFrame();
+      baseUiImage = baseFrame.image;
 
-  @override
-  Path getClip(Size size) {
-    final path = Path()
-      ..addOval(Rect.fromCircle(center: center, radius: radius));
-    if (!editInside) {
-      return Path.combine(
-        PathOperation.difference,
-        Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
-        path,
+      final baseSize = Size(
+        baseUiImage.width.toDouble(),
+        baseUiImage.height.toDouble(),
       );
-    }
-    return path;
-  }
 
-  @override
-  bool shouldReclip(_CircleClipper oldClipper) =>
-      oldClipper.center != center ||
-      oldClipper.radius != radius ||
-      oldClipper.editInside != editInside;
+      // ───────────────────────────────────────────────────────────
+      // IMPORTANT — use the *paint editor's* body size, not the main
+      // editor's.  The library converts the layer's offset/size from
+      // paint-editor-body coords into main-editor-body coords by
+      // multiplying by `mainEditorSizeFactor` (which is a single double
+      // derived from the ratio of the two body sizes).  That single
+      // double is *only* correct when the body widths AND heights share
+      // the same ratio.  In our case the paint editor has its own app
+      // bar + bottom panel so the body sizes are different — the
+      // library's multiplication makes the layer land at the wrong
+      // (x, y) and (w, h) in the image.
+      //
+      // To fix this we:
+      //   1. Capture the paint editor's body size at tick time
+      //      (see [_capturePaintEditorBodySize]).
+      //   2. Reverse the library's `mainEditorSizeFactor` (= layer.scale)
+      //      on the layer's `offset` and `size` to recover the
+      //      paint-editor-body coordinates the user actually drew at.
+      //   3. Run the same `applyBoxFit` math the user saw while drawing,
+      //      using the paint editor's body size — so the body-to-image
+      //      scale matches what the user actually saw.
+      //   4. Convert and draw the layer into the image.
+      // ───────────────────────────────────────────────────────────
+      final bodySize = _paintEditorBodySize ?? ed.sizesManager.bodySize;
+      _paintEditorBodySize = null; // consume so we don't leak between sessions
+
+      // Find the base image's rect inside the body (BoxFit.contain) and
+      // the body-to-image scale.  This is the same `applyBoxFit` math
+      // the editor itself uses to render the background.
+      final FittedSizes fitted = applyBoxFit(
+        BoxFit.contain,
+        baseSize,
+        bodySize,
+      );
+      final Rect imageRectInBody = Alignment.center.inscribe(
+        fitted.destination,
+        Offset.zero & bodySize,
+      );
+      final double bodyToImageScale = baseSize.width / imageRectInBody.width;
+
+      // Look up the registered PaintEditorConfigs so custom path
+      // builders (e.g. the triangle) are honored.
+      final paintConfigs = ed.configs.paintEditor;
+
+      // Composite: draw base image, then each paint layer on top.
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawImage(baseUiImage, Offset.zero, Paint());
+
+      for (final layer in paintLayers) {
+        try {
+          // Reverse the library's mainEditorSizeFactor (== layer.scale)
+          // to recover the layer's offset/size in the *paint editor's*
+          // body coordinates.  In the paint editor the user drew at
+          // these exact coordinates — so converting from here into
+          // image pixels gives us a pixel-perfect bake.
+          final double reverseFactor = layer.scale == 0.0
+              ? 1.0
+              : 1.0 / layer.scale;
+          final Offset paintEditorOffset = layer.offset * reverseFactor;
+          final Size paintEditorSize = layer.size * reverseFactor;
+
+          // Layer's center in *paint editor* body coords:
+          //   bodyX = paintEditorOffset.dx + bodyW/2
+          //   bodyY = paintEditorOffset.dy + bodyH/2
+          // Convert to image coords using the paint editor's
+          // `bodyToImageScale`:
+          //   imageX = (bodyX - imageRectInBody.left) * bodyToImageScale
+          //   imageY = (bodyY - imageRectInBody.top)  * bodyToImageScale
+          final double layerCenterBodyX =
+              paintEditorOffset.dx + bodySize.width / 2.0;
+          final double layerCenterBodyY =
+              paintEditorOffset.dy + bodySize.height / 2.0;
+          final double layerCenterImgX =
+              (layerCenterBodyX - imageRectInBody.left) * bodyToImageScale;
+          final double layerCenterImgY =
+              (layerCenterBodyY - imageRectInBody.top) * bodyToImageScale;
+          final Size layerSizeImg = paintEditorSize * bodyToImageScale;
+
+          if (layerSizeImg.width <= 0 || layerSizeImg.height <= 0) continue;
+
+          final Offset layerTopLeftImg = Offset(
+            layerCenterImgX - layerSizeImg.width / 2.0,
+            layerCenterImgY - layerSizeImg.height / 2.0,
+          );
+
+          canvas.save();
+          canvas.translate(layerTopLeftImg.dx, layerTopLeftImg.dy);
+
+          // Apply the layer's opacity via saveLayer so transparent
+          // strokes blend with the base image (and any previously
+          // rendered layers).
+          final opacity = layer.opacity.clamp(0.0, 1.0);
+          if (opacity < 1.0) {
+            canvas.saveLayer(
+              Rect.fromLTWH(0, 0, layerSizeImg.width, layerSizeImg.height),
+              Paint()..color = Color.fromRGBO(255, 255, 255, opacity),
+            );
+          }
+
+          // Use the body-to-image scale for the path builder so the
+          // path is rendered at the correct image-pixel size. The
+          // layer's offsets (in `layer.item.offsets`) are in body
+          // coords (the library translates them to be relative to the
+          // layerRect's top-left in `_transformPaintedModelToLayer`).
+          // Multiplying by `bodyToImageScale` puts them in image coords.
+          final pathBuilder = PathBuilderBase.fromMode(
+            item: layer.item,
+            scale: bodyToImageScale,
+            paintEditorConfigs: paintConfigs,
+          );
+          pathBuilder.draw(canvas: canvas, size: layerSizeImg);
+
+          if (opacity < 1.0) canvas.restore();
+          canvas.restore();
+        } catch (e) {
+          debugPrint('[BakePaint] Error rendering layer: $e');
+        }
+      }
+
+      final picture = recorder.endRecording();
+      final resultImage = await picture.toImage(
+        baseUiImage.width,
+        baseUiImage.height,
+      );
+
+      // Export to a temp PNG file and swap it in as the new background.
+      final resultBytes = await EffectEngine().exportToBytes(resultImage);
+      final dir = await getTemporaryDirectory();
+      final outFile = File(
+        '${dir.path}/paint_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await outFile.writeAsBytes(resultBytes);
+
+      ed.stateManager.updateBackgroundImages(
+        oldImage: currentImage.copyWith(),
+        newImage: EditorImage.file(outFile),
+      );
+
+      // Remove the now-baked paint layers from the layer stack so they
+      // don't render twice (once baked into the image, once as vectors).
+      for (final layer in paintLayers) {
+        try {
+          ed.removeLayer(layer);
+        } catch (e) {
+          debugPrint('[BakePaint] Error removing layer: $e');
+        }
+      }
+
+      // Dispose the heavy intermediates.
+      resultImage.dispose();
+
+      debugPrint(
+        '[BakePaint] Successfully baked ${paintLayers.length} layer(s).',
+      );
+    } catch (e, stackTrace) {
+      debugPrint('[BakePaint] Error: $e\n$stackTrace');
+    } finally {
+      baseUiImage?.dispose();
+      if (mounted) {
+        setState(() => _isBakingPaint = false);
+      }
+    }
+  }
 }
 
-// ─── Painters ──────────────────────────────────────────────────
 class _CirclePainter extends CustomPainter {
   final Offset center;
   final double radius;
@@ -3386,8 +3604,36 @@ class _CirclePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _CirclePainter oldDelegate) {
+  bool shouldRepaint(_CirclePainter oldDelegate) {
     return oldDelegate.center != center || oldDelegate.radius != radius;
+  }
+}
+
+class _CircleClipper extends CustomClipper<Path> {
+  final Offset center;
+  final double radius;
+  final bool editInside;
+
+  _CircleClipper({
+    required this.center,
+    required this.radius,
+    required this.editInside,
+  });
+
+  @override
+  Path getClip(Size size) {
+    if (editInside) {
+      return Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+    }
+    // For "editOutside", clip is the entire size (no clip in the inside)
+    return Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+  }
+
+  @override
+  bool shouldReclip(_CircleClipper oldClipper) {
+    return oldClipper.center != center ||
+        oldClipper.radius != radius ||
+        oldClipper.editInside != editInside;
   }
 }
 

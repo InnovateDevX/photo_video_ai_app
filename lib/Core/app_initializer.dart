@@ -122,7 +122,9 @@ class AppInitializer {
       UserSession.instance.uid = uid;
       UserSession.instance.deviceId = deviceId;
 
-
+      // ── Step 4.2: Sync Subscription State from Firestore ──────────────────
+      final isProDB = await _userRepository.getProStatus(uid);
+      await SubscriptionService().syncIsSubscribed(isProDB);
 
       // ── Step 4.5: Sync FCM Token ──────────────────────────────────────────
       // Now that UID is set, we can link the device token to the Firestore doc.
@@ -176,6 +178,10 @@ class AppInitializer {
             final String? url = toolData['imageUrl'] ?? toolData['imageurl'];
             if (url != null && url.isNotEmpty) {
               imageUrls.add(url);
+            }
+            final String? videoUrl = toolData['videoUrl'] ?? toolData['videourl'];
+            if (videoUrl != null && videoUrl.isNotEmpty) {
+              imageUrls.add(videoUrl);
             }
           }
         }

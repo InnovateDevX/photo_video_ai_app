@@ -1,0 +1,152 @@
+[
+  {
+    "id": 1,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FCocktail%20Dresses%2Fc1.png?alt=media&token=d2d7f122-427d-4dd9-a446-eda6d4ad8202",
+    "category": "Cocktail Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 2,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FCocktail%20Dresses%2Fc2.png?alt=media&token=af3966a6-68d0-4bff-bc5e-48f339cf97c6",
+    "category": "Cocktail Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 3,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FCocktail%20Dresses%2Fc3.png?alt=media&token=8e68447c-3fa2-44d2-b43f-d912a802ef30",
+    "category": "Cocktail Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 4,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FCocktail%20Dresses%2Fc4.png?alt=media&token=c53736e9-e8e7-4902-b4e7-523cbdba57ae",
+    "category": "Cocktail Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 5,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FCocktail%20Dresses%2Fc5.png?alt=media&token=133f7098-100e-4b2f-9c42-c5d751023967",
+    "category": "Cocktail Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 6,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FMaxi%20Dresses%2Fm1.png?alt=media&token=7ba9502e-f7e9-4a39-bb81-6bd3ff8554cf",
+    "category": "Maxi Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 7,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FMaxi%20Dresses%2Fm2.png?alt=media&token=ee6c6b3e-6fe6-4612-aa90-ddb00ae6e1db",
+    "category": "Maxi Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 8,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FMaxi%20Dresses%2Fm3.png?alt=media&token=207da6ef-7fbf-462f-ba2d-45a76aeda6e0",
+    "category": "Maxi Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 9,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FMaxi%20Dresses%2Fm4.png?alt=media&token=fc97437e-b36f-4b58-86a1-ae8965664298",
+    "category": "Maxi Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 10,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FMaxi%20Dresses%2Fm5.png?alt=media&token=2d033b6c-ee46-43c2-9ec9-84bd8630df94",
+    "category": "Maxi Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 11,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FOff%20Shoulder%20Dresses%2Fo1.png?alt=media&token=42899160-b165-4f62-a0b4-17d83f656bdc",
+    "category": "Off Shoulder Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 12,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FOff%20Shoulder%20Dresses%2Fo2.png?alt=media&token=bedb4e07-3563-4f94-bbb9-4a1e9608c8d3",
+    "category": "Off Shoulder Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 13,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FOff%20Shoulder%20Dresses%2Fo3.png?alt=media&token=5d1a9519-1ff7-4d51-b7da-e042018aa153",
+    "category": "Off Shoulder Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 14,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FOff%20Shoulder%20Dresses%2Fo4.png?alt=media&token=a6437fa4-da8a-4154-983f-7e4f30b4323a",
+    "category": "Off Shoulder Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 15,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FOff%20Shoulder%20Dresses%2Fo5.png?alt=media&token=a39ba7b9-5ca8-4158-9a48-66866b3bd477",
+    "category": "Off Shoulder Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 16,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FShirt%20Dresses%2Fs1.png?alt=media&token=3aec13bd-a520-4be4-b787-8aeffd65d13f",
+    "category": "Shirt Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 17,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FShirt%20Dresses%2Fs2.png?alt=media&token=dc894540-308f-4665-8afe-40f01a280b35",
+    "category": "Shirt Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 18,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FShirt%20Dresses%2Fs3.png?alt=media&token=e59476f2-895c-4bda-bd66-605c7fde9739",
+    "category": "Shirt Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 19,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FShirt%20Dresses%2Fs4.png?alt=media&token=d9377949-83ef-4a89-b4f6-9758636ec2be",
+    "category": "Shirt Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 20,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FShirt%20Dresses%2Fs5.png?alt=media&token=dd895397-affd-4df2-8066-21a90ab5f2d3",
+    "category": "Shirt Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 21,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FWrap%20Dresses%2Fw1.png?alt=media&token=5bb0e9cf-1729-42c2-a8f0-1ee6e60c86a3",
+    "category": "Wrap Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 22,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FWrap%20Dresses%2Fw2.png?alt=media&token=7bba551c-c845-4ea9-a4d5-24a447cb05aa",
+    "category": "Wrap Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 23,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FWrap%20Dresses%2Fw3.png?alt=media&token=5424a55a-1a3e-424e-9f12-eaca817255e7",
+    "category": "Wrap Dresses",
+    "isLocked": false
+  },
+  {
+    "id": 24,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FWrap%20Dresses%2Fw4.png?alt=media&token=958a0e51-1355-49ea-b15f-02f94f4bb264",
+    "category": "Wrap Dresses",
+    "isLocked": true
+  },
+  {
+    "id": 25,
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/Dress%20Images%2FWrap%20Dresses%2Fw5.png?alt=media&token=00fc22d5-6eb8-4e6b-a8f5-a4ab27c80938",
+    "category": "Wrap Dresses",
+    "isLocked": false
+  }
+]

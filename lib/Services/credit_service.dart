@@ -154,6 +154,17 @@ class CreditService {
     return RemoteConfigService().initialCredits;
   }
 
+  /// Resets the service state for logout.
+  /// Cancels subscriptions but keeps the service reusable for re-login.
+  void resetForLogout() {
+    _firestoreSubscription?.cancel();
+    _firestoreSubscription = null;
+    _initialized = false;
+    _initFuture = null;
+    _credits = 0;
+    debugPrint('💳 [CreditService] Reset for logout');
+  }
+
   void dispose() {
     _firestoreSubscription?.cancel();
     _creditStreamController.close();

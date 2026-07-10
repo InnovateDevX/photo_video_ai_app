@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/strings.dart'; // AppStrings.selectionCategories
 import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
 
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:trail_ai_app/pages/generation_page.dart';
@@ -36,7 +36,7 @@ class _SelectionState extends State<Selection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: h * 0.05),
-          const TopBar(),
+
           SizedBox(height: h * 0.02),
 
           // Categories segmented control

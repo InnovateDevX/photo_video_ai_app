@@ -5,7 +5,7 @@ import 'package:trail_ai_app/Core/colors.dart';
 import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
 import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
 import 'package:trail_ai_app/Services/replicate_service.dart';
 import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/ad_service.dart';
@@ -16,7 +16,11 @@ import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'dart:convert';
 import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
+import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
+import 'package:trail_ai_app/Services/base64_image_encoder.dart';
+import 'package:path_provider/path_provider.dart';
 
 // ── Page state ─────────────────────────────────────────────────────────────
 enum _PageState { selection, loading, result }
@@ -50,6 +54,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
   // ── Page state ─────────────────────────────────────────────────────────────
   _PageState _pageState = _PageState.selection;
   String? _generatedImageUrl;
+  bool _isCancelled = false;
 
   // ── Progress animation ─────────────────────────────────────────────────────
   late AnimationController _progressController;
@@ -84,7 +89,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       _isLoadingOutfits = true;
     });
     try {
-      final result = await FirebaseStorage.instance.ref('Outfits').listAll();
+      final result = await FirebaseStorage.instance.ref('Dress Images').listAll();
       final folderNames = result.prefixes.map((ref) => ref.name).toList();
 
       Map<String, List<Reference>> refsMap = {};
@@ -94,7 +99,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
         // 1. Fetch ONLY the first category completely to immediately unblock the UI
         final firstCat = folderNames.first;
         final firstCatResult = await FirebaseStorage.instance
-            .ref('Outfits/$firstCat')
+            .ref('Dress Images/$firstCat')
             .listAll();
         final firstRefs = firstCatResult.items;
         final firstUrls = await _runWithConcurrencyLimit<String, Reference>(
@@ -146,7 +151,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
             remainingCategories.map((category) async {
               try {
                 final catResult = await FirebaseStorage.instance
-                    .ref('Outfits/$category')
+                    .ref('Dress Images/$category')
                     .listAll();
                 final refs = catResult.items;
                 final urls = await _runWithConcurrencyLimit<String, Reference>(
@@ -243,8 +248,6 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       return;
     }
 
-
-
     // 1. Enter Loading State FIRST
     setState(() => _pageState = _PageState.loading);
     _progressController.forward(from: 0);
@@ -264,6 +267,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
     }
 
     try {
+      _isCancelled = false;
       final outfitLabel = _outfitRefs[_selectedOutfitIndex].name;
       final prompt =
           'A person wearing ${categories[_selectedCategoryIndex]} style $outfitLabel';
@@ -285,6 +289,35 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       );
       await tempFile.writeAsBytes(response.bodyBytes);
 
+      // --- DEBUG: Save base64s Locally ---
+      try {
+        final b64Image1 = await Base64ImageEncoder.encodeFile(_selectedImage!);
+        final b64Image2 = await Base64ImageEncoder.encodeFile(tempFile);
+        
+        final debugJson = jsonEncode({
+          'user_image_index_0': b64Image1,
+          'cloth_image_index_1': b64Image2,
+        });
+
+        // We use path_provider to get external storage so you can access it via File Manager
+        final directory = await getExternalStorageDirectory();
+        final debugFile = File('${directory!.path}/debug_base64_${DateTime.now().millisecondsSinceEpoch}.json');
+        await debugFile.writeAsString(debugJson);
+        
+        debugPrint('✅ [DEBUG] Base64 JSON saved locally to: ${debugFile.path}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Debug JSON saved locally! Path in console.'),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ [DEBUG] Failed to save debug JSON locally: $e');
+      }
+      // --------------------------------------------------------
+
       final resultUrl = await _replicateService.generateContent(
         modelConfig: _replicateService.clothModel!,
         prompt: prompt,
@@ -304,14 +337,35 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       if (mounted) {
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
+
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
+
         if (e is NsfwContentException) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
+    }
+  }
+
+  Future<void> _showCancelWarningDialog() async {
+    final shouldCancel = await showCancelDialog(context);
+    if (shouldCancel && mounted) {
+      _replicateService.cancelActivePrediction();
+      _progressController.stop();
+      setState(() {
+        _pageState = _PageState.selection;
+        _isCancelled = true;
+      });
     }
   }
 
@@ -356,7 +410,9 @@ class _OutfitChangePageState extends State<OutfitChangePage>
           _circleBtn(
             isDark: isDark,
             icon: Icons.close,
-            onTap: () => Navigator.pop(context),
+            onTap: _pageState == _PageState.loading
+                ? _showCancelWarningDialog
+                : () => Navigator.pop(context),
           ),
         ],
       ),
@@ -398,63 +454,65 @@ class _OutfitChangePageState extends State<OutfitChangePage>
         onReEdit: () => setState(() => _pageState = _PageState.selection),
         onTryAgain: () {
           setState(() => _pageState = _PageState.selection);
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            _generateOutfit,
-          );
+          Future.delayed(const Duration(milliseconds: 100), _generateOutfit);
         },
         onBack: () => setState(() => _pageState = _PageState.selection),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Credits top bar
-            const TopBar(),
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          _showCancelWarningDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Credits top bar
 
-            // Navigation bar (changes subtitle per state)
-            _buildTopBar(
-              isDark: isDark,
-              subtitle: switch (_pageState) {
-                _PageState.loading => 'outfit_processing_subtitle'.i18n(),
-                _PageState.result => 'outfit_result_subtitle'.i18n(),
-                _PageState.selection => 'outfit_selection_subtitle'.i18n(),
-              },
-              onBack: switch (_pageState) {
-                _PageState.loading => () {
-                  _progressController.stop();
-                  setState(() => _pageState = _PageState.selection);
+
+              // Navigation bar (changes subtitle per state)
+              _buildTopBar(
+                isDark: isDark,
+                subtitle: switch (_pageState) {
+                  _PageState.loading => 'outfit_processing_subtitle'.i18n(),
+                  _PageState.result => 'outfit_result_subtitle'.i18n(),
+                  _PageState.selection => 'outfit_selection_subtitle'.i18n(),
                 },
-                _PageState.result => () => setState(
-                  () => _pageState = _PageState.selection,
-                ),
-                _PageState.selection => null, // defaults to Navigator.pop
-              },
-            ),
+                onBack: switch (_pageState) {
+                  _PageState.loading => _showCancelWarningDialog,
+                  _PageState.result => () => setState(
+                    () => _pageState = _PageState.selection,
+                  ),
+                  _PageState.selection => null, // defaults to Navigator.pop
+                },
+              ),
 
-            // Page body — swap between the three screens
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => AILoadingScreen(
-                  selectedImage: _selectedImage,
-                  progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.outfitAiTips.map((e) => e.i18n()).toList(),
-                  processingTitle: 'processing_title'.i18n(),
-                  applyingText: 'applying_outfit'.i18n(),
-                  waitText: 'take_few_seconds'.i18n(),
-                  onCancel: () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
-                  },
-                ),
-                _PageState.result => const SizedBox.shrink(),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+              // Page body — swap between the three screens
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => AILoadingScreen(
+                    selectedImage: _selectedImage,
+                    progressAnimation: _progressAnimation,
+                    aiTips: AppStrings.outfitAiTips
+                        .map((e) => e.i18n())
+                        .toList(),
+                    processingTitle: 'processing_title'.i18n(),
+                    applyingText: 'applying_outfit'.i18n(),
+                    waitText: 'take_few_seconds'.i18n(),
+                    onCancel: _showCancelWarningDialog,
+                  ),
+                  _PageState.result => const SizedBox.shrink(),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -614,8 +672,10 @@ class _OutfitChangePageState extends State<OutfitChangePage>
           SizedBox(height: sh * 0.02),
 
           // Outfits Grid
-          _isLoadingOutfits
-              ? const Center(child: CircularProgressIndicator())
+          _isLoadingCategories
+              ? const SizedBox.shrink()
+              : _isLoadingOutfits
+                  ? const Center(child: CircularProgressIndicator())
               : _outfitRefs.isEmpty
               ? Center(
                   child: Text(

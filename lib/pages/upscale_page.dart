@@ -16,7 +16,8 @@ import '../Services/credit_service.dart';
 import '../Services/generation_gate.dart';
 import '../pages/ai_loading_screen.dart';
 import '../pages/ai_result_screen.dart';
-import '../Widgets/topbar.dart';
+
+import '../Widgets/cancel_dialog.dart';
 import '../Services/media_service.dart';
 
 enum _PageState { selection, loading, result }
@@ -45,6 +46,7 @@ class _UpscalePageState extends State<UpscalePage>
 
   String? _currentPollUrl;
   String? _currentCancelUrl;
+  bool _isCancelled = false;
 
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
@@ -113,128 +115,20 @@ class _UpscalePageState extends State<UpscalePage>
   }
 
   Future<void> _showCancelWarningDialog() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sw = MediaQuery.of(context).size.width;
-    final sh = MediaQuery.of(context).size.height;
-
-    final result = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          padding: EdgeInsets.all(sw * 0.06),
-          decoration: BoxDecoration(
-            color: AppColors.tileBackgroundColor(isDark),
-            borderRadius: BorderRadius.circular(sw * 0.06),
-            border: Border.all(
-              color: AppColors.creditsCardBorder(isDark),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon
-              Container(
-                padding: EdgeInsets.all(sw * 0.04),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  color: const Color(0xFFFF9800),
-                  size: sw * 0.08,
-                ),
-              ),
-              SizedBox(height: sh * 0.025),
-              Text(
-                'Cancel Generation?',
-                style: TextStyle(
-                  color: AppColors.textColor(isDark),
-                  fontSize: sw * 0.055,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: sh * 0.015),
-              Text(
-                'The upscale process is in progress. Cancelling will stop the server request and you may lose any credits used.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.secondaryTextColor(isDark),
-                  fontSize: sw * 0.035,
-                  height: 1.5,
-                ),
-              ),
-              SizedBox(height: sh * 0.04),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(ctx, 'cancel'),
-                    child: Container(
-                      height: sh * 0.065,
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(sw * 0.04),
-                        border: Border.all(
-                          color: Colors.red.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Yes, Cancel',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontSize: sw * 0.04,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: sh * 0.015),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: sh * 0.015),
-                    ),
-                    onPressed: () => Navigator.pop(ctx, 'wait'),
-                    child: Text(
-                      'Continue Waiting',
-                      style: TextStyle(
-                        color: AppColors.secondaryTextColor(isDark),
-                        fontWeight: FontWeight.w600,
-                        fontSize: sw * 0.038,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    final shouldCancel = await showCancelDialog(
+      context,
+      message:
+          'The upscale process is in progress. Cancelling will stop the server request and you may lose any credits used.',
     );
-
-    if (result == 'cancel' && mounted) {
-      // Cancel the server request
-      if (_currentCancelUrl != null) {
-        _replicateService.cancelPrediction(_currentCancelUrl!);
-      }
+    if (shouldCancel && mounted) {
+      // Cancel the server request and abort polling
+      _replicateService.cancelActivePrediction();
       _progressController.stop();
       setState(() {
         _pageState = _PageState.selection;
         _currentPollUrl = null;
         _currentCancelUrl = null;
+        _isCancelled = true;
       });
     }
   }
@@ -271,6 +165,7 @@ class _UpscalePageState extends State<UpscalePage>
     }
 
     try {
+      _isCancelled = false;
       final scaleStr = _factors[_selectedUpscaleFactor].replaceAll(
         RegExp(r'[^0-9]'),
         '',
@@ -308,6 +203,10 @@ class _UpscalePageState extends State<UpscalePage>
       if (mounted) {
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
         if (e.toString().toLowerCase().contains('timeout')) {
           showDialog(
             context: context,
@@ -426,46 +325,57 @@ class _UpscalePageState extends State<UpscalePage>
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const TopBar(),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-            _buildTopBar(
-              isDark: isDark,
-              subtitle: switch (_pageState) {
-                _PageState.loading => 'outfit_processing_subtitle'.i18n(),
-                _PageState.result => 'outfit_result_subtitle'.i18n(),
-                _PageState.selection => 'upscale_subtitle'.i18n(),
-              },
-              onBack: switch (_pageState) {
-                _PageState.loading => _showCancelWarningDialog,
-                _PageState.result => () => setState(
-                  () => _pageState = _PageState.selection,
-                ),
-                _PageState.selection => null,
-              },
-            ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => AILoadingScreen(
-                  selectedImage: _selectedImage,
-                  progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.outfitAiTips.map((e) => e.i18n()).toList(),
-                  processingTitle: 'processing_title'.i18n(),
-                  applyingText: 'Processing ...'
-                      .i18n(), // Or 'upscaling_photo' if added
-                  waitText: 'take_few_seconds'.i18n(),
-                  onCancel: _showCancelWarningDialog,
-                ),
-                _PageState.result => const SizedBox.shrink(),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          _showCancelWarningDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+
+              SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+              _buildTopBar(
+                isDark: isDark,
+                subtitle: switch (_pageState) {
+                  _PageState.loading => 'outfit_processing_subtitle'.i18n(),
+                  _PageState.result => 'outfit_result_subtitle'.i18n(),
+                  _PageState.selection => 'upscale_subtitle'.i18n(),
+                },
+                onBack: switch (_pageState) {
+                  _PageState.loading => _showCancelWarningDialog,
+                  _PageState.result => () => setState(
+                    () => _pageState = _PageState.selection,
+                  ),
+                  _PageState.selection => null,
+                },
+              ),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => AILoadingScreen(
+                    selectedImage: _selectedImage,
+                    progressAnimation: _progressAnimation,
+                    aiTips: AppStrings.outfitAiTips
+                        .map((e) => e.i18n())
+                        .toList(),
+                    processingTitle: 'processing_title'.i18n(),
+                    applyingText: 'Processing ...'
+                        .i18n(), // Or 'upscaling_photo' if added
+                    waitText: 'take_few_seconds'.i18n(),
+                    onCancel: _showCancelWarningDialog,
+                  ),
+                  _PageState.result => const SizedBox.shrink(),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

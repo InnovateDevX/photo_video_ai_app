@@ -1,9 +1,32 @@
 import 'package:flutter/material.dart';
 import '../Core/colors.dart';
 import '../Core/gradient.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FeedbackHelper {
-  static void showThumbsUpDialog(BuildContext context, {required bool isDark}) {
+  static Future<void> _saveFeedbackToFirestore({
+    required String type,
+    String? reason,
+    String? comments,
+    String? assetUrl,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await FirebaseFirestore.instance.collection('feedback_reports').add({
+        'type': type,
+        'reason': reason ?? '',
+        'comments': comments ?? '',
+        'assetUrl': assetUrl ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': user?.uid ?? 'anonymous',
+      });
+    } catch (e) {
+      debugPrint('Error saving feedback: $e');
+    }
+  }
+  static void showThumbsUpDialog(BuildContext context, {required bool isDark, String? assetUrl}) {
+    _saveFeedbackToFirestore(type: 'positive', assetUrl: assetUrl);
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
 
@@ -91,6 +114,7 @@ class FeedbackHelper {
   static void showThumbsDownDialog(
     BuildContext context, {
     required bool isDark,
+    String? assetUrl,
   }) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
@@ -220,6 +244,12 @@ class FeedbackHelper {
                                 debugPrint(
                                   'Negative Feedback submitted: $selectedReason - ${commentsController.text}',
                                 );
+                                _saveFeedbackToFirestore(
+                                  type: 'negative',
+                                  reason: selectedReason,
+                                  comments: commentsController.text,
+                                  assetUrl: assetUrl,
+                                );
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -268,7 +298,7 @@ class FeedbackHelper {
     );
   }
 
-  static void showFeedbackSheet(BuildContext context, {required bool isDark}) {
+  static void showFeedbackSheet(BuildContext context, {required bool isDark, String? assetUrl}) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
 
@@ -390,9 +420,14 @@ class FeedbackHelper {
                         ? null
                         : () {
                             FocusManager.instance.primaryFocus?.unfocus();
-                            // Here you would typically send the feedback to your backend
                             debugPrint(
                               'Feedback submitted: $selectedReason - ${commentsController.text}',
+                            );
+                            _saveFeedbackToFirestore(
+                              type: 'nsfw_report',
+                              reason: selectedReason,
+                              comments: commentsController.text,
+                              assetUrl: assetUrl,
                             );
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(

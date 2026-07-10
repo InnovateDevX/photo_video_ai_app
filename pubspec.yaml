@@ -58,6 +58,7 @@ dependencies:
   path_provider: ^2.1.5
   gallery_saver_plus: ^3.2.9
   image_cropper: ^12.1.0
+  image: ^4.1.3
 
   image_collage_widget: ^1.0.6
   flutter_bloc: ^8.1.3

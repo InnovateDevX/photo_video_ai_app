@@ -11,7 +11,7 @@ import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/generation_gate.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
 import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
 import 'package:trail_ai_app/pages/upscale_page.dart';
 
 enum _PageState { selection, loading, result }
@@ -37,6 +37,7 @@ class _AiLogoPageState extends State<AiLogoPage>
   int _selectedLogoIndex = 0;
   final bool _isDownloading = false;
   bool _isNsfw = false;
+  bool _isCancelled = false;
 
   final ScrollController _scrollController = ScrollController();
   late AnimationController _progressController;
@@ -134,10 +135,11 @@ class _AiLogoPageState extends State<AiLogoPage>
     }
 
     try {
+      _isCancelled = false;
       final url = await _replicateService.generateContent(
         modelConfig: model,
-        prompt:
-            'logo design, ${_promptController.text}, $_selectedStyle style, professional minimalist logo, white background',
+        prompt: _promptController.text.trim(),
+        extraVariables: {'style': _selectedStyle},
       );
 
       await _creditService.deductCredits(model.creditUsed);
@@ -158,6 +160,11 @@ class _AiLogoPageState extends State<AiLogoPage>
     } catch (e) {
       if (mounted) {
         _progressController.stop();
+
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
 
         if (e is NsfwContentException) {
           if (e.url != null) {
@@ -259,45 +266,165 @@ class _AiLogoPageState extends State<AiLogoPage>
     );
   }
 
+  Future<void> _showCancelWarningDialog(
+    BuildContext context,
+    bool isDark,
+    double sw,
+    double sh,
+  ) async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: EdgeInsets.all(sw * 0.06),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundColor(isDark),
+            borderRadius: BorderRadius.circular(sw * 0.05),
+            border: Border.all(
+              color: AppColors.creditsCardBorder(isDark),
+              width: sw * 0.002,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red,
+                size: sw * 0.12,
+              ),
+              SizedBox(height: sh * 0.02),
+              Text(
+                'Cancel Generation?',
+                style: TextStyle(
+                  color: AppColors.textColor(isDark),
+                  fontWeight: FontWeight.bold,
+                  fontSize: sw * 0.045,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: sh * 0.015),
+              Text(
+                'Are you sure you want to cancel? Your credits have already been deducted.',
+                style: TextStyle(
+                  color: AppColors.secondaryTextColor(isDark),
+                  fontSize: sw * 0.035,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: sh * 0.03),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx, 'cancel'),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: sh * 0.015),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(sw * 0.03),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Yes, Cancel',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: sw * 0.04,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: sh * 0.015),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: sh * 0.015),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, 'wait'),
+                    child: Text(
+                      'Continue Waiting',
+                      style: TextStyle(
+                        color: AppColors.secondaryTextColor(isDark),
+                        fontWeight: FontWeight.w600,
+                        fontSize: sw * 0.038,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result == 'cancel' && mounted) {
+      _replicateService.cancelActivePrediction();
+      _progressController.stop();
+      setState(() {
+        _pageState = _PageState.selection;
+        _isCancelled = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const TopBar(),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-            _buildTopBar(
-              isDark: isDark,
-              title: 'logo_maker_title'.i18n(),
-              subtitle: switch (_pageState) {
-                _PageState.loading => 'enhancing_logo'.i18n(),
-                _PageState.result => 'check_the_result'.i18n(),
-                _PageState.selection => 'logo_maker_desc'.i18n(),
-              },
-              onBack: switch (_pageState) {
-                _PageState.loading => () {
-                  _progressController.stop();
-                  setState(() => _pageState = _PageState.selection);
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          final sw = MediaQuery.of(context).size.width;
+          final sh = MediaQuery.of(context).size.height;
+          _showCancelWarningDialog(context, isDark, sw, sh);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+              _buildTopBar(
+                isDark: isDark,
+                title: 'logo_maker_title'.i18n(),
+                subtitle: switch (_pageState) {
+                  _PageState.loading => 'enhancing_logo'.i18n(),
+                  _PageState.result => 'check_the_result'.i18n(),
+                  _PageState.selection => 'logo_maker_desc'.i18n(),
                 },
-                _PageState.result => () => setState(
-                  () => _pageState = _PageState.selection,
-                ),
-                _PageState.selection => null,
-              },
-            ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => _buildLoadingScreen(isDark),
-                _PageState.result => _buildResultBody(isDark),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+                onBack: switch (_pageState) {
+                  _PageState.loading => () {
+                    final sw = MediaQuery.of(context).size.width;
+                    final sh = MediaQuery.of(context).size.height;
+                    _showCancelWarningDialog(context, isDark, sw, sh);
+                  },
+                  _PageState.result => () => setState(
+                    () => _pageState = _PageState.selection,
+                  ),
+                  _PageState.selection => null,
+                },
+              ),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => _buildLoadingScreen(isDark),
+                  _PageState.result => _buildResultBody(isDark),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -307,109 +434,115 @@ class _AiLogoPageState extends State<AiLogoPage>
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'processing_title'.i18n(),
-          style: TextStyle(
-            fontSize: sw * 0.05,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textColor(isDark),
-          ),
-        ),
-        SizedBox(height: sh * 0.02),
-        Text(
-          'Transform your photo into art within\nAI filters',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: sw * 0.035,
-            color: AppColors.secondaryTextColor(isDark),
-          ),
-        ),
-        SizedBox(height: sh * 0.05),
-        GridView.builder(
-          shrinkWrap: true,
-          padding: EdgeInsets.symmetric(horizontal: sw * 0.1),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: sw * 0.04,
-            mainAxisSpacing: sw * 0.04,
-          ),
-          itemCount: 4,
-          itemBuilder: (context, index) => Container(
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white10 : Colors.grey[200],
-              borderRadius: BorderRadius.circular(sw * 0.04),
-            ),
-            child: Icon(
-              Icons.image_outlined,
-              color: Colors.grey[400],
-              size: sw * 0.1,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'processing_title'.i18n(),
+            style: TextStyle(
+              fontSize: sw * 0.05,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textColor(isDark),
             ),
           ),
-        ),
-        SizedBox(height: sh * 0.1),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: sw * 0.1),
-          child: Column(
-            children: [
-              Text(
-                'creating_logo'.i18n(),
-                style: TextStyle(
-                  fontSize: sw * 0.04,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textColor(isDark),
+          SizedBox(height: sh * 0.015),
+          Text(
+            'Transform your photo into art within\nAI filters',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: sw * 0.035,
+              color: AppColors.secondaryTextColor(isDark),
+            ),
+          ),
+          SizedBox(height: sh * 0.03),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: sw * 0.1),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: sw * 0.04,
+              mainAxisSpacing: sw * 0.04,
+            ),
+            itemCount: 4,
+            itemBuilder: (context, index) => Container(
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : Colors.grey[200],
+                borderRadius: BorderRadius.circular(sw * 0.04),
+              ),
+              child: Icon(
+                Icons.image_outlined,
+                color: Colors.grey[400],
+                size: sw * 0.1,
+              ),
+            ),
+          ),
+          SizedBox(height: sh * 0.05),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: sw * 0.1),
+            child: Column(
+              children: [
+                Text(
+                  'creating_logo'.i18n(),
+                  style: TextStyle(
+                    fontSize: sw * 0.04,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textColor(isDark),
+                  ),
+                ),
+                SizedBox(height: sh * 0.01),
+                LinearProgressIndicator(
+                  value: _progressAnimation.value,
+                  backgroundColor: isDark ? Colors.grey[850] : Colors.grey[200],
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Colors.orange,
+                  ),
+                  minHeight: sh * 0.012,
+                  borderRadius: BorderRadius.circular(sw * 0.025),
+                ),
+                SizedBox(height: sh * 0.01),
+                Text(
+                  'enhancing_logo'.i18n(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: sw * 0.03,
+                    color: AppColors.secondaryTextColor(isDark),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: sh * 0.05),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: sw * 0.1,
+              vertical: sh * 0.02,
+            ),
+            child: OutlinedButton(
+              onPressed: () {
+                final sw = MediaQuery.of(context).size.width;
+                final sh = MediaQuery.of(context).size.height;
+                _showCancelWarningDialog(context, isDark, sw, sh);
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, sh * 0.06),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(sw * 0.08),
+                ),
+                side: BorderSide(
+                  color: isDark ? Colors.white : Colors.black,
+                  width: sw * 0.003,
                 ),
               ),
-              SizedBox(height: sh * 0.01),
-              LinearProgressIndicator(
-                value: _progressAnimation.value,
-                backgroundColor: isDark ? Colors.grey[850] : Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
-                minHeight: sh * 0.012,
-                borderRadius: BorderRadius.circular(sw * 0.025),
-              ),
-              SizedBox(height: sh * 0.01),
-              Text(
-                'enhancing_logo'.i18n(),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: sw * 0.03,
-                  color: AppColors.secondaryTextColor(isDark),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: sw * 0.1,
-            vertical: sh * 0.04,
-          ),
-          child: OutlinedButton(
-            onPressed: () {
-              _progressController.stop();
-              setState(() => _pageState = _PageState.selection);
-            },
-            style: OutlinedButton.styleFrom(
-              minimumSize: Size(double.infinity, sh * 0.06),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(sw * 0.08),
-              ),
-              side: BorderSide(
-                color: isDark ? Colors.white : Colors.black,
-                width: sw * 0.003,
+              child: Text(
+                'cancel'.i18n(),
+                style: TextStyle(color: AppColors.textColor(isDark)),
               ),
             ),
-            child: Text(
-              'cancel'.i18n(),
-              style: TextStyle(color: AppColors.textColor(isDark)),
-            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

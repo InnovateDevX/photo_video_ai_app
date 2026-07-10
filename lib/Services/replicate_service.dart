@@ -100,15 +100,25 @@ class AIModelConfig {
     } else if (source is String) {
       dynamic result = source;
       for (final entry in variables.entries) {
-        final placeholder = '{{${entry.key}}}';
+        final keyUpper = entry.key.toUpperCase();
+        final keyLower = entry.key.toLowerCase();
+        final placeholderOriginal = '{{${entry.key}}}';
+        final placeholderUpper = '{{$keyUpper}}';
+        final placeholderLower = '{{$keyLower}}';
+
         // Exact match replacement (e.g., used for "scale": "{{scale}}" to keep it as an int)
-        if (result == placeholder) {
+        if (result == placeholderOriginal ||
+            result == placeholderUpper ||
+            result == placeholderLower) {
           result = entry.value;
           break; // Stop looking if the whole value is replaced
         }
         // Partial string replacement
-        if (result is String && result.contains(placeholder)) {
-          result = result.replaceAll(placeholder, entry.value.toString());
+        if (result is String) {
+          result = result
+              .replaceAll(placeholderOriginal, entry.value.toString())
+              .replaceAll(placeholderUpper, entry.value.toString())
+              .replaceAll(placeholderLower, entry.value.toString());
         }
       }
       return result;
@@ -142,9 +152,11 @@ class ReplicateService {
 
   /// Cancels the currently active prediction (if any) by sending a POST to its cancel URL.
   /// Also closes any tracked HTTP client to abort in-flight requests.
-  Future<void> cancelActivePrediction() async {
-    if (_currentCancelUrl != null && _currentCancelUrl!.isNotEmpty) {
-      await cancelPrediction(_currentCancelUrl!);
+  /// If [cancelUrl] is provided, it cancels that specific URL; otherwise cancels the stored one.
+  Future<void> cancelActivePrediction({String? cancelUrl}) async {
+    final targetUrl = cancelUrl ?? _currentCancelUrl;
+    if (targetUrl != null && targetUrl.isNotEmpty) {
+      await cancelPrediction(targetUrl);
     }
     // Also close any tracked HTTP clients to abort in-flight polling
     CancellationManager().cancelAll();
@@ -426,11 +438,16 @@ class ReplicateService {
 
     final requestInput = modelConfig.createRequestBody(variables);
     Map<String, dynamic> finalBody = Map.from(requestInput);
+
     final List<String> rawBase64s = [];
     final List<String> imageUrls = [];
 
-    bool templateIncludesDataUriPrefix(dynamic v) {
-      final placeholders = [
+    /// Returns the data URI prefix (everything up to and including `;base64,`)
+    /// from a template value string that embeds a placeholder with a prefix.
+    /// e.g. `"data:image/jpeg;base64,{{image}}"` → `"data:image/jpeg;base64,"`
+    /// Returns null if no valid data URI prefix is found.
+    String? extractEmbeddedDataUriPrefix(String val) {
+      const placeholders = [
         '{{image}}',
         '{{image_url}}',
         '{{input_image}}',
@@ -438,20 +455,77 @@ class ReplicateService {
         '{{end_image}}',
         '{{reference_image}}',
         '{{prompt_image}}',
+        '{{cloth_image}}',
+        '{{garm_image}}',
+        '{{dress_image}}',
+        '{{garment}}',
+        '{{garment_image}}',
       ];
-      if (v is String) {
-        for (final p in placeholders) {
-          if (v.contains(p) && v.contains('data:') && v.contains('base64,')) {
-            return true;
+      for (final p in placeholders) {
+        if (val.contains(p)) {
+          // Find the data URI prefix before the placeholder
+          final idx = val.indexOf(p);
+          if (idx >= 0) {
+            final prefix = val.substring(0, idx);
+            if (prefix.startsWith('data:') && prefix.endsWith(';base64,')) {
+              return prefix;
+            }
           }
         }
-        return false;
       }
-      if (v is Map<String, dynamic>) {
-        return v.values.any(templateIncludesDataUriPrefix);
+      return null;
+    }
+
+    /// Injects a base64 data URI into the request body JSON for a specific placeholder.
+    ///
+    /// Handles the case where the template has a hardcoded prefix like:
+    /// "data:image/jpeg;base64,{{image}}" - we need to remove the prefix and replace
+    /// just the placeholder with the full data URI (which has the correct MIME type).
+    Map<String, dynamic> injectBase64IntoBody(
+      Map<String, dynamic> body,
+      String placeholder,
+      String fullDataUri, // e.g. "data:image/png;base64,iVBOR..."
+    ) {
+      final jsonStr = jsonEncode(body);
+      final ph = '{{$placeholder}}';
+
+      // If the placeholder doesn't exist in the serialized body, return unchanged
+      if (!jsonStr.contains(ph)) return body;
+
+      // Find the position of the placeholder in the JSON string
+      final phIdx = jsonStr.indexOf(ph);
+      String result;
+
+      // Check if there's a hardcoded data URI prefix before the placeholder
+      if (phIdx >= 10) {
+        // Look backwards from the placeholder to find a potential data URI prefix
+        final segment = jsonStr.substring(0, phIdx);
+        // Search for the unescaped or escaped pattern
+        int prefixStart = segment.lastIndexOf('data:');
+        if (prefixStart == -1) {
+          prefixStart = segment.lastIndexOf('data\\u003a');
+        }
+
+        if (prefixStart >= 0) {
+          final possiblePrefix = segment.substring(prefixStart);
+          // Check if it ends with the base64 suffix comma right before the placeholder
+          if (possiblePrefix.endsWith(',') ||
+              possiblePrefix.endsWith('\\u002c')) {
+            // Found a pattern like: data:image/jpeg;base64,{{image}}
+            // Remove the prefix and just keep the placeholder part
+            result = jsonStr.replaceFirst(possiblePrefix + ph, fullDataUri);
+            debugPrint(
+              '🔄 [ReplicateService] Removed hardcoded prefix and replaced "$ph" with data URI',
+            );
+            return jsonDecode(result) as Map<String, dynamic>;
+          }
+        }
       }
-      if (v is List) return v.any(templateIncludesDataUriPrefix);
-      return false;
+
+      // Simple placeholder replacement - the full data URI already has the correct MIME type
+      result = jsonStr.replaceAll(ph, fullDataUri);
+      debugPrint('🔄 [ReplicateService] Replaced "$ph" with full data URI');
+      return jsonDecode(result) as Map<String, dynamic>;
     }
 
     // ── Base64 Encoding for single reference image ──────────────────────────
@@ -459,21 +533,20 @@ class ReplicateService {
       debugPrint('🖼 [ReplicateService] Encoding reference image to base64...');
       try {
         final encoded = await Base64ImageEncoder.encodeFile(referenceImage);
-        final rawBase64 = encoded.split(',').last;
         rawBase64s.add(encoded);
 
-        final hasPrefix = templateIncludesDataUriPrefix(finalBody);
-        final base64ForTemplate = hasPrefix ? rawBase64 : encoded;
-
-        finalBody = modelConfig._replaceValues(finalBody, {
-          'image': base64ForTemplate,
-          'image_url': base64ForTemplate,
-          'input_image': base64ForTemplate,
-          'start_image': base64ForTemplate,
-          'end_image': base64ForTemplate,
-          'reference_image': base64ForTemplate,
-          'prompt_image': base64ForTemplate,
-        });
+        finalBody = injectBase64IntoBody(finalBody, 'image', encoded);
+        // Also inject for all single-image placeholder variants
+        for (final ph in [
+          'image_url',
+          'input_image',
+          'start_image',
+          'end_image',
+          'reference_image',
+          'prompt_image',
+        ]) {
+          finalBody = injectBase64IntoBody(finalBody, ph, encoded);
+        }
         debugPrint('✅ [ReplicateService] Reference image injected as base64.');
       } catch (e) {
         debugPrint('❌ [ReplicateService] Base64 fallback failed: $e');
@@ -495,26 +568,42 @@ class ReplicateService {
           rawBase64s.add(encoded);
         }
 
-        final hasPrefix = templateIncludesDataUriPrefix(finalBody);
-        final replacements = <String, dynamic>{
-          'images': encodedImagesWithPrefix,
-          'image_urls': encodedImagesWithPrefix,
-        };
+        // Inject the images list (use jsonEncode for valid JSON array syntax)
+        final imagesJson = jsonEncode(encodedImagesWithPrefix);
+        finalBody = injectBase64IntoBody(finalBody, 'images', imagesJson);
+        finalBody = injectBase64IntoBody(finalBody, 'image_urls', imagesJson);
 
         if (encodedImagesWithPrefix.isNotEmpty) {
-          final base64ForTemplate = hasPrefix
-              ? rawImages.first
-              : encodedImagesWithPrefix.first;
-          replacements['image'] = base64ForTemplate;
-          replacements['image_url'] = base64ForTemplate;
-          replacements['input_image'] = base64ForTemplate;
-          replacements['start_image'] = base64ForTemplate;
-          replacements['end_image'] = base64ForTemplate;
-          replacements['reference_image'] = base64ForTemplate;
-          replacements['prompt_image'] = base64ForTemplate;
+          // First image → primary image placeholders
+          final firstEncoded = encodedImagesWithPrefix.first;
+          for (final ph in [
+            'image',
+            'image_url',
+            'input_image',
+            'start_image',
+            'end_image',
+            'reference_image',
+            'prompt_image',
+          ]) {
+            finalBody = injectBase64IntoBody(finalBody, ph, firstEncoded);
+          }
+
+          // Second image → cloth/garment placeholders
+          if (encodedImagesWithPrefix.length > 1) {
+            final secondEncoded = encodedImagesWithPrefix[1];
+            for (final ph in [
+              'image2',
+              'cloth_image',
+              'garm_image',
+              'dress_image',
+              'garment',
+              'garment_image',
+            ]) {
+              finalBody = injectBase64IntoBody(finalBody, ph, secondEncoded);
+            }
+          }
         }
 
-        finalBody = modelConfig._replaceValues(finalBody, replacements);
         debugPrint(
           '✅ [ReplicateService] ${encodedImagesWithPrefix.length} images injected as base64.',
         );
@@ -530,6 +619,19 @@ class ReplicateService {
       '🧹 [ReplicateService] Pruning request body of empty placeholders...',
     );
     finalBody = _pruneBody(finalBody) ?? finalBody;
+
+    // Fallback: Ensure 'prompt' is included in 'input' if it's missing but provided to the method.
+    // We do this AFTER pruning because an unfulfilled template might have caused the prompt field to be dropped entirely.
+    if (finalBody.containsKey('input') &&
+        finalBody['input'] is Map<String, dynamic>) {
+      final inputMap = finalBody['input'] as Map<String, dynamic>;
+      if (!inputMap.containsKey('prompt') && prompt.isNotEmpty) {
+        inputMap['prompt'] = prompt;
+        debugPrint(
+          '⚠️ [ReplicateService] Re-injected prompt after pruning to satisfy API validation.',
+        );
+      }
+    }
 
     final url = await _createPrediction(
       modelConfig.url,
@@ -670,7 +772,7 @@ class ReplicateService {
           '⚠️ [ReplicateService] Failed to cancel prediction: ${response.statusCode} - ${response.body}',
         );
       } else {
-        debugPrint('✅ [ReplicateService] Prediction cancelled successfully.');
+        debugPrint('✅ [ReplicationService] Prediction cancelled successfully.');
       }
     } catch (e) {
       debugPrint('❌ [ReplicateService] Error cancelling prediction: $e');

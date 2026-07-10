@@ -54,7 +54,7 @@ class _ImageCropPageState extends State<ImageCropPage> {
           cropFrameColor: AppColors.primaryOrange,
           cropGridColor: Colors.white24,
           showCropGrid: true,
-          lockAspectRatio: widget.aspectRatio != null,
+          lockAspectRatio: true, // Forces freeStyleCropEnabled to false to fix pinch-zoom on Android
           hideBottomControls: false,
           initAspectRatio: CropAspectRatioPreset.original,
           aspectRatioPresets: [
@@ -90,8 +90,8 @@ class _ImageCropPageState extends State<ImageCropPage> {
     if (croppedFile != null) {
       Navigator.pop(context, File(croppedFile.path));
     } else {
-      // User cancelled the native cropper — go back without a result
-      Navigator.pop(context, null);
+      // User cancelled the native cropper — keep them on the ImageCropPage
+      // so they can choose "Skip" (use original) or click "Crop" to try again.
     }
   }
 
@@ -161,10 +161,14 @@ class _ImageCropPageState extends State<ImageCropPage> {
                 padding: EdgeInsets.symmetric(horizontal: sw * 0.04),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(sw * 0.06),
-                  child: Image.file(
-                    widget.imageFile,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
+                  child: InteractiveViewer(
+                    maxScale: 5.0,
+                    minScale: 1.0,
+                    child: Image.file(
+                      widget.imageFile,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                    ),
                   ),
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class ReelVideoPlayer extends StatefulWidget {
@@ -13,6 +14,7 @@ class ReelVideoPlayer extends StatefulWidget {
   final BorderRadiusGeometry? borderRadius;
   final bool mute;
   final BoxFit fit;
+  final AlignmentGeometry alignment;
 
   const ReelVideoPlayer({
     super.key,
@@ -24,6 +26,7 @@ class ReelVideoPlayer extends StatefulWidget {
     this.borderRadius,
     this.mute = true,
     this.fit = BoxFit.contain,
+    this.alignment = Alignment.center,
   });
 
   @override
@@ -104,21 +107,34 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
 
       if (!mounted) return;
 
-      // 2. Create controller (either from File or Network)
+      // 2. Try initializing with cache file, fallback to network if it fails or times out
+      bool initialized = false;
       if (videoFile != null) {
-        _controller = VideoPlayerController.file(
-          videoFile,
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-        );
-      } else {
+        try {
+          _controller = VideoPlayerController.file(
+            videoFile,
+            videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+          );
+          await _controller!.initialize().timeout(const Duration(seconds: 4));
+          initialized = true;
+        } catch (e) {
+          debugPrint("⚠️ [VideoPlayer] Cache init failed or timed out: $e. Falling back to network...");
+          try {
+            await DefaultCacheManager().removeFile(widget.videoUrl);
+          } catch (_) {}
+          _controller?.dispose();
+          _controller = null;
+        }
+      }
+
+      if (!initialized) {
+        if (!mounted) return;
         _controller = VideoPlayerController.networkUrl(
           Uri.parse(widget.videoUrl),
           videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
+        await _controller!.initialize().timeout(const Duration(seconds: 10));
       }
-
-      // 3. Initialize and play
-      await _controller!.initialize();
 
       if (mounted) {
         setState(() {
@@ -180,6 +196,7 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
 
         Widget content = FittedBox(
           fit: widget.fit,
+          alignment: widget.alignment,
           clipBehavior: Clip.hardEdge,
           child: SizedBox(
             width: _controller!.value.size.width,

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trail_ai_app/Core/routes.dart';
 import 'package:video_player/video_player.dart';
+import 'package:trail_ai_app/Services/subscription_service.dart';
+import 'package:trail_ai_app/pages/paywall_page.dart';
+import 'package:trail_ai_app/Widgets/main_navigation.dart';
 
 // --- Data Models ---
 
@@ -227,7 +230,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finishOnboarding() async {
     await OnboardingPage.markCompleted();
     if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      final bool isPaid = SubscriptionService().isSubscribed;
+      if (!isPaid) {
+        // Load MainNavigation as the base route in background
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => const MainNavigation()),
+        );
+        // And instantly push the PaywallPage on top of it
+        Navigator.of(context).push(
+          PageRouteBuilder<void>(
+            pageBuilder: (_, __, ___) => const PaywallPage(
+              isStartup: true,
+              showOnboarding: false,
+            ),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
     }
   }
 

@@ -164,18 +164,7 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
                 letterSpacing: -0.5,
               ),
             ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.005),
-            Text(
-              'Trending apps now a click\naway',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: sw * 0.038,
-                color: AppColors.secondaryTextColor(isDark),
-                height: 1.2,
-              ),
-            ),
-            SizedBox(height: sh * 0.035),
-
+            SizedBox(height: sh * 0.02),
             // Grid content
             Expanded(
               child: _items.isEmpty && _isLoading

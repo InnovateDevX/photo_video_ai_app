@@ -29,6 +29,10 @@ class UserRepository {
     final data = {
       'created_at': FieldValue.serverTimestamp(),
       'credits': creditsToAssign,
+      'isPro': false,
+      'proProductId': null,
+      'proPurchasedAt': null,
+      'proExpiresAt': null,
     };
 
     try {
@@ -57,6 +61,19 @@ class UserRepository {
               if (!snapshot.exists) {
                 tx.set(docRef, data);
                 debugPrint('💾 [UserRepository] Standalone tx: set() called ✅');
+              } else {
+                final existingData = snapshot.data();
+                final updateData = <String, dynamic>{};
+                if (existingData != null) {
+                  if (!existingData.containsKey('isPro')) updateData['isPro'] = false;
+                  if (!existingData.containsKey('proProductId')) updateData['proProductId'] = null;
+                  if (!existingData.containsKey('proPurchasedAt')) updateData['proPurchasedAt'] = null;
+                  if (!existingData.containsKey('proExpiresAt')) updateData['proExpiresAt'] = null;
+                }
+                if (updateData.isNotEmpty) {
+                  tx.update(docRef, updateData);
+                  debugPrint('💾 [UserRepository] Standalone tx: missing pro fields added ✅');
+                }
               }
             });
             debugPrint(
@@ -123,10 +140,14 @@ class UserRepository {
           // Doc exists → only update credits (don't touch created_at)
           tx.update(docRef, {'credits': credits});
         } else {
-          // Doc missing → create with both required fields (satisfies hasAll rule)
+          // Doc missing → create with required fields
           tx.set(docRef, {
             'credits': credits,
             'created_at': FieldValue.serverTimestamp(),
+            'isPro': false,
+            'proProductId': null,
+            'proPurchasedAt': null,
+            'proExpiresAt': null,
           });
         }
       });

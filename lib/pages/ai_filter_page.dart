@@ -12,11 +12,12 @@ import 'package:trail_ai_app/Services/ad_service.dart';
 import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Services/generation_gate.dart';
 import 'package:trail_ai_app/Services/remote_config_service.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
 import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
+import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 enum _PageState { selection, loading, result }
@@ -41,6 +42,7 @@ class _AiFilterPageState extends State<AiFilterPage>
 
   _PageState _pageState = _PageState.selection;
   String? _generatedImageUrl;
+  bool _isCancelled = false;
 
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
@@ -119,8 +121,6 @@ class _AiFilterPageState extends State<AiFilterPage>
       return;
     }
 
-
-
     setState(() => _pageState = _PageState.loading);
     _progressController.forward(from: 0);
 
@@ -138,6 +138,7 @@ class _AiFilterPageState extends State<AiFilterPage>
     }
 
     try {
+      _isCancelled = false;
       final url = await _replicateService.generateContent(
         modelConfig: model,
         prompt: _selectedStyle!.prompt,
@@ -168,14 +169,34 @@ class _AiFilterPageState extends State<AiFilterPage>
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
 
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
+
         if (e is NsfwContentException) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
           );
         }
       }
+    }
+  }
+
+  Future<void> _showCancelWarningDialog() async {
+    final shouldCancel = await showCancelDialog(context);
+    if (shouldCancel && mounted) {
+      _replicateService.cancelActivePrediction();
+      _progressController.stop();
+      setState(() {
+        _pageState = _PageState.selection;
+        _isCancelled = true;
+      });
     }
   }
 
@@ -190,43 +211,46 @@ class _AiFilterPageState extends State<AiFilterPage>
         onReEdit: () => setState(() => _pageState = _PageState.selection),
         onTryAgain: () {
           setState(() => _pageState = _PageState.selection);
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            _generateFilter,
-          );
+          Future.delayed(const Duration(milliseconds: 100), _generateFilter);
         },
         onBack: () => setState(() => _pageState = _PageState.selection),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (_pageState == _PageState.selection) const TopBar(),
-            _buildCustomNav(isDark),
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => AILoadingScreen(
-                  selectedImage: _selectedImage,
-                  progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.stickerAiTips
-                      .map((e) => e.i18n())
-                      .toList(), // Reusing tips for now
-                  processingTitle: 'filter_processing'.i18n(),
-                  applyingText: 'filter_applying'.i18n(),
-                  waitText: 'take_few_seconds'.i18n(),
-                  onCancel: () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
-                  },
-                ),
-                _PageState.result => const SizedBox.shrink(),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          _showCancelWarningDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+
+              _buildCustomNav(isDark),
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => AILoadingScreen(
+                    selectedImage: _selectedImage,
+                    progressAnimation: _progressAnimation,
+                    aiTips: AppStrings.stickerAiTips
+                        .map((e) => e.i18n())
+                        .toList(),
+                    processingTitle: 'filter_processing'.i18n(),
+                    applyingText: 'filter_applying'.i18n(),
+                    waitText: 'take_few_seconds'.i18n(),
+                    onCancel: _showCancelWarningDialog,
+                  ),
+                  _PageState.result => const SizedBox.shrink(),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -242,7 +266,9 @@ class _AiFilterPageState extends State<AiFilterPage>
           _navCircleBtn(
             isDark,
             Icons.arrow_back_ios_new,
-            () => Navigator.pop(context),
+            _pageState == _PageState.loading
+                ? _showCancelWarningDialog
+                : () => Navigator.pop(context),
           ),
           Expanded(
             child: Column(
@@ -266,7 +292,13 @@ class _AiFilterPageState extends State<AiFilterPage>
               ],
             ),
           ),
-          _navCircleBtn(isDark, Icons.close, () => Navigator.pop(context)),
+          _navCircleBtn(
+            isDark,
+            Icons.close,
+            _pageState == _PageState.loading
+                ? _showCancelWarningDialog
+                : () => Navigator.pop(context),
+          ),
         ],
       ),
     );
@@ -327,12 +359,18 @@ class _AiFilterPageState extends State<AiFilterPage>
                                 size: 50,
                                 color: Colors.grey[400],
                               ),
-                              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.01,
+                              ),
                               Text(
                                 'tap_to_select_gallery'.i18n(),
                                 style: TextStyle(color: Colors.grey[500]),
                               ),
-                              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.02,
+                              ),
                               GestureDetector(
                                 onTap: _pickImage,
                                 child: Container(
@@ -364,7 +402,9 @@ class _AiFilterPageState extends State<AiFilterPage>
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedImage = null),
                         child: Container(
-                          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.015),
+                          padding: EdgeInsets.all(
+                            MediaQuery.of(context).size.width * 0.015,
+                          ),
                           decoration: const BoxDecoration(
                             color: Colors.black54,
                             shape: BoxShape.circle,
@@ -384,7 +424,9 @@ class _AiFilterPageState extends State<AiFilterPage>
                       child: Row(
                         children: [
                           _actionIcon(Icons.qr_code_scanner, isDark),
-                          SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.02,
+                          ),
                           _actionIcon(Icons.crop_original, isDark),
                         ],
                       ),
@@ -398,7 +440,9 @@ class _AiFilterPageState extends State<AiFilterPage>
               padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
+                borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.05,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,10 +467,14 @@ class _AiFilterPageState extends State<AiFilterPage>
                   SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
+                    padding: EdgeInsets.all(
+                      MediaQuery.of(context).size.width * 0.03,
+                    ),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.grey[800] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.02),
+                      borderRadius: BorderRadius.circular(
+                        MediaQuery.of(context).size.width * 0.02,
+                      ),
                     ),
                     child: Text(
                       'ai_filter_suggestion'.i18n(),
@@ -475,7 +523,9 @@ class _AiFilterPageState extends State<AiFilterPage>
                                 height: 90,
                                 margin: const EdgeInsets.only(right: 12),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.04),
+                                  borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width * 0.04,
+                                  ),
                                   border: Border.all(
                                     color: isSelected
                                         ? Colors.orange
@@ -484,7 +534,9 @@ class _AiFilterPageState extends State<AiFilterPage>
                                   ),
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.035),
+                                  borderRadius: BorderRadius.circular(
+                                    MediaQuery.of(context).size.width * 0.035,
+                                  ),
                                   child: style.thumbnailUrl.isNotEmpty
                                       ? CachedNetworkImage(
                                           imageUrl: style.thumbnailUrl,
@@ -509,7 +561,10 @@ class _AiFilterPageState extends State<AiFilterPage>
                                         ),
                                 ),
                               ),
-                              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.01,
+                              ),
                               Padding(
                                 padding: const EdgeInsets.only(right: 12),
                                 child: SizedBox(

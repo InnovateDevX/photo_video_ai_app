@@ -23,6 +23,7 @@ import '../Services/content_safety_service.dart';
 import '../Helpers/error_dialog_helper.dart';
 import '../Services/media_service.dart';
 import '../Services/data_service.dart';
+import '../Services/subscription_service.dart';
 import '../Models/category_image.dart';
 import 'dart:async';
 
@@ -91,6 +92,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
   String? _currentPollUrl;
   String? _currentCancelUrl;
+  bool _isCancelled = false;
 
   // Reference image picked via + button
   File? _selectedImage;
@@ -565,6 +567,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
     // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
+      _isCancelled = false;
       int? width;
       int? height;
       String? aspectRatio;
@@ -625,6 +628,10 @@ class _GenerationPageState extends State<GenerationPage> {
       }
     } catch (e) {
       if (mounted) {
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
         if (e is NsfwContentException) {
           if (e.url != null) {
             setState(() {
@@ -888,6 +895,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
     // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
+      _isCancelled = false;
       // Stage 1: Image Edit
       final editedImageUrl = await _replicateService.generateContent(
         modelConfig: imageModel,
@@ -937,6 +945,10 @@ class _GenerationPageState extends State<GenerationPage> {
       } catch (_) {}
     } catch (e) {
       if (mounted) {
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
         if (e is NsfwContentException) {
           if (e.url != null) {
             setState(() {
@@ -1171,13 +1183,12 @@ class _GenerationPageState extends State<GenerationPage> {
       });
       return true;
     } else if (result == 'cancel_request') {
-      if (_currentCancelUrl != null) {
-        _replicateService.cancelPrediction(_currentCancelUrl!);
-      }
+      _replicateService.cancelActivePrediction();
       setState(() {
         _isGenerating = false;
         _currentPollUrl = null;
         _currentCancelUrl = null;
+        _isCancelled = true;
       });
       return true;
     }
@@ -1509,6 +1520,17 @@ class _GenerationPageState extends State<GenerationPage> {
                     ),
                   ),
                 ),
+              if (!SubscriptionService().isSubscribed)
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: IgnorePointer(
+                    child: Image.asset(
+                      'assets/images/watermark.png',
+                      width: 100,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1518,6 +1540,25 @@ class _GenerationPageState extends State<GenerationPage> {
         videoUrl: _generatedVideoUrl!,
         borderRadius: screenWidth * 0.06,
       );
+
+      if (!SubscriptionService().isSubscribed) {
+        resultWidget = Stack(
+          alignment: Alignment.center,
+          children: [
+            resultWidget,
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: IgnorePointer(
+                child: Image.asset(
+                  'assets/images/watermark.png',
+                  width: 100,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
 
       if (_isNsfw) {
         resultWidget = Center(
@@ -1537,6 +1578,17 @@ class _GenerationPageState extends State<GenerationPage> {
                       Icons.visibility_off,
                       color: Colors.white,
                       size: MediaQuery.of(context).size.width * 0.12,
+                    ),
+                  ),
+                ),
+              if (!SubscriptionService().isSubscribed)
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: IgnorePointer(
+                    child: Image.asset(
+                      'assets/images/watermark.png',
+                      width: 100,
                     ),
                   ),
                 ),

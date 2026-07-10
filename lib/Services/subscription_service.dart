@@ -18,7 +18,7 @@ class SubscriptionService {
   bool _isSubscribed = false;
   bool get isSubscribed => _isSubscribed;
 
-  bool _isUltra = false;
+  final bool _isUltra = false;
   bool get isUltra => _isUltra;
 
   /// The loaded product details (weekly, monthly) from Google Play.
@@ -91,8 +91,8 @@ class SubscriptionService {
 
       debugPrint('🛒 [SubscriptionService] Querying products: $ids');
 
-      final ProductDetailsResponse response =
-          await InAppPurchase.instance.queryProductDetails(ids);
+      final ProductDetailsResponse response = await InAppPurchase.instance
+          .queryProductDetails(ids);
 
       if (response.error != null) {
         debugPrint(
@@ -245,6 +245,17 @@ class SubscriptionService {
     } catch (e) {
       debugPrint('⚠️ [SubscriptionService] Error parsing rc_credits_map: $e');
       return 999999;
+    }
+  }
+
+  /// Syncs the local subscription state with the database.
+  Future<void> syncIsSubscribed(bool isSubscribed) async {
+    if (_isSubscribed != isSubscribed) {
+      _isSubscribed = isSubscribed;
+      _subscriptionStreamController.add(isSubscribed);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_localSubKey, isSubscribed);
+      debugPrint('🛒 [SubscriptionService] Synced isSubscribed from DB: $isSubscribed');
     }
   }
 

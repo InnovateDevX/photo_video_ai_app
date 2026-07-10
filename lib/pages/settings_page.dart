@@ -152,7 +152,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                 ? Alignment.centerRight
                                 : Alignment.centerLeft,
                             child: Padding(
-                              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.005),
+                              padding: EdgeInsets.all(
+                                MediaQuery.of(context).size.width * 0.005,
+                              ),
                               child: Container(
                                 width: 24,
                                 height: 24,
@@ -319,9 +321,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Container(
         height: sh * 0.075,
         margin: EdgeInsets.only(bottom: sh * 0.015),
-        padding: EdgeInsets.symmetric(
-          horizontal: sw * 0.04,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: sw * 0.04),
         decoration: BoxDecoration(
           color: AppColors.tileBackgroundColor(isDark),
           borderRadius: BorderRadius.circular(sw * 0.08),
@@ -427,7 +427,9 @@ class _CreditsCard extends StatelessWidget {
                             color: AppColors.creditsPillText(isDark),
                             size: w * 0.045,
                           ),
-                          SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.01,
+                          ),
                           Text(
                             '$credits',
                             style: TextStyle(
@@ -491,7 +493,7 @@ class _LoginButton extends StatelessWidget {
               Navigator.pushNamed(context, AppRoutes.login);
             } else {
               // Sign out and re-initialize to get a fresh anonymous session
-              await AuthService().signOut();
+              await AuthService().signOutWithCleanup();
               // To ensure the app resets gracefully to the home page:
               if (context.mounted) {
                 Navigator.of(

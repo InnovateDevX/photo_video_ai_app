@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:trail_ai_app/Core/user_session.dart';
+import 'package:trail_ai_app/Services/credit_service.dart';
 
 /// Service responsible for Firebase Authentication.
 /// Architecture Decision: Dependency injection ready structure.
@@ -35,11 +38,9 @@ class AuthService {
   /// Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount googleUser =
-          await _googleSignIn.authenticate();
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
-      final GoogleSignInAuthentication googleAuth =
-          googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final authorization = await googleUser.authorizationClient
           .authorizationForScopes(['email', 'profile']);
 
@@ -62,6 +63,33 @@ class AuthService {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
+  }
+
+  /// Signs out and performs cleanup to prevent permission errors.
+  /// This clears UserSession and cancels Firestore subscriptions
+  /// before signing out to avoid permission denied errors.
+  Future<void> signOutWithCleanup() async {
+    // 1. Clear UserSession.uid first to prevent Firestore operations
+    //    from using stale credentials
+    UserSession.instance.uid = null;
+    UserSession.instance.deviceId = null;
+
+    // 2. Cancel Firestore subscriptions to prevent permission errors
+    //    after authentication state changes
+    CreditService().resetForLogout();
+
+    // 3. Sign out from Firebase and Google
+    await _googleSignIn.signOut();
+    await _auth.signOut();
+  }
+
+  /// Performs cleanup before login to prevent permission errors
+  /// when switching from a guest or previous user session.
+  Future<void> prepareForLogin() async {
+    // Reset CreditService to cancel old subscriptions before
+    // the UID changes
+    CreditService().resetForLogout();
+    debugPrint('🔑 [AuthService] Prepared for login - reset CreditService');
   }
 
   User? get currentUser => _auth.currentUser;

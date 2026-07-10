@@ -10,8 +10,8 @@ import 'package:trail_ai_app/pages/upscale_page.dart';
 import 'package:video_player/video_player.dart';
 import 'package:trail_ai_app/Services/review_service.dart';
 import 'package:trail_ai_app/Services/asset_service.dart';
+import 'package:trail_ai_app/Services/subscription_service.dart';
 import '../Helpers/feedback_helper.dart';
-
 class AIResultScreen extends StatefulWidget {
   final File? originalImage;
   final String resultImageUrl;
@@ -202,32 +202,37 @@ class _AIResultScreenState extends State<AIResultScreen> {
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isNsfw = true;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Content flagged as inappropriate.'),
-                          backgroundColor: Colors.red,
+                  if (!_isNsfw && _isLiked == null)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isNsfw = true;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Content flagged as inappropriate.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        FeedbackHelper.showFeedbackSheet(
+                          context,
+                          isDark: isDark,
+                          assetUrl: widget.resultImageUrl,
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white12 : Colors.grey.shade200,
+                          shape: BoxShape.circle,
                         ),
-                      );
-                      FeedbackHelper.showFeedbackSheet(context, isDark: isDark);
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
-                      decoration: BoxDecoration(
-                        color: _isNsfw ? Colors.red.withValues(alpha: 0.2) : (isDark ? Colors.white12 : Colors.grey.shade200),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _isNsfw ? Icons.flag_rounded : Icons.flag_outlined,
-                        color: _isNsfw ? Colors.red : AppColors.textColor(isDark),
-                        size: 20,
+                        child: Icon(
+                          Icons.flag_outlined,
+                          color: AppColors.textColor(isDark),
+                          size: 20,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -259,7 +264,11 @@ class _AIResultScreenState extends State<AIResultScreen> {
                           GestureDetector(
                             onTap: () {
                               setState(() => _isLiked = true);
-                              FeedbackHelper.showThumbsUpDialog(context, isDark: isDark);
+                              FeedbackHelper.showThumbsUpDialog(
+                                context,
+                                isDark: isDark,
+                                assetUrl: widget.resultImageUrl,
+                              );
                             },
                             child: Container(
                               padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
@@ -280,7 +289,11 @@ class _AIResultScreenState extends State<AIResultScreen> {
                           GestureDetector(
                             onTap: () {
                               setState(() => _isLiked = false);
-                              FeedbackHelper.showThumbsDownDialog(context, isDark: isDark);
+                              FeedbackHelper.showThumbsDownDialog(
+                                context,
+                                isDark: isDark,
+                                assetUrl: widget.resultImageUrl,
+                              );
                             },
                             child: Container(
                               padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
@@ -324,130 +337,129 @@ class _AIResultScreenState extends State<AIResultScreen> {
   }
 
   Widget _buildMediaDisplay(double sw, double sh, bool isDark, bool isVideo) {
+    Widget mediaWidget;
+
     // If it's the original image comparison (only for images)
     if (widget.originalImage != null && !isVideo) {
-      return Container(
-        constraints: BoxConstraints(
-          maxHeight: sh * 0.75,
-        ), // Allow more height for portrait results
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _showOriginal = true),
-          onTapUp: (_) => setState(() => _showOriginal = false),
-          onTapCancel: () => setState(() => _showOriginal = false),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              _mediaWrapper(
-                child: InteractiveViewer(
-                  maxScale: 3.5,
-                  child: Center(
-                    child: _showOriginal
-                        ? Image.file(widget.originalImage!, fit: widget.fit)
-                        : widget.resultImageUrl.startsWith('http')
-                        ? CachedNetworkImage(
-                            imageUrl: widget.resultImageUrl,
-                            fit: widget.fit,
-                            placeholder: (context, url) =>
-                                _buildPlaceholder(isDark),
-                          )
-                        : Image.file(
-                            File(widget.resultImageUrl),
-                            fit: widget.fit,
-                          ),
-                  ),
+      mediaWidget = GestureDetector(
+        onTapDown: (_) => setState(() => _showOriginal = true),
+        onTapUp: (_) => setState(() => _showOriginal = false),
+        onTapCancel: () => setState(() => _showOriginal = false),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              maxScale: 3.5,
+              child: Center(
+                child: _showOriginal
+                    ? Image.file(widget.originalImage!, fit: widget.fit)
+                    : widget.resultImageUrl.startsWith('http')
+                    ? CachedNetworkImage(
+                        imageUrl: widget.resultImageUrl,
+                        fit: widget.fit,
+                        placeholder: (context, url) =>
+                            _buildPlaceholder(isDark),
+                      )
+                    : Image.file(
+                        File(widget.resultImageUrl),
+                        fit: widget.fit,
+                      ),
+              ),
+            ),
+            Positioned(
+              bottom: sw * 0.03,
+              right: sw * 0.03,
+              child: Container(
+                padding: EdgeInsets.all(sw * 0.02),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(120),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.compare,
+                  color: Colors.white,
+                  size: sw * 0.05,
                 ),
               ),
-              Positioned(
-                bottom: sw * 0.03,
-                right: sw * 0.03,
-                child: Container(
-                  padding: EdgeInsets.all(sw * 0.02),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(120),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.compare,
-                    color: Colors.white,
-                    size: sw * 0.05,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
-    }
-
-    // Default Video/Image Display
-    Widget mediaWidget = AspectRatio(
-      aspectRatio: 1.0,
-      child: isVideo
+    } else {
+      // Default Video/Image Display
+      mediaWidget = isVideo
           ? (_isVideoInitialized && _videoController != null
-              ? FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _videoController!.value.size.width > 0
-                        ? _videoController!.value.size.width
-                        : 100, // Fallback width
-                    height: _videoController!.value.size.height > 0
-                        ? _videoController!.value.size.height
-                        : 100, // Fallback height
-                    child: VideoPlayer(_videoController!),
+              ? AspectRatio(
+                  aspectRatio: _videoController!.value.aspectRatio > 0
+                      ? _videoController!.value.aspectRatio
+                      : 1.0,
+                  child: FittedBox(
+                    fit: widget.fit,
+                    child: SizedBox(
+                      width: _videoController!.value.size.width > 0
+                          ? _videoController!.value.size.width
+                          : 100, // Fallback width
+                      height: _videoController!.value.size.height > 0
+                          ? _videoController!.value.size.height
+                          : 100, // Fallback height
+                      child: VideoPlayer(_videoController!),
+                    ),
                   ),
                 )
               : _buildPlaceholder(isDark))
           : InteractiveViewer(
               maxScale: 3.0,
-              child: SizedBox.expand(
-                child: widget.resultImageUrl.startsWith('http')
-                    ? CachedNetworkImage(
-                        imageUrl: widget.resultImageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            _buildPlaceholder(isDark),
-                        errorWidget: (context, url, err) =>
-                            const Icon(Icons.error_outline),
-                      )
-                    : Image.file(
-                        File(widget.resultImageUrl),
-                        fit: BoxFit.cover,
-                      ),
-              ),
-            ),
-    );
+              child: widget.resultImageUrl.startsWith('http')
+                  ? CachedNetworkImage(
+                      imageUrl: widget.resultImageUrl,
+                      fit: widget.fit,
+                      placeholder: (context, url) =>
+                          _buildPlaceholder(isDark),
+                      errorWidget: (context, url, err) =>
+                          const Icon(Icons.error_outline),
+                    )
+                  : Image.file(
+                      File(widget.resultImageUrl),
+                      fit: widget.fit,
+                    ),
+            );
+    }
 
     if (_isNsfw) {
-      mediaWidget = Stack(
-        fit: StackFit.expand,
-        children: [
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: mediaWidget,
-          ),
-          Container(
-            color: Colors.black.withValues(alpha: 0.3),
-            child: const Center(
-              child: Icon(
-                Icons.visibility_off,
-                color: Colors.white,
-                size: 48,
+      mediaWidget = IgnorePointer(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: mediaWidget,
+            ),
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: Icon(
+                  Icons.visibility_off,
+                  color: Colors.white,
+                  size: 48,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: sh * 0.72,
+        maxHeight: widget.originalImage != null && !isVideo ? sh * 0.75 : sh * 0.72,
       ), // Flexible vertical limit
-      child: _mediaWrapper(child: mediaWidget),
+      child: _mediaWrapper(child: mediaWidget, isDark: isDark),
     );
   }
 
-  Widget _mediaWrapper({required Widget child}) {
+  Widget _mediaWrapper({required Widget child, required bool isDark}) {
+    final bool showWatermark = !SubscriptionService().isSubscribed;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06),
@@ -459,7 +471,26 @@ class _AIResultScreenState extends State<AIResultScreen> {
           ),
         ],
       ),
-      child: ClipRRect(borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06), child: child),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            child,
+            if (showWatermark)
+              Positioned(
+                right: 20,
+                bottom: 20,
+                child: IgnorePointer(
+                  child: Image.asset(
+                    'assets/images/watermark.png',
+                    width: 120,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 

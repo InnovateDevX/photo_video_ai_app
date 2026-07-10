@@ -166,7 +166,7 @@ class FirebaseStickerPickerState extends State<FirebaseStickerPicker> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxHeight < AppEditorConstants.h(context, 0.1)) {
+        if (constraints.maxHeight < 140.0) {
           return const SizedBox.shrink();
         }
         return Column(

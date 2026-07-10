@@ -674,6 +674,11 @@ class ImageEditorBloc extends Bloc<ImageEditorEvent, ImageEditorState> {
           message: 'Applied!',
           canUndo: _canUndo,
           canRedo: _canRedo,
+          circleBlur: 0.0,
+          circleBrightness: 0.5,
+          circleContrast: 0.5,
+          circleSaturation: 0.5,
+          circleHue: 0.5,
         ),
       );
       editor.setState(() {});
@@ -926,6 +931,7 @@ class ImageEditorBloc extends Bloc<ImageEditorEvent, ImageEditorState> {
           message: 'Overlay applied!',
           canUndo: _canUndo,
           canRedo: _canRedo,
+          overlayOpacity: 1.0,
         ),
       );
       editor.setState(() {});
@@ -1289,6 +1295,7 @@ class ImageEditorBloc extends Bloc<ImageEditorEvent, ImageEditorState> {
           message: 'Background removed!',
           canUndo: _canUndo,
           canRedo: _canRedo,
+          closeToolTrigger: true,
         ),
       );
       editor.setState(() {});

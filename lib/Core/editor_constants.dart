@@ -94,7 +94,7 @@ class AppEditorConstants {
     ShapeModeData(icon: Icons.circle, mode: 'circle'),
     ShapeModeData(icon: Icons.square, mode: 'rect'),
     ShapeModeData(icon: Icons.change_history, mode: 'custom1'), // Triangle
-    ShapeModeData(icon: Icons.star, mode: 'star'),
+
     ShapeModeData(icon: Icons.north_east, mode: 'arrow'),
     ShapeModeData(icon: Icons.hexagon, mode: 'hexagon'),
   ];

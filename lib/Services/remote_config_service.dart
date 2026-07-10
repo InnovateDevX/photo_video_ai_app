@@ -59,6 +59,7 @@ class RemoteConfigService {
         'nsfw_image_unsafe_values': '["VERY_LIKELY"]',
         'share_app_url': '',
         'show_ads': true,
+        'watermark_url': '',
       });
 
       // 2. Configure Settings
@@ -98,6 +99,7 @@ class RemoteConfigService {
 
   // Type-safe Convenience Getters
   String get replicateAuthToken => getString('replicate_auth_token');
+  String get watermarkUrl => getString('watermark_url');
   String get imageModelsJson => getString('replicate_image_models');
   String get videoModelsJson => getString('replicate_video_models');
   String get clothModelJson => getString('replicate_cloth_model');

@@ -13,7 +13,8 @@ import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import 'package:trail_ai_app/Services/content_safety_service.dart';
 import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
+import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -35,6 +36,7 @@ class _AiRestorePageState extends State<AiRestorePage>
 
   _PageState _pageState = _PageState.selection;
   String? _generatedImageUrl;
+  bool _isCancelled = false;
 
   late AnimationController _progressController;
   late Animation<double> _progressAnimation;
@@ -92,8 +94,6 @@ class _AiRestorePageState extends State<AiRestorePage>
       return;
     }
 
-
-
     setState(() => _pageState = _PageState.loading);
     _progressController.forward(from: 0);
 
@@ -101,7 +101,7 @@ class _AiRestorePageState extends State<AiRestorePage>
       context: context,
       adService: _adService,
       creditService: _creditService,
-      creditCost: model.creditUsed, // Assuming 56 based on mockups
+      creditCost: model.creditUsed,
     );
     if (!canProceed) {
       _progressController.stop();
@@ -110,13 +110,12 @@ class _AiRestorePageState extends State<AiRestorePage>
     }
 
     try {
+      _isCancelled = false;
       final url = await _replicateService.generateContent(
         modelConfig: model,
         prompt: 'restore old photo, enhance face, remove scratches',
         referenceImage: _selectedImage,
-        extraVariables: {
-          'strength': _restoreStrength,
-        }, // Mock parameter passing
+        extraVariables: {'strength': _restoreStrength},
       );
 
       await _creditService.deductCredits(model.creditUsed);
@@ -138,8 +137,16 @@ class _AiRestorePageState extends State<AiRestorePage>
         _progressController.stop();
         setState(() => _pageState = _PageState.selection);
 
+        if (_isCancelled) {
+          _isCancelled = false;
+          return;
+        }
+
         if (e is NsfwContentException) {
-          ErrorDialogHelper.showRestrictedContentDialog(context, messageKey: e.messageKey);
+          ErrorDialogHelper.showRestrictedContentDialog(
+            context,
+            messageKey: e.messageKey,
+          );
         } else if (e.toString().toLowerCase().contains('timeout')) {
           ErrorDialogHelper.showTimeoutDialog(context);
         } else {
@@ -149,6 +156,18 @@ class _AiRestorePageState extends State<AiRestorePage>
           );
         }
       }
+    }
+  }
+
+  Future<void> _showCancelWarningDialog() async {
+    final shouldCancel = await showCancelDialog(context);
+    if (shouldCancel && mounted) {
+      _replicateService.cancelActivePrediction();
+      _progressController.stop();
+      setState(() {
+        _pageState = _PageState.selection;
+        _isCancelled = true;
+      });
     }
   }
 
@@ -200,7 +219,9 @@ class _AiRestorePageState extends State<AiRestorePage>
           _circleBtn(
             isDark: isDark,
             icon: Icons.close,
-            onTap: () => Navigator.pop(context),
+            onTap: _pageState == _PageState.loading
+                ? _showCancelWarningDialog
+                : () => Navigator.pop(context),
           ),
         ],
       ),
@@ -240,59 +261,61 @@ class _AiRestorePageState extends State<AiRestorePage>
         onReEdit: () => setState(() => _pageState = _PageState.selection),
         onTryAgain: () {
           setState(() => _pageState = _PageState.selection);
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            _generateRestore,
-          );
+          Future.delayed(const Duration(milliseconds: 100), _generateRestore);
         },
         onBack: () => setState(() => _pageState = _PageState.selection),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor(isDark),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const TopBar(),
-            _buildTopBar(
-              isDark: isDark,
-              title: 'restore_title'.i18n(),
-              subtitle: switch (_pageState) {
-                _PageState.loading => 'outfit_processing_subtitle'.i18n(),
-                _PageState.result => 'outfit_result_subtitle'.i18n(),
-                _PageState.selection => 'restore_desc'.i18n(),
-              },
-              onBack: switch (_pageState) {
-                _PageState.loading => () {
-                  _progressController.stop();
-                  setState(() => _pageState = _PageState.selection);
+    return PopScope(
+      canPop: _pageState != _PageState.loading,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_pageState == _PageState.loading) {
+          _showCancelWarningDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor(isDark),
+        body: SafeArea(
+          child: Column(
+            children: [
+
+              _buildTopBar(
+                isDark: isDark,
+                title: 'restore_title'.i18n(),
+                subtitle: switch (_pageState) {
+                  _PageState.loading => 'outfit_processing_subtitle'.i18n(),
+                  _PageState.result => 'outfit_result_subtitle'.i18n(),
+                  _PageState.selection => 'restore_desc'.i18n(),
                 },
-                _PageState.result => () => setState(
-                  () => _pageState = _PageState.selection,
-                ),
-                _PageState.selection => null,
-              },
-            ),
-            Expanded(
-              child: switch (_pageState) {
-                _PageState.loading => AILoadingScreen(
-                  selectedImage: _selectedImage,
-                  progressAnimation: _progressAnimation,
-                  aiTips: AppStrings.outfitAiTips.map((e) => e.i18n()).toList(),
-                  processingTitle: 'processing_title'.i18n(),
-                  applyingText: 'restoring_photo'.i18n(),
-                  waitText: 'take_few_seconds'.i18n(),
-                  onCancel: () {
-                    _progressController.stop();
-                    setState(() => _pageState = _PageState.selection);
-                  },
-                ),
-                _PageState.result => const SizedBox.shrink(),
-                _PageState.selection => _buildSelectionBody(isDark),
-              },
-            ),
-          ],
+                onBack: switch (_pageState) {
+                  _PageState.loading => _showCancelWarningDialog,
+                  _PageState.result => () => setState(
+                    () => _pageState = _PageState.selection,
+                  ),
+                  _PageState.selection => null,
+                },
+              ),
+              Expanded(
+                child: switch (_pageState) {
+                  _PageState.loading => AILoadingScreen(
+                    selectedImage: _selectedImage,
+                    progressAnimation: _progressAnimation,
+                    aiTips: AppStrings.outfitAiTips
+                        .map((e) => e.i18n())
+                        .toList(),
+                    processingTitle: 'processing_title'.i18n(),
+                    applyingText: 'restoring_photo'.i18n(),
+                    waitText: 'take_few_seconds'.i18n(),
+                    onCancel: _showCancelWarningDialog,
+                  ),
+                  _PageState.result => const SizedBox.shrink(),
+                  _PageState.selection => _buildSelectionBody(isDark),
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -520,7 +543,7 @@ class _AiRestorePageState extends State<AiRestorePage>
                     children: [
                       Icon(
                         Icons.lightbulb,
-                        color: Colors.brown, // Or similar color from mockup
+                        color: Colors.brown,
                         size: w * 0.05,
                       ),
                       SizedBox(width: w * 0.02),

@@ -213,56 +213,13 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
-                      placeholder: (context, url) => Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Opacity(
-                            opacity: 0.3,
-                            child: Center(
-                              child: Image.asset(
-                                widget.tool.imagePath,
-                                width: sw * 0.4,
-                                height: sw * 0.4,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                          const CircularProgressIndicator(color: Colors.white),
-                        ],
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
                       ),
-                      errorWidget: (context, error, stackTrace) => Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Opacity(
-                            opacity: 0.3,
-                            child: Center(
-                              child: Image.asset(
-                                widget.tool.imagePath,
-                                width: sw * 0.4,
-                                height: sw * 0.4,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      errorWidget: (context, error, stackTrace) => const SizedBox.shrink(),
                     )
-                  : Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Opacity(
-                          opacity: 0.3,
-                          child: Center(
-                            child: Image.asset(
-                              widget.tool.imagePath,
-                              width: sw * 0.4,
-                              height: sw * 0.4,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                        const CircularProgressIndicator(color: Colors.white),
-                      ],
+                  : const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
                     );
 
               if (snapshot.connectionState == ConnectionState.done &&
@@ -272,6 +229,7 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                   videoUrl: _videoUrl!,
                   placeholder: placeholderWidget,
                   seamlessLoop: true,
+                  fit: BoxFit.cover,
                 );
               }
 

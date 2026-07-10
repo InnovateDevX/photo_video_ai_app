@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:trail_ai_app/Services/subscription_service.dart';
@@ -5,7 +6,18 @@ import 'package:trail_ai_app/Services/remote_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PaywallPage extends StatefulWidget {
-  const PaywallPage({super.key});
+  final bool isDismissible;
+  final bool showOnboarding;
+  final bool isStartup;
+  final VoidCallback? onDismiss;
+
+  const PaywallPage({
+    super.key,
+    this.isDismissible = true,
+    this.showOnboarding = false,
+    this.isStartup = false,
+    this.onDismiss,
+  });
 
   @override
   State<PaywallPage> createState() => _PaywallPageState();
@@ -20,10 +32,26 @@ class _PaywallPageState extends State<PaywallPage> {
   ProductDetails? _weeklyProduct;
   ProductDetails? _monthlyProduct;
 
+  StreamSubscription<bool>? _subscriptionSub;
+
   @override
   void initState() {
     super.initState();
     _loadProducts();
+
+    _subscriptionSub = SubscriptionService().subscriptionStream.listen((
+      isSubscribed,
+    ) {
+      if (isSubscribed && mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscriptionSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -94,303 +122,321 @@ class _PaywallPageState extends State<PaywallPage> {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Scrollable content
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                // ── Hero Image ───────────────────────────────────────────
-                SizedBox(
-                  height: h * 0.42,
-                  width: double.infinity,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Hero image
-                      Image.asset(
-                        'assets/images/pywall.png',
-                        fit: BoxFit.cover,
-                      ),
-                      // Gradient fade to black at bottom
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: h * 0.15,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [Colors.transparent, Colors.black],
-                            ),
-                          ),
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // Scrollable content
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  // ── Hero Image ───────────────────────────────────────────
+                  SizedBox(
+                    height: h * 0.42,
+                    width: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Hero image
+                        Image.asset(
+                          'assets/images/pywall.png',
+                          fit: BoxFit.cover,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Title ────────────────────────────────────────────────
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: w * 0.06),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Get Pro Access',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: w * 0.07,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: h * 0.025),
-
-                      // ── Feature List ─────────────────────────────────
-                      _buildFeatureRow(
-                        Icons.lock_open_rounded,
-                        'Unlock All Styles',
-                        'Ads',
-                        'Ads free experience.',
-                        w,
-                      ),
-                      SizedBox(height: h * 0.015),
-                      _buildFeatureRowSimple(
-                        Icons.all_inclusive,
-                        'Unlimited Video & Image Generation',
-                        w,
-                      ),
-                      SizedBox(height: h * 0.015),
-                      _buildFeatureRowSimple(
-                        Icons.speed_rounded,
-                        'Quick & Best Quality Image',
-                        w,
-                      ),
-                      SizedBox(height: h * 0.03),
-
-                      // ── Free Trial Toggle ────────────────────────────
-                      Row(
-                        children: [
-                          Text(
-                            'Free Trial',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: w * 0.042,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.white38,
-                            size: w * 0.04,
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: [
-                              Text(
-                                'ON',
-                                style: TextStyle(
-                                  color: _freeTrialEnabled
-                                      ? const Color(0xFFFF9800)
-                                      : Colors.white38,
-                                  fontSize: w * 0.035,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        // Gradient fade to black at bottom
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: h * 0.15,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.transparent, Colors.black],
                               ),
-                              const SizedBox(width: 6),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _freeTrialEnabled = !_freeTrialEnabled;
-                                  });
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: 48,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Title ────────────────────────────────────────────────
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: w * 0.06),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Get Pro Access',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: w * 0.07,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: h * 0.025),
+
+                        // ── Feature List ─────────────────────────────────
+                        _buildFeatureRow(
+                          Icons.lock_open_rounded,
+                          'Unlock All Styles',
+                          'Ads',
+                          'Ads free experience.',
+                          w,
+                        ),
+                        SizedBox(height: h * 0.015),
+                        _buildFeatureRowSimple(
+                          Icons.all_inclusive,
+                          'Unlimited Video & Image Generation',
+                          w,
+                        ),
+                        SizedBox(height: h * 0.015),
+                        _buildFeatureRowSimple(
+                          Icons.speed_rounded,
+                          'Quick & Best Quality Image',
+                          w,
+                        ),
+                        SizedBox(height: h * 0.03),
+
+                        // ── Free Trial Toggle ────────────────────────────
+                        Row(
+                          children: [
+                            Text(
+                              'Free Trial',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: w * 0.042,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.white38,
+                              size: w * 0.04,
+                            ),
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Text(
+                                  'ON',
+                                  style: TextStyle(
                                     color: _freeTrialEnabled
                                         ? const Color(0xFFFF9800)
-                                        : Colors.white24,
+                                        : Colors.white38,
+                                    fontSize: w * 0.035,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  child: AnimatedAlign(
+                                ),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _freeTrialEnabled = !_freeTrialEnabled;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 200),
-                                    alignment: _freeTrialEnabled
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    child: Container(
-                                      width: 22,
-                                      height: 22,
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 3,
+                                    width: 48,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      color: _freeTrialEnabled
+                                          ? const Color(0xFFFF9800)
+                                          : Colors.white24,
+                                    ),
+                                    child: AnimatedAlign(
+                                      duration: const Duration(
+                                        milliseconds: 200,
                                       ),
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white,
+                                      alignment: _freeTrialEnabled
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: Container(
+                                        width: 22,
+                                        height: 22,
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 3,
+                                        ),
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: h * 0.025),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: h * 0.025),
 
-                      // ── Subscription Cards ───────────────────────────
-                      Row(
-                        children: [
-                          // Weekly Card
-                          Expanded(
-                            child: _buildPlanCard(
-                              title: 'Weekly\naccess',
-                              price: _weeklyProduct?.price ?? '\$ —',
-                              period: 'Per week',
-                              isSelected: !_isMonthlySelected,
-                              badge: null,
-                              onTap: () =>
-                                  setState(() => _isMonthlySelected = false),
-                              w: w,
-                            ),
-                          ),
-                          SizedBox(width: w * 0.035),
-                          // Monthly Card
-                          Expanded(
-                            child: _buildPlanCard(
-                              title: 'Monthly\naccess',
-                              price: _monthlyProduct?.price ?? '\$ —',
-                              period: 'Per month',
-                              isSelected: _isMonthlySelected,
-                              badge: '90% off',
-                              onTap: () =>
-                                  setState(() => _isMonthlySelected = true),
-                              w: w,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: h * 0.03),
-
-                      // ── Continue Button ──────────────────────────────
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF6B00), Color(0xFFFF9800)],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFFFF9800,
-                                ).withOpacity(0.35),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                        // ── Subscription Cards ───────────────────────────
+                        Row(
+                          children: [
+                            // Weekly Card
+                            Expanded(
+                              child: _buildPlanCard(
+                                title: 'Weekly\naccess',
+                                price: _weeklyProduct?.price ?? '\$ —',
+                                period: 'Per week',
+                                isSelected: !_isMonthlySelected,
+                                badge: null,
+                                onTap: () =>
+                                    setState(() => _isMonthlySelected = false),
+                                w: w,
                               ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
+                            ),
+                            SizedBox(width: w * 0.035),
+                            // Monthly Card
+                            Expanded(
+                              child: _buildPlanCard(
+                                title: 'Monthly\naccess',
+                                price: _monthlyProduct?.price ?? '\$ —',
+                                period: 'Per month',
+                                isSelected: _isMonthlySelected,
+                                badge: '90% off',
+                                onTap: () =>
+                                    setState(() => _isMonthlySelected = true),
+                                w: w,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: h * 0.03),
+
+                        // ── Continue Button ──────────────────────────────
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: Container(
+                            decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(28),
-                              onTap: (_isLoading || _isLoadingProducts)
-                                  ? null
-                                  : _handlePurchase,
-                              child: Center(
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF6B00), Color(0xFFFF9800)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFFF9800,
+                                  ).withOpacity(0.35),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(28),
+                                onTap: (_isLoading || _isLoadingProducts)
+                                    ? null
+                                    : _handlePurchase,
+                                child: Center(
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        )
+                                      : Text(
+                                          'Continue',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: w * 0.048,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      )
-                                    : Text(
-                                        'Continue',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: w * 0.048,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: h * 0.01),
+                        SizedBox(height: h * 0.01),
 
-                      // Cancel anytime
-                      Center(
-                        child: Text(
-                          'Cancel anytime',
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: w * 0.033,
+                        // Cancel anytime
+                        Center(
+                          child: Text(
+                            'Cancel anytime',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: w * 0.033,
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: h * 0.025),
+                        SizedBox(height: h * 0.025),
 
-                      // ── Footer Links ─────────────────────────────────
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildFooterLink('Terms Of Use', () {
-                            final url = RemoteConfigService().termsOfUseUrl;
-                            if (url.isNotEmpty) launchUrl(Uri.parse(url));
-                          }),
-                          _buildFooterLink('Privacy policy', () {
-                            final url = RemoteConfigService().privacyPolicyUrl;
-                            if (url.isNotEmpty) launchUrl(Uri.parse(url));
-                          }),
-                          _buildFooterLink('Restore Purchase', _handleRestore),
-                        ],
-                      ),
-                      SizedBox(height: h * 0.04),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Close Button ─────────────────────────────────────────────
-          SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(w * 0.04),
-              child: Align(
-                alignment: Alignment.topRight,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white24),
+                        // ── Footer Links ─────────────────────────────────
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildFooterLink('Terms Of Use', () {
+                              final url = RemoteConfigService().termsOfUseUrl;
+                              if (url.isNotEmpty) launchUrl(Uri.parse(url));
+                            }),
+                            _buildFooterLink('Privacy policy', () {
+                              final url =
+                                  RemoteConfigService().privacyPolicyUrl;
+                              if (url.isNotEmpty) launchUrl(Uri.parse(url));
+                            }),
+                            _buildFooterLink(
+                              'Restore Purchase',
+                              _handleRestore,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: h * 0.04),
+                      ],
                     ),
-                    padding: EdgeInsets.all(w * 0.022),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 20,
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Close Button ─────────────────────────────────────────────
+            if (widget.isDismissible || widget.isStartup)
+              SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.all(w * 0.04),
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        // If onDismiss callback is provided, use it (for overlay mode)
+                        // Otherwise use Navigator.pop (for route mode)
+                        if (widget.onDismiss != null) {
+                          widget.onDismiss!();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        padding: EdgeInsets.all(w * 0.022),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

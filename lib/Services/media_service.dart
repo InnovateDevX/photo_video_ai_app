@@ -42,6 +42,7 @@ class MediaService {
         filePath = imageUrl;
       }
 
+
       final success = await GallerySaver.saveImage(
         filePath,
         albumName: 'Trail AI',
@@ -99,6 +100,7 @@ class MediaService {
         filePath = videoUrl;
       }
 
+
       final success = await GallerySaver.saveVideo(
         filePath,
         albumName: 'Trail AI',
@@ -147,6 +149,7 @@ class MediaService {
         filePath = imageUrl;
       }
 
+
       await Share.shareXFiles([
         XFile(filePath),
       ], text: shareText ?? 'share_outfit_text'.i18n());
@@ -180,6 +183,7 @@ class MediaService {
       } else {
         filePath = videoUrl;
       }
+
 
       await Share.shareXFiles(
         [XFile(filePath)],
@@ -293,28 +297,37 @@ class MediaService {
         await LocalStorageService().saveAsset(asset);
         NotificationService().showGenerationCompleteNotification(
           title: 'Trail AI Studio',
-          body: '✅ ${category == 'video' ? 'Video' : 'Image'} saved successfully!',
+          body:
+              '✅ ${category == 'video' ? 'Video' : 'Image'} saved successfully!',
           payload: asset.id,
         );
         return;
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final List<String> pendingDownloads = prefs.getStringList('background_pending_downloads') ?? [];
-      
+      final List<String> pendingDownloads =
+          prefs.getStringList('background_pending_downloads') ?? [];
+
       final downloadId = DateTime.now().millisecondsSinceEpoch.toString();
-      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-      
-      pendingDownloads.add(jsonEncode({
-        'id': downloadId,
-        'url': url,
-        'category': category,
-        'fileExtension': fileExtension,
-        'prompt': prompt,
-        'notificationId': notificationId,
-      }));
-      await prefs.setStringList('background_pending_downloads', pendingDownloads);
-      
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+        100000,
+      );
+
+      pendingDownloads.add(
+        jsonEncode({
+          'id': downloadId,
+          'url': url,
+          'category': category,
+          'fileExtension': fileExtension,
+          'prompt': prompt,
+          'notificationId': notificationId,
+        }),
+      );
+      await prefs.setStringList(
+        'background_pending_downloads',
+        pendingDownloads,
+      );
+
       debugPrint('📥 [MediaService] Queued background download: $url');
 
       // Start background service to process the download

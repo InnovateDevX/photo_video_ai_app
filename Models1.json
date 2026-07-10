@@ -208,7 +208,10 @@
             "shuffle": true,
             "images": [
                 {
-                    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/All%20About%20Love%2FAngels%20Love%2FThe_unchanged_reference_character_leans_202605141303%20(1).jpeg?alt=media&token=139e095f-aade-4ccd-8bb5-896f34542e01",
+                    "imageUrl": [
+                        "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/All%20About%20Love%2FAngels%20Love%2FThe_unchanged_reference_character_leans_202605141303%20(1).jpeg?alt=media&token=139e095f-aade-4ccd-8bb5-896f34542e01",
+                        "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.firebasestorage.app/o/All%20About%20Love%2FAngels%20Love%2FThe_unchanged_reference_character_leans_202605141303.jpeg?alt=media&token=8b30d9b4-b3a5-4be4-803c-b04e09a8c406"
+                    ],
                     "modelUsed": "openai/gpt-image-2",
                     "title": "Angels Love",
                     "prompt": "The unchanged reference character leans confidently against a towering white column in a lavish scarlet couture gown with a sculptural oversized collar and sweeping fabric. The pose is sharp and seductive, with crossed legs and a piercing gaze toward the camera. The setting resembles an elite fashion house campaign with soft studio glow and poster text reading “ANGELS LOVES ME.”"

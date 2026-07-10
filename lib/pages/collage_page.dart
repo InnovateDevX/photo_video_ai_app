@@ -8,7 +8,7 @@ import 'package:trail_ai_app/Core/gradient.dart';
 import 'package:trail_ai_app/Services/ad_service.dart';
 import 'package:trail_ai_app/Services/credit_service.dart';
 import 'package:trail_ai_app/Models/collage_template.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+
 import 'package:trail_ai_app/pages/ai_loading_screen.dart';
 import 'package:trail_ai_app/pages/ai_result_screen.dart';
 import '../Services/collage_bloc.dart';
@@ -226,7 +226,7 @@ class _AiCollageViewState extends State<_AiCollageView>
             child: Column(
               children: [
                 // ── Global credits top-bar ──
-                const TopBar(),
+
                 SizedBox(height: MediaQuery.of(context).size.height * 0.015),
 
                 // ── Page-level top bar ──
