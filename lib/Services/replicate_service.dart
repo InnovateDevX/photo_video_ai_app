@@ -681,7 +681,7 @@ class ReplicateService {
     }
 
     // ── Base64 Encoding for single reference image ──────────────────────────
-    if (referenceImage != null) {
+    if (referenceImage != null && (images == null || images.isEmpty)) {
       debugPrint('🖼 [ReplicateService] Encoding reference image to base64...');
       try {
         final encoded = await Base64ImageEncoder.encodeFile(referenceImage);

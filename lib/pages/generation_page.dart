@@ -1309,7 +1309,7 @@ class GenerationPageState extends State<GenerationPage> {
               ),
               SizedBox(height: sh * 0.015),
               Text(
-                'You have a generation running. Would you like to continue it in the background or cancel the request entirely?',
+                'You have a generation running. Leaving this screen will cancel the request entirely and refund your credits.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.secondaryTextColor(isDark),
@@ -1321,32 +1321,7 @@ class GenerationPageState extends State<GenerationPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (_currentPollUrl != null) ...[
-                    GestureDetector(
-                      onTap: () => Navigator.pop(ctx, 'background'),
-                      child: Container(
-                        height: sh * 0.065,
-                        decoration: ProGradientDecoration(
-                          borderRadius: BorderRadius.circular(
-                            MediaQuery.of(context).size.width * 0.04,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Run in Background',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: sw * 0.04,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.015,
-                    ),
-                  ],
+
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx, 'cancel_request'),
                     child: Container(
@@ -1362,7 +1337,7 @@ class GenerationPageState extends State<GenerationPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Cancel Generation',
+                          'Leave & Cancel',
                           style: TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.bold,
@@ -1379,7 +1354,7 @@ class GenerationPageState extends State<GenerationPage> {
                     ),
                     onPressed: () => Navigator.pop(ctx, 'wait'),
                     child: Text(
-                      'Continue Waiting',
+                      'Stay & Wait',
                       style: TextStyle(
                         color: AppColors.secondaryTextColor(isDark),
                         fontWeight: FontWeight.w600,
@@ -1395,22 +1370,8 @@ class GenerationPageState extends State<GenerationPage> {
       ),
     );
 
-    if (result == 'background') {
-      if (_currentPollUrl != null) {
-        BackgroundGenerationService().takeOverGeneration(
-          creditCost: _effectiveCreditCost,
-          pollUrl: _currentPollUrl!,
-          category: _selectedCategory,
-          prompt: _promptController.text.trim(),
-        );
-      }
-      setState(() {
-        _isGenerating = false;
-        _currentPollUrl = null;
-        _currentCancelUrl = null;
-      });
-      return true;
-    } else if (result == 'cancel_request') {
+
+    if (result == 'cancel_request') {
       _replicateService.cancelActivePrediction();
       setState(() {
         _isGenerating = false;
@@ -1432,7 +1393,7 @@ class GenerationPageState extends State<GenerationPage> {
 
     return PopScope(
       canPop: !_isGenerating,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, dynamic dynamicResult) async {
         if (didPop) return;
         final shouldPop = await _onWillPop();
         if (shouldPop && mounted) {

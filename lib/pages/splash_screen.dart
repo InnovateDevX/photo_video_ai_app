@@ -241,8 +241,15 @@ class _SplashScreenState extends State<SplashScreen>
       errors.add('DataService: $e');
     }
 
-    // Step 10: Background service (fire-and-forget)
-    unawaited(_initializeBackgroundServiceSafely());
+    // Step 10: Removed Background service initialization
+    // App will only poll Replicate in foreground.
+    unawaited(
+      BackgroundGenerationService().resumePendingGenerations().catchError((
+        Object e,
+      ) {
+        debugPrint('⚠️ [SplashScreen] resumePendingGenerations failed: $e');
+      }),
+    );
 
     return InitializationResult(
       uid: uid,
@@ -252,24 +259,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Future<void> _initializeBackgroundServiceSafely() async {
-    try {
-      await BackgroundGenerationService().initializeBackgroundService().timeout(
-        _bgServiceTimeout,
-      );
-      unawaited(
-        BackgroundGenerationService().resumePendingGenerations().catchError((
-          Object e,
-        ) {
-          debugPrint('⚠️ [SplashScreen] resumePendingGenerations failed: $e');
-        }),
-      );
-    } on TimeoutException {
-      debugPrint('⚠️ [SplashScreen] Background service init timed out');
-    } catch (e) {
-      debugPrint('❌ [SplashScreen] Background service init failed: $e');
-    }
-  }
 
   void _updateStatus(String message) {
     if (!mounted) return;

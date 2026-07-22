@@ -126,10 +126,16 @@ class PromptInput extends StatelessWidget {
                   ],
                 ),
                 GestureDetector(
-                  onTap: onAddImagePressed,
+                  onTap: selectedImages.length >= noOfUploadable
+                      ? null
+                      : onAddImagePressed,
                   child: Icon(
                     Icons.add_photo_alternate_outlined,
-                    color: AppColors.textColor(isDark),
+                    color: selectedImages.length >= noOfUploadable
+                        ? AppColors.secondaryTextColor(
+                            isDark,
+                          ).withValues(alpha: 0.3)
+                        : AppColors.textColor(isDark),
                     size: screenWidth * 0.07,
                   ),
                 ),
@@ -148,7 +154,8 @@ class PromptInput extends StatelessWidget {
                 height: screenWidth * 0.22,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: selectedImages.length +
+                  itemCount:
+                      selectedImages.length +
                       ((noOfUploadable > 1 &&
                               selectedImages.length < noOfUploadable)
                           ? 1
@@ -159,14 +166,17 @@ class PromptInput extends StatelessWidget {
                     if (index == selectedImages.length) {
                       // Placeholder for adding more images
                       return GestureDetector(
-                        onTap: onAddImagePressed,
+                        onTap: selectedImages.length >= noOfUploadable
+                            ? null
+                            : onAddImagePressed,
                         child: Container(
                           width: screenWidth * 0.2,
                           height: screenWidth * 0.2,
                           decoration: BoxDecoration(
                             color: isDark ? Colors.white10 : Colors.black12,
-                            borderRadius:
-                                BorderRadius.circular(screenWidth * 0.025),
+                            borderRadius: BorderRadius.circular(
+                              screenWidth * 0.025,
+                            ),
                             border: Border.all(
                               color: AppColors.creditsCardBorder(isDark),
                               style: BorderStyle.solid,
@@ -175,7 +185,11 @@ class PromptInput extends StatelessWidget {
                           child: Center(
                             child: Icon(
                               Icons.add_photo_alternate_outlined,
-                              color: AppColors.secondaryTextColor(isDark),
+                              color: selectedImages.length >= noOfUploadable
+                                  ? AppColors.secondaryTextColor(
+                                      isDark,
+                                    ).withValues(alpha: 0.3)
+                                  : AppColors.secondaryTextColor(isDark),
                               size: screenWidth * 0.08,
                             ),
                           ),

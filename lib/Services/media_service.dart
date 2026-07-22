@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'background_generation_service.dart';
 import 'notification_service.dart';
@@ -328,37 +327,15 @@ class MediaService {
         return;
       }
 
-      final prefs = await SharedPreferences.getInstance();
-      final List<String> pendingDownloads =
-          prefs.getStringList('background_pending_downloads') ?? [];
+      debugPrint('📥 [MediaService] Starting async download: $url');
 
-      final downloadId = DateTime.now().millisecondsSinceEpoch.toString();
-      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
-        100000,
+      // Start the download using BackgroundGenerationService
+      // This will download the file, save it to local storage, and show a notification
+      BackgroundGenerationService().saveAndNotifyAsset(
+        url: url,
+        category: category,
+        prompt: prompt,
       );
-
-      pendingDownloads.add(
-        jsonEncode({
-          'id': downloadId,
-          'url': url,
-          'category': category,
-          'fileExtension': fileExtension,
-          'prompt': prompt,
-          'notificationId': notificationId,
-        }),
-      );
-      await prefs.setStringList(
-        'background_pending_downloads',
-        pendingDownloads,
-      );
-
-      debugPrint('📥 [MediaService] Queued background download: $url');
-
-      // Start background service to process the download
-      final service = FlutterBackgroundService();
-      if (!await service.isRunning()) {
-        await service.startService();
-      }
     } catch (e) {
       debugPrint('❌ [MediaService] Failed to queue background download: $e');
       NotificationService().showGenerationCompleteNotification(

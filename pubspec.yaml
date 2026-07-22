@@ -85,7 +85,6 @@ dependencies:
   provider: ^6.1.2
   visibility_detector: ^0.4.0+2
   flutter_svg: ^2.3.0
-  flutter_background_service: ^5.1.0
   package_info_plus: ^9.0.1
   connectivity_plus: ^6.0.3
   crypto: ^3.0.7
