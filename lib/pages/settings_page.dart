@@ -292,13 +292,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       label: 'Share App',
                       onTap: () async {
                         try {
-                          String url = RemoteConfigService().shareAppUrl;
+                          String url = "";
                           if (url.isEmpty) {
                             PackageInfo packageInfo =
                                 await PackageInfo.fromPlatform();
+                            print(packageInfo.packageName);
                             String packageName = packageInfo.packageName;
                             url =
                                 "https://play.google.com/store/apps/details?id=$packageName";
+                            print(url);
                           }
 
                           String subject = "Check out this Amazing App!";
@@ -329,17 +331,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       onTap: () =>
                           _launchUrl(RemoteConfigService().privacyPolicyUrl),
                     ),
-                    _settingsTile(
-                      isDark: darkTheme,
-                      icon: Icon(
-                        Icons.person_outline,
-                        size: w * 0.055,
-                        color: AppColors.iconColor(darkTheme),
-                      ),
-                      label: 'Customer Support',
-                      onTap: () =>
-                          _launchUrl(RemoteConfigService().customerSupportUrl),
-                    ),
+
                     _settingsTile(
                       isDark: darkTheme,
                       icon: Icon(

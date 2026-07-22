@@ -27,6 +27,7 @@ class AIResultScreen extends StatefulWidget {
   final IconData? customActionIcon;
   final VoidCallback? onCustomAction;
   final VoidCallback? onBack;
+  final VoidCallback? onDelete;
 
   // Visual Customization
   final BoxFit fit;
@@ -46,6 +47,7 @@ class AIResultScreen extends StatefulWidget {
     this.isNsfw = false,
     this.onBack,
     this.hideEnhance = false,
+    this.onDelete,
   });
 
   @override
@@ -718,6 +720,33 @@ class _AIResultScreenState extends State<AIResultScreen> {
               ),
             ),
           ),
+
+          // Delete Button (Optional)
+          if (widget.onDelete != null) ...[
+            SizedBox(width: sw * 0.03),
+            GestureDetector(
+              onTap: widget.onDelete,
+              child: Container(
+                height: sh * 0.07,
+                width: sh * 0.07,
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(sw * 0.07),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: sw * 0.003,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: Colors.red,
+                    size: sw * 0.055,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

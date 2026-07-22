@@ -438,6 +438,13 @@ class GenerationPageState extends State<GenerationPage> {
     if (widget.noOfUploadable > 1) {
       return widget.noOfUploadable;
     }
+
+    // If coming from a category preview (where showCategoryToggle is hidden),
+    // strictly enforce the default of 1 unless explicitly overridden above.
+    if (!widget.showCategoryToggle) {
+      return widget.noOfUploadable;
+    }
+
     // Otherwise, fall back to the model's own template-derived slot count.
     if (_selectedModel != null && _selectedModel!.iseditable) {
       final modelSlots = _selectedModel!.noOfUploadable;
@@ -557,7 +564,20 @@ class GenerationPageState extends State<GenerationPage> {
     // Dismiss keyboard to show progress clearly
     FocusScope.of(context).unfocus();
 
-    // ── 1. Progress state (immediate feedback) ───────────────────────────────
+    // ── 1. Ad gate (Check BEFORE clearing state) ───────────────────────────
+    debugPrint('🔥 [GenerationPage] Checking GenerationGate...');
+    final canProceed = await GenerationGate.check(
+      context: context,
+      creditService: _creditService,
+      creditCost: _effectiveCreditCost,
+    );
+    debugPrint('🔥 [GenerationPage] GenerationGate result: $canProceed');
+
+    if (!canProceed) {
+      return;
+    }
+
+    // ── 2. Progress state (immediate feedback) ───────────────────────────────
     setState(() {
       _isGenerating = true;
       _isNsfw = false;
@@ -568,20 +588,6 @@ class GenerationPageState extends State<GenerationPage> {
         _generatedVideoUrl = null;
       }
     });
-
-    // ── 2. Ad gate ──────────────────────────────────────────────────────────
-    debugPrint('🔥 [GenerationPage] Checking GenerationGate...');
-    final canProceed = await GenerationGate.check(
-      context: context,
-      creditService: _creditService,
-      creditCost: _effectiveCreditCost,
-    );
-    debugPrint('🔥 [GenerationPage] GenerationGate result: $canProceed');
-
-    if (!canProceed) {
-      setState(() => _isGenerating = false);
-      return;
-    }
 
     if (!mounted) return;
 
@@ -751,6 +757,7 @@ class GenerationPageState extends State<GenerationPage> {
       }
 
       BackgroundGenerationService().startBackgroundGeneration(
+        creditCost: _effectiveCreditCost,
         category: _selectedCategory,
         modelConfig: _selectedModel!,
         prompt: prompt,
@@ -914,15 +921,7 @@ class GenerationPageState extends State<GenerationPage> {
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
-    setState(() {
-      _selectedCategory = 'video';
-      _isGenerating = true;
-      _isNsfw = false;
-      _generatedImageUrl = null;
-      _generatedVideoUrl = null;
-    });
-
-    // ── 2. Ad gate ──────────────────────────────────────────────────────────
+    // ── 1. Ad gate (Check BEFORE clearing state) ───────────────────────────
     final canProceed = await GenerationGate.check(
       context: context,
       creditService: _creditService,
@@ -930,9 +929,17 @@ class GenerationPageState extends State<GenerationPage> {
     );
 
     if (!canProceed) {
-      if (mounted) setState(() => _isGenerating = false);
       return;
     }
+
+    // ── 2. Progress state (immediate feedback) ───────────────────────────────
+    setState(() {
+      _selectedCategory = 'video';
+      _isGenerating = true;
+      _isNsfw = false;
+      _generatedImageUrl = null;
+      _generatedVideoUrl = null;
+    });
 
     if (!mounted) return;
 
@@ -1085,6 +1092,7 @@ class GenerationPageState extends State<GenerationPage> {
       }
 
       BackgroundGenerationService().startTwoStageBackgroundGeneration(
+        creditCost: totalCost,
         imageModel: imageModel,
         videoModel: videoModel,
         imagePrompt: actualImagePrompt,
@@ -1390,6 +1398,7 @@ class GenerationPageState extends State<GenerationPage> {
     if (result == 'background') {
       if (_currentPollUrl != null) {
         BackgroundGenerationService().takeOverGeneration(
+          creditCost: _effectiveCreditCost,
           pollUrl: _currentPollUrl!,
           category: _selectedCategory,
           prompt: _promptController.text.trim(),

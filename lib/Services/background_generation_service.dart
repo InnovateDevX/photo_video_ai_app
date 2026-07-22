@@ -12,6 +12,7 @@ import 'package:vidzeon/Services/foreground_task_handler.dart';
 import 'replicate_service.dart';
 import 'notification_service.dart';
 import 'content_safety_service.dart';
+import 'credit_service.dart';
 
 class BackgroundGenerationService {
   static final BackgroundGenerationService _instance =
@@ -302,6 +303,7 @@ class BackgroundGenerationService {
 
   /// Takes over an already running generation (e.g. user clicked "Generate in Background" mid-way).
   void takeOverGeneration({
+    required int creditCost,
     required String pollUrl,
     required String category,
     required String prompt,
@@ -336,6 +338,7 @@ class BackgroundGenerationService {
   /// Starts the generation logic independently of the calling widget so that
   /// it can continue even if the widget is dismounted (the user navigates away).
   void startBackgroundGeneration({
+    required int creditCost,
     required String category,
     required AIModelConfig modelConfig,
     required String prompt,
@@ -428,6 +431,7 @@ class BackgroundGenerationService {
 
   /// Starts a two-stage generation (Image Edit -> Video Generation) in the background.
   void startTwoStageBackgroundGeneration({
+    required int creditCost,
     required AIModelConfig imageModel,
     required AIModelConfig videoModel,
     required String imagePrompt,

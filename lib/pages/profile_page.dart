@@ -279,7 +279,38 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       body: SafeArea(
-                        child: AIResultScreen(resultImageUrl: asset.filePath),
+                        child: AIResultScreen(
+                          resultImageUrl: asset.filePath,
+                          onDelete: () async {
+                            final confirm = await showDialog<bool>(
+                              context: innerContext,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Media'),
+                                content: const Text('Are you sure you want to delete this? It cannot be recovered.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              await LocalStorageService().deleteAsset(asset.id);
+                              if (innerContext.mounted) {
+                                Navigator.pop(innerContext); // Close result screen
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Removed successfully')),
+                                );
+                              }
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ),

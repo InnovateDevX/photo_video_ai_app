@@ -78,13 +78,9 @@ class SubscriptionService {
       return;
     }
 
-    // Load local cache
-    final prefs = await SharedPreferences.getInstance();
-    _isSubscribed = prefs.getBool(_localSubKey) ?? false;
+    // We no longer rely on local cache; always check Google Play Billing.
+    _isSubscribed = false;
     isSubscribedNotifier.value = _isSubscribed;
-    debugPrint(
-      '🛒 [SubscriptionService] Local cache: subscribed=$_isSubscribed',
-    );
 
     // Listen for purchase updates
     _purchaseSubscription = InAppPurchase.instance.purchaseStream.listen(

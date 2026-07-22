@@ -141,7 +141,7 @@ class MediaService {
   /// Helper to append the app link to the shared text
   static Future<String> _getShareTextWithAppLink(String baseText) async {
     try {
-      String url = RemoteConfigService().shareAppUrl;
+      String url = "";
       if (url.isEmpty) {
         final PackageInfo packageInfo = await PackageInfo.fromPlatform();
         final String packageName = packageInfo.packageName;
