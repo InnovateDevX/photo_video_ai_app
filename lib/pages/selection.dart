@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // AppStrings.selectionCategories
-import 'package:localization/localization.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/strings.dart'; // AppStrings.selectionCategories
 
 
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/pages/generation_page.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/pages/generation_page.dart';
 import '../Services/credit_service.dart';
 
 class Selection extends StatefulWidget {
@@ -97,7 +96,7 @@ class _SelectionState extends State<Selection> {
                       ),
                       SizedBox(height: h * 0.02),
                       Text(
-                        'selection_title'.i18n(),
+                        'Craft your\nmasterpiece\'s',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: w * 0.055,
@@ -108,7 +107,7 @@ class _SelectionState extends State<Selection> {
                       ),
                       SizedBox(height: h * 0.012),
                       Text(
-                        'selection_subtitle'.i18n(),
+                        'No magic made yet, let\'s create!',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.secondaryTextColor(isDark),
@@ -140,7 +139,7 @@ class _SelectionState extends State<Selection> {
                               vertical: h * 0.015,
                             ),
                             child: Text(
-                              'start_create'.i18n(),
+                              'Start Creating',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -214,7 +213,7 @@ class _SelectionState extends State<Selection> {
                     ],
                   ),
                   child: Text(
-                    label.i18n(),
+                    label,
                     style: TextStyle(
                       color: AppColors.secondaryTextColor(isDark),
                       fontWeight: FontWeight.normal,

@@ -7,19 +7,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:image_background_remover/image_background_remover.dart';
-import 'package:trail_ai_app/Services/effect_engine.dart';
+import 'package:vidzeon/Services/effect_engine.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:trail_ai_app/Models/effect_overlay.dart';
+import 'package:vidzeon/Models/effect_overlay.dart';
 import 'package:flutter/foundation.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
-import 'package:trail_ai_app/Models/curves_data.dart';
-import 'package:trail_ai_app/Services/curves_processor.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Models/curves_data.dart';
+import 'package:vidzeon/Services/curves_processor.dart';
 import 'package:http/http.dart' as http;
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
-import 'package:trail_ai_app/Models/history_entry.dart';
-import 'package:trail_ai_app/Services/effect_service.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
+import 'package:vidzeon/Models/history_entry.dart';
+import 'package:vidzeon/Services/effect_service.dart';
 
 // ─────────────────────────────────────────────
 // EVENTS

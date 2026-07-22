@@ -1,16 +1,19 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:vidzeon/Widgets/firebase_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trail_ai_app/Widgets/reel_video_player.dart';
-import 'package:trail_ai_app/pages/generation_page.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Models/category_image.dart';
-import 'package:trail_ai_app/Models/reel.dart';
+import 'package:vidzeon/Widgets/reel_video_player.dart';
+import 'package:vidzeon/pages/generation_page.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Models/category_image.dart';
+import 'package:vidzeon/Models/reel.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:trail_ai_app/Services/data_service.dart';
-import 'package:trail_ai_app/Core/colors.dart';
+import 'package:vidzeon/Services/data_service.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class CategoryPreviewPage extends StatefulWidget {
   final List<dynamic> items;
   final int initialIndex;
@@ -104,16 +107,28 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
   String? type;
   bool isEditable = false;
   bool imageEditMode = false;
+  int noOfUploadable = 1;
   List<String>? imageUrls;
   late PageController _imagePageController;
   Timer? _slideshowTimer;
   int _currentImageIndex = 0;
+  bool _localHideSwipeText = false;
+  String? categoryName;
 
   @override
   void initState() {
     super.initState();
+    _localHideSwipeText = widget.hideSwipeText;
     _imagePageController = PageController();
     _resolveItemProperties();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PreviewPageItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hideSwipeText != oldWidget.hideSwipeText) {
+      _localHideSwipeText = widget.hideSwipeText;
+    }
   }
 
   @override
@@ -125,7 +140,9 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
 
   void _startSlideshow() {
     if (imageUrls != null && imageUrls!.length > 1) {
-      _slideshowTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _slideshowTimer = Timer.periodic(const Duration(milliseconds: 1500), (
+        timer,
+      ) {
         if (mounted && _imagePageController.hasClients) {
           int nextIndex = (_currentImageIndex + 1) % imageUrls!.length;
           _imagePageController.animateToPage(
@@ -162,6 +179,8 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
       videoModelId = item.videoModelUsed;
       type = item.type;
       isEditable = item.isEditable;
+      noOfUploadable = item.noOfUploadable;
+      categoryName = item.categoryName;
 
       final reelId = item.reelId;
 
@@ -175,19 +194,28 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
         imageUrl = item.imageUrl;
         videoUrl = item.videoUrl;
       }
-      
+
       imageUrls = item.imageUrls;
       if (imageUrls != null && imageUrls!.length > 1) {
         _startSlideshow();
+        // Pre-cache subsequent images for smoother transitions
+        for (int i = 1; i < imageUrls!.length; i++) {
+          final url = sanitizeFirebaseUrl(imageUrls![i]);
+          DefaultCacheManager()
+              .downloadFile(url)
+              .catchError(
+                (_) => DefaultCacheManager().getFileStream(url).first,
+              );
+        }
       }
 
       if (reelId != null) {
         // We need to fetch the reel from Firestore to get full details (like videoUrl if missing, or imageEditMode)
         try {
-          final reelDoc = await FirebaseFirestore.instance
-              .collection('reels')
-              .doc(reelId)
-              .get();
+          final reelDoc = await FirebaseFirestore.instanceFor(
+            app: Firebase.app(),
+            databaseId: 'default',
+          ).collection('reels').doc(reelId).get();
           if (reelDoc.exists && mounted) {
             final reel = Reel.fromFirestore(reelDoc.id, reelDoc.data()!);
             setState(() {
@@ -229,9 +257,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
     final secondaryTextColor = AppColors.secondaryTextColor(isDark);
 
     if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(color: textColor),
-      );
+      return Center(child: CircularProgressIndicator(color: textColor));
     }
 
     final w = MediaQuery.of(context).size.width;
@@ -246,7 +272,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
     // Calculate dynamic credit cost
     final replicateService = ReplicateService();
     int creditCost = 0;
-    
+
     final allModels = [
       ...replicateService.imageModels,
       ...replicateService.videoModels,
@@ -255,24 +281,42 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
     if (useTwoStage) {
       int imgCost = 0;
       int vidCost = 0;
-      
+
       if (modelId != null && modelId!.isNotEmpty) {
-        final match = allModels.where((m) => m.id == modelId || m.name.toLowerCase() == modelId!.toLowerCase());
+        final match = allModels.where(
+          (m) =>
+              m.id == modelId || m.name.toLowerCase() == modelId!.toLowerCase(),
+        );
         if (match.isNotEmpty) imgCost = match.first.creditUsed;
       }
       if (videoModelId != null && videoModelId!.isNotEmpty) {
-        final match = allModels.where((m) => m.id == videoModelId || m.name.toLowerCase() == videoModelId!.toLowerCase());
+        final match = allModels.where(
+          (m) =>
+              m.id == videoModelId ||
+              m.name.toLowerCase() == videoModelId!.toLowerCase(),
+        );
         if (match.isNotEmpty) vidCost = match.first.creditUsed;
       }
-      
-      if (imgCost == 0 && replicateService.imageModels.isNotEmpty) imgCost = replicateService.imageModels.first.creditUsed;
-      if (vidCost == 0 && replicateService.videoModels.isNotEmpty) vidCost = replicateService.videoModels.first.creditUsed;
-      
+
+      if (imgCost == 0 && replicateService.imageModels.isNotEmpty) {
+        imgCost = replicateService.imageModels.first.creditUsed;
+      }
+      if (vidCost == 0 && replicateService.videoModels.isNotEmpty) {
+        vidCost = replicateService.videoModels.first.creditUsed;
+      }
+
       creditCost = imgCost + vidCost;
     } else {
-      final relevantModelId = (type == 'video' && videoModelId != null && videoModelId!.isNotEmpty) ? videoModelId : modelId;
+      final relevantModelId =
+          (type == 'video' && videoModelId != null && videoModelId!.isNotEmpty)
+          ? videoModelId
+          : modelId;
       if (relevantModelId != null && relevantModelId.isNotEmpty) {
-        final match = allModels.where((m) => m.id == relevantModelId || m.name.toLowerCase() == relevantModelId.toLowerCase());
+        final match = allModels.where(
+          (m) =>
+              m.id == relevantModelId ||
+              m.name.toLowerCase() == relevantModelId.toLowerCase(),
+        );
         if (match.isNotEmpty) {
           creditCost = match.first.creditUsed;
         }
@@ -302,18 +346,16 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                   videoUrl: videoUrl!,
                   seamlessLoop: true,
                   mute: false,
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                   alignment: Alignment.center,
                   placeholder: (imageUrl != null && imageUrl!.isNotEmpty)
-                      ? CachedNetworkImage(
-                          imageUrl: imageUrl!,
-                          fit: BoxFit.contain,
-                          alignment: Alignment.center,
-                          placeholder: (context, url) => Center(
-                            child: CircularProgressIndicator(color: textColor),
+                      ? SizedBox.expand(
+                          child: FirebaseImage(
+                            url: imageUrl!,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            isDark: isDark,
                           ),
-                          errorWidget: (context, url, error) =>
-                              Icon(Icons.error_outline, color: textColor),
                         )
                       : Center(
                           child: CircularProgressIndicator(color: textColor),
@@ -323,27 +365,43 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                 Stack(
                   fit: StackFit.expand,
                   children: [
-                    PageView.builder(
-                      controller: _imagePageController,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: imageUrls!.length,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentImageIndex = index;
-                        });
+                    NotificationListener<ScrollNotification>(
+                      onNotification: (ScrollNotification notification) {
+                        if (notification is UserScrollNotification) {
+                          _slideshowTimer?.cancel();
+                          _slideshowTimer = null;
+                          if (!_localHideSwipeText) {
+                            SharedPreferences.getInstance().then((prefs) {
+                              prefs.setBool(
+                                'has_swiped_category_preview',
+                                true,
+                              );
+                            });
+                            setState(() {
+                              _localHideSwipeText = true;
+                            });
+                          }
+                        }
+                        return false;
                       },
-                      itemBuilder: (context, index) {
-                        return CachedNetworkImage(
-                          imageUrl: imageUrls![index],
-                          fit: BoxFit.contain,
-                          alignment: Alignment.center,
-                          placeholder: (context, url) => Center(
-                            child: CircularProgressIndicator(color: textColor),
-                          ),
-                          errorWidget: (context, url, error) =>
-                              Icon(Icons.error_outline, color: textColor),
-                        );
-                      },
+                      child: PageView.builder(
+                        controller: _imagePageController,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: imageUrls!.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return FirebaseImage(
+                            url: imageUrls![index],
+                            fit: BoxFit.contain,
+                            alignment: Alignment.center,
+                            isDark: isDark,
+                          );
+                        },
+                      ),
                     ),
                     Positioned(
                       bottom: 10,
@@ -369,15 +427,11 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                   ],
                 )
               else if (imageUrl != null && imageUrl!.isNotEmpty)
-                CachedNetworkImage(
-                  imageUrl: imageUrl!,
+                FirebaseImage(
+                  url: imageUrl!,
                   fit: BoxFit.contain,
                   alignment: Alignment.center,
-                  placeholder: (context, url) => Center(
-                    child: CircularProgressIndicator(color: textColor),
-                  ),
-                  errorWidget: (context, url, error) =>
-                      Icon(Icons.error_outline, color: textColor),
+                  isDark: isDark,
                 )
               else
                 Center(child: Icon(Icons.broken_image, color: textColor)),
@@ -394,8 +448,10 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        isDark ? Colors.black.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.9),
-                        Colors.transparent
+                        isDark
+                            ? Colors.black.withValues(alpha: 0.6)
+                            : Colors.white.withValues(alpha: 0.9),
+                        Colors.transparent,
                       ],
                     ),
                   ),
@@ -403,37 +459,53 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
               ),
 
               // Swipe Text Box
-              if (!widget.hideSwipeText)
+              if (!_localHideSwipeText)
                 Positioned(
-                top: MediaQuery.of(context).padding.top + 15,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.05),
-                      border: Border.all(color: isDark ? Colors.white24 : Colors.black12, width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.swipe, color: secondaryTextColor, size: 16),
-                        SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                        Text(
-                          'Swipe left or right to see more',
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                  top: MediaQuery.of(context).padding.top + 15,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.4)
+                            : Colors.white.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.05,
                         ),
-                      ],
+                        border: Border.all(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.swipe,
+                            color: secondaryTextColor,
+                            size: 16,
+                          ),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.02,
+                          ),
+                          Text(
+                            'Swipe left or right to see more',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
               // Back Button
               Positioned(
@@ -450,9 +522,7 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
 
         // Bottom Info & Button
         Container(
-          decoration: BoxDecoration(
-            color: AppColors.backgroundColor(isDark),
-          ),
+          decoration: BoxDecoration(color: AppColors.backgroundColor(isDark)),
           padding: EdgeInsets.fromLTRB(w * 0.05, h * 0.02, w * 0.05, w * 0.08),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -487,25 +557,32 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => GenerationPage(
-                            initialCategory: useTwoStage
+                            showCategoryToggle: false,
+                            initialCategory: (videoUrl != null && videoUrl!.isNotEmpty)
                                 ? 'video'
-                                : (type ?? 'image'),
+                                : (useTwoStage
+                                    ? 'video'
+                                    : (type ?? 'image')),
                             initialPrompt: useTwoStage
                                 ? videoPrompt
-                                : (type == 'video' && videoPrompt != null
+                                : ((type == 'video' || (videoUrl != null && videoUrl!.isNotEmpty)) && videoPrompt != null && videoPrompt!.isNotEmpty
                                       ? videoPrompt
                                       : prompt ?? ''),
                             initialModelId: useTwoStage
                                 ? videoModelId
-                                : (type == 'video' && videoModelId != null
+                                : ((type == 'video' || (videoUrl != null && videoUrl!.isNotEmpty)) && videoModelId != null && videoModelId!.isNotEmpty
                                       ? videoModelId
                                       : modelId),
                             initialIsEditable: isEditable,
                             imageEditMode: useTwoStage,
                             imagePrompt: prompt ?? '',
                             videoPrompt: videoPrompt ?? '',
-                            initialImageUrl: type == 'video' ? videoUrl : imageUrl,
+                            initialImageUrl: (videoUrl != null && videoUrl!.isNotEmpty)
+                                ? videoUrl
+                                : (type == 'video' ? videoUrl : imageUrl),
                             initialImageModelId: useTwoStage ? modelId : null,
+                            sourceCategoryName: categoryName,
+                            noOfUploadable: noOfUploadable,
                           ),
                         ),
                       );

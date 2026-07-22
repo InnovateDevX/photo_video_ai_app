@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
 
 /// Reusable slider row widget for editor controls
 class EditorSliderRow extends StatelessWidget {

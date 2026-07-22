@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Branded splash screen – shown immediately when the Android process starts,
-     before Flutter renders its first frame. The dark background + centered logo
-     matches the Flutter splash screen so the transition is seamless. -->
+<!-- Branded launch screen – shown immediately when the Android process starts.
+     Uses solid black background and rounded launcher icon to match Flutter splash screen. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Solid dark background (matches SplashScreen bg in Flutter) -->
+    <!-- Solid black background -->
     <item>
-        <color android:color="#161616" />
+        <color android:color="#000000" />
     </item>
 
-    <!-- Centered app logo at a visible size (not the tiny launcher icon).
-         The drawable lives in each mipmap-{density} folder as splash_logo.png
-         at density-appropriate dimensions (~120dp on screen). -->
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/splash_logo" />
-    </item>
+    <!-- Centered rounded app logo at 96dp size -->
+    <item
+        android:width="96dp"
+        android:height="96dp"
+        android:gravity="center"
+        android:drawable="@mipmap/ic_launcher_round" />
 </layer-list>

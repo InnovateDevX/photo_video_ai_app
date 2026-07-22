@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
 import 'package:flutter/foundation.dart';
 import '../Models/category_image.dart';
 
@@ -83,6 +83,83 @@ class DataService {
     }
   }
 
+  /// Background refresh: silently fetches the latest Remote Config and updates
+  /// categories. Preserves all existing cached image items so the UI stays fast.
+  /// Returns [true] when the category list has changed (new or removed entries),
+  /// so the caller can call [setState] only when needed.
+  Future<bool> refreshCategories() async {
+    try {
+      final config = RemoteConfigService();
+      // Make sure RC is initialised first (no-op if already done)
+      await config.initialize();
+      // Then force-fetch the latest values from the network
+      await config.refresh();
+
+      final jsonStr = config.categoriesJson;
+      if (jsonStr.isEmpty || jsonStr == '[]') return false;
+
+      final dynamic parsed = json.decode(jsonStr);
+      if (parsed is! List || parsed.isEmpty) return false;
+
+      if (parsed[0] is Map) {
+        // Structured format
+        final freshData = parsed.map((cat) {
+          final data = CategoryData.fromJson(cat as Map<String, dynamic>);
+          if (data.shuffle) data.images.shuffle();
+          return data;
+        }).toList();
+
+        final freshNames = freshData.map((c) => c.name).toList();
+        final existingNames = categoryData.map((c) => c.name).toSet();
+        final newNames = freshNames
+            .where((n) => !existingNames.contains(n))
+            .toList();
+        final countChanged = freshNames.length != categories.length;
+
+        if (newNames.isNotEmpty || countChanged) {
+          // Merge: keep existing category data (retains cached images),
+          // append truly new category entries at the end.
+          final existingMap = {for (final c in categoryData) c.name: c};
+          categoryData = freshData.map((fresh) {
+            // Prefer the fresh entry so images/metadata stay up-to-date,
+            // but the old cached items in categoryItems map are untouched.
+            return existingMap[fresh.name] ?? fresh;
+          }).toList();
+          // Add any brand-new categories that weren't cached
+          for (final fresh in freshData) {
+            if (!existingMap.containsKey(fresh.name)) {
+              categoryData.add(fresh);
+            }
+          }
+          categories = categoryData.map((c) => c.name).toList();
+          debugPrint(
+            '📦 [DataService] refreshCategories: ${categories.length} total, '
+            '${newNames.length} new (${newNames.join(", ")})',
+          );
+          return true;
+        }
+      } else {
+        // Legacy string-list format
+        final freshNames = parsed.cast<String>();
+        final existingSet = categories.toSet();
+        final hasNew = freshNames.any((n) => !existingSet.contains(n));
+        if (hasNew || freshNames.length != categories.length) {
+          categories = freshNames;
+          debugPrint(
+            '📦 [DataService] refreshCategories (legacy): ${categories.length} categories',
+          );
+          return true;
+        }
+      }
+
+      debugPrint('📦 [DataService] refreshCategories: no changes detected');
+      return false;
+    } catch (e) {
+      debugPrint('❌ [DataService] refreshCategories failed: $e');
+      return false;
+    }
+  }
+
   /// Get category images with metadata for a specific category
   List<CategoryImage> getCategoryImages(String categoryName) {
     final category = categoryData.firstWhere(
@@ -107,26 +184,38 @@ class DataService {
       debugPrint('📦 [DataService] Starting _fetchInitialTrending...');
       final config = RemoteConfigService();
       final jsonStr = config.trendingDataJson;
-      debugPrint('📦 [DataService] fetched trendingDataJson length: ${jsonStr.length}');
-      debugPrint('📦 [DataService] trendingDataJson preview: ${jsonStr.substring(0, jsonStr.length > 100 ? 100 : jsonStr.length)}');
+      debugPrint(
+        '📦 [DataService] fetched trendingDataJson length: ${jsonStr.length}',
+      );
+      debugPrint(
+        '📦 [DataService] trendingDataJson preview: ${jsonStr.substring(0, jsonStr.length > 100 ? 100 : jsonStr.length)}',
+      );
       if (jsonStr.isNotEmpty && jsonStr != '{}') {
         final dynamic parsed = json.decode(jsonStr);
         debugPrint('📦 [DataService] parsed JSON type: ${parsed.runtimeType}');
         if (parsed is Map<String, dynamic>) {
           final data = CategoryData.fromJson(parsed);
-          debugPrint('📦 [DataService] data.images length: ${data.images.length}');
+          debugPrint(
+            '📦 [DataService] data.images length: ${data.images.length}',
+          );
           if (data.shuffle) {
             data.images.shuffle();
           }
           trendingItems = data.images;
         } else if (parsed is List) {
-          debugPrint('📦 [DataService] Parsed JSON is a List. Parsing directly.');
-          final items = parsed.map((img) => CategoryImage.fromJson(img as Map<String, dynamic>)).toList();
+          debugPrint(
+            '📦 [DataService] Parsed JSON is a List. Parsing directly.',
+          );
+          final items = parsed
+              .map((img) => CategoryImage.fromJson(img as Map<String, dynamic>))
+              .toList();
           trendingItems = items;
         } else {
-          debugPrint('📦 [DataService] ERROR: parsed JSON is neither Map nor List');
+          debugPrint(
+            '📦 [DataService] ERROR: parsed JSON is neither Map nor List',
+          );
         }
-        
+
         debugPrint(
           '📦 [DataService] Remote config trending items cached: ${trendingItems.length}',
         );
@@ -209,6 +298,4 @@ class DataService {
       rethrow;
     }
   }
-
-
 }

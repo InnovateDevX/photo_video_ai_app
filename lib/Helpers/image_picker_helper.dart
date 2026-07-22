@@ -2,10 +2,9 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:trail_ai_app/Widgets/image_crop_page.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Widgets/image_crop_page.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
 
 class ImagePickerHelper {
   /// Wrapper for backward compatibility.
@@ -144,7 +143,7 @@ class ImagePickerHelper {
                     ),
                   ),
                   Text(
-                    'add_reference_image'.i18n(),
+                    'Add Reference Image',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -153,7 +152,7 @@ class ImagePickerHelper {
                   ),
                   SizedBox(height: w * 0.02),
                   Text(
-                    'choose_source'.i18n(),
+                    'Choose a source',
                     style: TextStyle(
                       color: Colors.white60,
                       fontSize: w * 0.035,
@@ -165,7 +164,7 @@ class ImagePickerHelper {
                       Expanded(
                         child: _SourceTile(
                           icon: Icons.photo_library_outlined,
-                          label: 'gallery'.i18n(),
+                          label: 'Gallery',
                           onTap: () => Navigator.pop(ctx, ImageSource.gallery),
                         ),
                       ),
@@ -173,7 +172,7 @@ class ImagePickerHelper {
                       Expanded(
                         child: _SourceTile(
                           icon: Icons.camera_alt_outlined,
-                          label: 'camera'.i18n(),
+                          label: 'Camera',
                           onTap: () => Navigator.pop(ctx, ImageSource.camera),
                         ),
                       ),
@@ -183,7 +182,7 @@ class ImagePickerHelper {
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
                     child: Text(
-                      'cancel'.i18n(),
+                      'Cancel',
                       style: TextStyle(
                         color: Colors.white54,
                         fontSize: w * 0.038,

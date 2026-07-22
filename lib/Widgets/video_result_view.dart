@@ -50,22 +50,54 @@ class _VideoResultViewState extends State<VideoResultView> {
 
     if (!mounted) return;
 
-    VideoPlayerController controller;
+    VideoPlayerController? controller;
     if (url.startsWith('http')) {
+      File? cachedFile;
       try {
-        // Cache the video file to prevent buffering during playback
-        final file = await DefaultCacheManager().getSingleFile(url);
-        controller = VideoPlayerController.file(file);
+        final fileInfo = await DefaultCacheManager().getFileFromCache(url);
+        if (fileInfo != null && fileInfo.file.existsSync() && fileInfo.file.lengthSync() > 1024) {
+          debugPrint("📦 [VideoResultView] Playing from CACHE: $url");
+          cachedFile = fileInfo.file;
+        } else if (fileInfo != null) {
+          debugPrint("⚠️ [VideoResultView] Corrupted cache file detected (<1KB), removing...");
+          await DefaultCacheManager().removeFile(url);
+        }
       } catch (e) {
-        debugPrint('Cache manager failed: $e');
+        debugPrint('Cache manager check failed: $e');
+      }
+
+      if (cachedFile != null) {
+        try {
+          controller = VideoPlayerController.file(cachedFile);
+          await controller.initialize().timeout(const Duration(seconds: 4));
+          if (controller.value.hasError) {
+            throw Exception("Cache player has error");
+          }
+        } catch (e) {
+          debugPrint("⚠️ [VideoResultView] Cache init failed: $e, falling back to network...");
+          await DefaultCacheManager().removeFile(url);
+          controller?.dispose();
+          controller = null;
+        }
+      }
+
+      if (controller == null) {
+        debugPrint(
+          "🌐 [VideoResultView] Playing from network & caching in background: $url",
+        );
+        DefaultCacheManager().downloadFile(url).catchError((e) {
+          debugPrint("❌ [VideoResultView] Background cache download failed: $e");
+          return null;
+        });
         controller = VideoPlayerController.networkUrl(Uri.parse(url));
+        await controller.initialize().timeout(const Duration(seconds: 25));
       }
     } else {
       controller = VideoPlayerController.file(File(url));
+      await controller.initialize();
     }
 
     try {
-      await controller.initialize();
       if (mounted && url == widget.videoUrl) {
         setState(() {
           _controller = controller;
@@ -107,21 +139,8 @@ class _VideoResultViewState extends State<VideoResultView> {
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-            ),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            Text(
-              "Preparing video...",
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: MediaQuery.of(context).size.height * 0.015,
-              ),
-            ),
-          ],
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
         ),
       );
     }

@@ -1,3 +1,5 @@
+import 'category_image.dart';
+
 class Reel {
   final String id;
   final String videoUrl;
@@ -43,8 +45,10 @@ class Reel {
   factory Reel.fromFirestore(String id, Map<String, dynamic> data) {
     return Reel(
       id: id,
-      videoUrl: data['videoUrl'] ?? '',
-      thumbnailUrl: data['thumbnailUrl'],
+      videoUrl: sanitizeFirebaseUrl(data['videoUrl'] ?? ''),
+      thumbnailUrl: data['thumbnailUrl'] != null
+          ? sanitizeFirebaseUrl(data['thumbnailUrl'])
+          : null,
       // Backward-compatible: fall back to old 'prompt' key for existing docs
       videoPrompt: data['videoPrompt'] ?? data['prompt'] ?? '',
       imagePrompt: data['imagePrompt'] ?? '',
@@ -60,8 +64,10 @@ class Reel {
   factory Reel.fromJson(Map<String, dynamic> json) {
     return Reel(
       id: json['id'] ?? '',
-      videoUrl: json['videoUrl'] ?? '',
-      thumbnailUrl: json['thumbnailUrl'],
+      videoUrl: sanitizeFirebaseUrl(json['videoUrl'] ?? ''),
+      thumbnailUrl: json['thumbnailUrl'] != null
+          ? sanitizeFirebaseUrl(json['thumbnailUrl'])
+          : null,
       videoPrompt: json['videoPrompt'] ?? json['prompt'] ?? '',
       imagePrompt: json['imagePrompt'] ?? '',
       imageEdit: json['imageEdit'] ?? false,
@@ -103,4 +109,3 @@ class Reel {
     };
   }
 }
-

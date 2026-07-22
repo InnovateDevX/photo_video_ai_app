@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Models/generated_asset.dart';
 import 'local_storage_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:trail_ai_app/Services/foreground_task_handler.dart';
+import 'package:vidzeon/Services/foreground_task_handler.dart';
 import 'replicate_service.dart';
 import 'notification_service.dart';
 import 'content_safety_service.dart';
@@ -84,47 +84,45 @@ class BackgroundGenerationService {
   }
 
   Future<void> initializeBackgroundService() async {
-    final service = FlutterBackgroundService();
-
-    // ── Guard: skip re-configuration on subsequent launches ───────────────
-    // If the foreground service is already running from a previous session,
-    // calling `configure()` again can hang on Android. Skip it and let the
-    // existing service keep polling; we only need to configure once per
-    // app install. This is the most common cause of the "stuck on splash
-    // screen on second launch" issue.
     try {
-      final bool alreadyRunning = await service.isRunning();
-      if (alreadyRunning) {
-        debugPrint(
-          '✅ [BackgroundService] Already running from a previous session — '
-          'skipping configure() to avoid re-entrancy hang',
-        );
-        return;
-      }
-    } catch (e) {
-      debugPrint(
-        '⚠️ [BackgroundService] isRunning() check failed (continuing): $e',
-      );
-    }
+      final service = FlutterBackgroundService();
 
-    await service.configure(
-      androidConfiguration: AndroidConfiguration(
-        onStart: onStart,
-        autoStart: false,
-        isForegroundMode: true,
-        notificationChannelId: 'ai_generation_channel',
-        initialNotificationTitle: 'Trail AI Studio',
-        initialNotificationContent: 'Initializing background service',
-        foregroundServiceNotificationId: 888,
-      ),
-      iosConfiguration: IosConfiguration(
-        autoStart: false,
-        onForeground: onStart,
-        onBackground: (ServiceInstance service) {
-          return true;
-        },
-      ),
-    );
+      try {
+        final bool alreadyRunning = await service.isRunning();
+        if (alreadyRunning) {
+          debugPrint(
+            '✅ [BackgroundService] Already running from a previous session — '
+            'skipping configure() to avoid re-entrancy hang',
+          );
+          return;
+        }
+      } catch (e) {
+        debugPrint(
+          '⚠️ [BackgroundService] isRunning() check failed (continuing): $e',
+        );
+      }
+
+      await service.configure(
+        androidConfiguration: AndroidConfiguration(
+          onStart: onStart,
+          autoStart: false,
+          isForegroundMode: true,
+          notificationChannelId: 'ai_generation_channel',
+          initialNotificationTitle: 'VidZeon',
+          initialNotificationContent: 'Processing...',
+          foregroundServiceNotificationId: 888,
+        ),
+        iosConfiguration: IosConfiguration(
+          autoStart: false,
+          onForeground: onStart,
+          onBackground: (ServiceInstance service) {
+            return true;
+          },
+        ),
+      );
+    } catch (e) {
+      debugPrint('⚠️ [BackgroundService] Service init bypassed gracefully: $e');
+    }
   }
 
   /// Called on app startup to resume any pending generations that were
@@ -244,7 +242,7 @@ class BackgroundGenerationService {
         await NotificationService().cancelNotification(notificationId);
         _failureController.add('Background $category generation failed.');
         NotificationService().showGenerationCompleteNotification(
-          title: 'Trail AI Studio',
+          title: 'VidZeon',
           body: 'Background $category generation failed. Please try again.',
         );
       } else {
@@ -254,7 +252,7 @@ class BackgroundGenerationService {
         );
         NotificationService().showProgressNotification(
           id: notificationId,
-          title: 'Trail AI Studio',
+          title: 'VidZeon',
           body: 'Resuming $category generation...',
           progress: null,
           payload: 'OPEN_APP',
@@ -266,7 +264,7 @@ class BackgroundGenerationService {
               final int percent = (p * 100).toInt();
               NotificationService().showProgressNotification(
                 id: notificationId,
-                title: 'Trail AI Studio',
+                title: 'VidZeon',
                 body: 'Generating $category ($percent%)...',
                 progress: percent,
                 payload: 'OPEN_APP',
@@ -289,7 +287,7 @@ class BackgroundGenerationService {
               await NotificationService().cancelNotification(notificationId);
               _failureController.add('Background $category generation failed.');
               NotificationService().showGenerationCompleteNotification(
-                title: 'Trail AI Studio',
+                title: 'VidZeon',
                 body:
                     'Background $category generation failed. Please try again.',
               );
@@ -323,7 +321,7 @@ class BackgroundGenerationService {
 
     NotificationService().showProgressNotification(
       id: notificationId,
-      title: 'Trail AI Studio',
+      title: 'VidZeon',
       body: 'Resuming $category generation...',
       progress: null,
       payload: 'OPEN_APP',
@@ -356,7 +354,7 @@ class BackgroundGenerationService {
     // Show initial progress notification
     NotificationService().showProgressNotification(
       id: notificationId,
-      title: 'Trail AI Studio',
+      title: 'VidZeon',
       body: 'Preparing your $category...',
       progress: null, // Indeterminate at first
       payload: 'OPEN_APP',
@@ -377,7 +375,7 @@ class BackgroundGenerationService {
             final int percent = (p * 100).toInt();
             NotificationService().showProgressNotification(
               id: notificationId,
-              title: 'Trail AI Studio',
+              title: 'VidZeon',
               body: 'Generating $category ($percent%)...',
               progress: percent,
               payload: 'OPEN_APP',
@@ -421,7 +419,7 @@ class BackgroundGenerationService {
 
           _failureController.add(errorMessage);
           NotificationService().showGenerationCompleteNotification(
-            title: 'Trail AI Studio',
+            title: 'VidZeon',
             body: errorMessage,
           );
           return '';
@@ -443,7 +441,7 @@ class BackgroundGenerationService {
 
     NotificationService().showProgressNotification(
       id: notificationId,
-      title: 'Trail AI Studio',
+      title: 'VidZeon',
       body: 'Stage 1/2: Editing your photo...',
       progress: null,
       payload: 'OPEN_APP',
@@ -464,7 +462,7 @@ class BackgroundGenerationService {
 
           NotificationService().showProgressNotification(
             id: notificationId,
-            title: 'Trail AI Studio',
+            title: 'VidZeon',
             body: 'Stage 2/2: Generating video...',
             progress: null,
             payload: 'OPEN_APP',
@@ -513,7 +511,7 @@ class BackgroundGenerationService {
 
           reportFailure(errorMessage);
           NotificationService().showGenerationCompleteNotification(
-            title: 'Trail AI Studio',
+            title: 'VidZeon',
             body: errorMessage,
           );
           return null;
@@ -560,7 +558,7 @@ class BackgroundGenerationService {
         await LocalStorageService().saveAsset(asset);
         _completionController.add(asset);
         NotificationService().showGenerationCompleteNotification(
-          title: 'Trail AI Studio',
+          title: 'VidZeon',
           body: 'Your $category generation is complete!',
           payload: asset.id,
         );

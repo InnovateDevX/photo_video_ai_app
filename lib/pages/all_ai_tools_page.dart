@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 import '../Core/colors.dart';
 import '../Core/directory.dart';
 import '../Core/routes.dart';
-import 'package:localization/localization.dart';
-
-import 'settings_page.dart';
-import '../Widgets/ai_tools_grid.dart';
+import 'package:vidzeon/Widgets/ai_tools_grid.dart';
+import '../Widgets/pro_pill.dart';
 import '../Services/credit_service.dart';
 import '../Services/remote_config_service.dart';
 import '../Widgets/main_navigation.dart';
-import '../pages/ai_tool_demo_page.dart';
+import 'package:vidzeon/pages/ai_tool_demo_page.dart';
 import '../pages/generation_page.dart';
 
 // ─── Data Model ───────────────────────────────────────────────────────────────
@@ -29,135 +27,166 @@ class _ToolEntry {
     this.category = 'all',
     this.isPopular = false,
   });
+
+  _ToolEntry copyWith({bool? isPopular}) {
+    return _ToolEntry(
+      tool: tool,
+      subtitle: subtitle,
+      iconBg: iconBg,
+      category: category,
+      isPopular: isPopular ?? this.isPopular,
+    );
+  }
 }
 
 // ─── Tool Registry ────────────────────────────────────────────────────────────
-List<_ToolEntry> _buildRegistry(BuildContext context) => [
-  _ToolEntry(
-    tool: AiTool(
-      id: 'video',
-      label: 'ai_video_tool'.i18n(),
-      imagePath: AppDirectories.iconAiVideo,
-      initialCategory: 'video',
+List<_ToolEntry> _buildRegistry(BuildContext context) {
+  final popularStr = RemoteConfigService().popularAiTools;
+  final popularIds = popularStr.isEmpty
+      ? ['video', 'image', 'upscale', 'background']
+      : popularStr.split(',').map((e) => e.trim()).toList();
+
+  final rawEntries = [
+    _ToolEntry(
+      tool: AiTool(
+        id: 'video',
+        label: 'AI Video',
+        imagePath: AppDirectories.iconAiVideo,
+        initialCategory: 'video',
+      ),
+      subtitle: 'Create stunning videos',
+      iconBg: const Color(0xFF1A3A2A),
+      category: 'video',
+      isPopular: true,
     ),
-    subtitle: 'Create stunning videos',
-    iconBg: const Color(0xFF1A3A2A),
-    category: 'video',
-    isPopular: true,
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'image',
-      label: 'tool_ai_image'.i18n(),
-      imagePath: AppDirectories.iconAiImage,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'image',
+        label: 'AI Image',
+        imagePath: AppDirectories.iconAiImage,
+      ),
+      subtitle: 'Generate amazing images',
+      iconBg: const Color(0xFF1A2A3E),
+      category: 'image',
+      isPopular: true,
     ),
-    subtitle: 'Generate amazing images',
-    iconBg: const Color(0xFF1A2A3E),
-    category: 'image',
-    isPopular: true,
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'upscale',
-      label: 'tool_upscale'.i18n(),
-      imagePath: AppDirectories.iconUpscale,
-      route: AppRoutes.upscale,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'upscale',
+        label: 'Upscale',
+        imagePath: AppDirectories.iconUpscale,
+        route: AppRoutes.upscale,
+      ),
+      subtitle: 'Enhance image quality',
+      iconBg: const Color(0xFF3A1A0A),
+      category: 'image',
+      isPopular: true,
     ),
-    subtitle: 'Enhance image quality',
-    iconBg: const Color(0xFF3A1A0A),
-    category: 'all',
-    isPopular: true,
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'background',
-      label: 'background_ai'.i18n(),
-      imagePath: AppDirectories.iconBgAi,
-      route: AppRoutes.background,
+    _ToolEntry(
+      tool: AiTool(
+        id: 're_edit',
+        label: 'Re-Edit',
+        imagePath: AppDirectories.iconReEdit,
+      ),
+      subtitle: 'Edit images with premium tools',
+      iconBg: const Color(0xFF1E2A38),
+      category: 'image',
     ),
-    subtitle: 'Remove or change background',
-    iconBg: const Color(0xFF2A1A3E),
-    category: 'all',
-    isPopular: true,
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'cloth',
-      label: 'clothswap'.i18n(),
-      imagePath: AppDirectories.iconCloth,
-      route: AppRoutes.outfitChange,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'background',
+        label: 'Background AI',
+        imagePath: AppDirectories.iconBgAi,
+        route: AppRoutes.background,
+      ),
+      subtitle: 'Remove or change background',
+      iconBg: const Color(0xFF2A1A3E),
+      category: 'image',
+      isPopular: true,
     ),
-    subtitle: 'Try different outfits instantly',
-    iconBg: const Color(0xFF2E1A00),
-    category: 'all',
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'restore',
-      label: 'ai_restore'.i18n(),
-      imagePath: AppDirectories.iconRestore,
-      route: AppRoutes.restore,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'cloth',
+        label: 'Cloth-Changer',
+        imagePath: AppDirectories.iconCloth,
+        route: AppRoutes.outfitChange,
+      ),
+      subtitle: 'Try different outfits instantly',
+      iconBg: const Color(0xFF2E1A00),
+      category: 'image',
     ),
-    subtitle: 'Restore old or damaged photos',
-    iconBg: const Color(0xFF1A2E1A),
-    category: 'all',
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'filter',
-      label: 'ai_filter_style'.i18n(),
-      imagePath: AppDirectories.iconFilterStyle,
-      route: AppRoutes.filter,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'restore',
+        label: 'Restore AI',
+        imagePath: AppDirectories.iconRestore,
+        route: AppRoutes.restore,
+      ),
+      subtitle: 'Restore old or damaged photos',
+      iconBg: const Color(0xFF1A2E1A),
+      category: 'image',
     ),
-    subtitle: 'Apply stunning AI filters',
-    iconBg: const Color(0xFF2A1E00),
-    category: 'all',
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'headshot',
-      label: 'ai_headshot'.i18n(),
-      imagePath: AppDirectories.iconHeadshot,
-      route: AppRoutes.headshot,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'filter',
+        label: 'AI Filter Style',
+        imagePath: AppDirectories.iconFilterStyle,
+        route: AppRoutes.filter,
+      ),
+      subtitle: 'Apply stunning AI filters',
+      iconBg: const Color(0xFF2A1E00),
+      category: 'image',
     ),
-    subtitle: 'Professional AI headshots',
-    iconBg: const Color(0xFF002E2E),
-    category: 'all',
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'sticker',
-      label: 'ai_sticker'.i18n(),
-      imagePath: AppDirectories.iconSticker,
-      route: AppRoutes.sticker,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'headshot',
+        label: 'Headshot Pic AI',
+        imagePath: AppDirectories.iconHeadshot,
+        route: AppRoutes.headshot,
+      ),
+      subtitle: 'Professional AI headshots',
+      iconBg: const Color(0xFF002E2E),
+      category: 'image',
     ),
-    subtitle: 'Create custom AI stickers',
-    iconBg: const Color(0xFF2A2A2A),
-    category: 'all',
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'collage',
-      label: 'pic_collage'.i18n(),
-      imagePath: AppDirectories.iconPicCollage,
-      route: AppRoutes.collage,
+    // _ToolEntry(
+    //   tool: AiTool(
+    //     id: 'sticker',
+    //     label: 'Sticker AI',
+    //     imagePath: AppDirectories.iconSticker,
+    //     route: AppRoutes.sticker,
+    //   ),
+    //   subtitle: 'Create custom AI stickers',
+    //   iconBg: const Color(0xFF2A2A2A),
+    //   category: 'image',
+    // ),
+    _ToolEntry(
+      tool: AiTool(
+        id: 'collage',
+        label: 'Pic Collage',
+        imagePath: AppDirectories.iconPicCollage,
+        route: AppRoutes.collage,
+      ),
+      subtitle: 'Create beautiful collages',
+      iconBg: const Color(0xFF2A001A),
+      category: 'image',
     ),
-    subtitle: 'Create beautiful collages',
-    iconBg: const Color(0xFF2A001A),
-    category: 'all',
-  ),
-  _ToolEntry(
-    tool: AiTool(
-      id: 'logo',
-      label: 'ai_logo'.i18n(),
-      imagePath: AppDirectories.iconLogo,
-      route: AppRoutes.logo,
+    _ToolEntry(
+      tool: AiTool(
+        id: 'logo',
+        label: 'Logo AI',
+        imagePath: AppDirectories.iconLogo,
+        route: AppRoutes.logo,
+      ),
+      subtitle: 'Design unique logos',
+      iconBg: const Color(0xFF002A1A),
+      category: 'image',
     ),
-    subtitle: 'Design unique logos',
-    iconBg: const Color(0xFF002A1A),
-    category: 'all',
-  ),
-];
+  ];
+
+  return rawEntries
+      .map((e) => e.copyWith(isPopular: popularIds.contains(e.tool.id)))
+      .toList();
+}
 
 // ─── Badge helper ─────────────────────────────────────────────────────────────
 // Returns only the first badge text string for a tool id (without emoji prefix).
@@ -201,21 +230,26 @@ Map<String, String> _loadFirstBadge() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 class AllAiToolsPage extends StatefulWidget {
-  const AllAiToolsPage({super.key});
+  /// Set to true when this page is pre-built inside MainNavigation's IndexedStack.
+  /// When true, the intro scroll is only triggered by MainNavigation
+  /// calling [AllAiToolsPageState.onTabActivated()] rather than from initState.
+  final bool isEmbeddedAsTab;
+
+  const AllAiToolsPage({super.key, this.isEmbeddedAsTab = false});
 
   @override
-  State<AllAiToolsPage> createState() => _AllAiToolsPageState();
+  State<AllAiToolsPage> createState() => AllAiToolsPageState();
 }
 
-class _AllAiToolsPageState extends State<AllAiToolsPage> {
+// Public so MainNavigation can hold a GlobalKey<AllAiToolsPageState>.
+class AllAiToolsPageState extends State<AllAiToolsPage> {
   final CreditService _creditService = CreditService();
-  final TextEditingController _searchController = TextEditingController();
-
+  final ScrollController _popularScrollController = ScrollController();
   List<_ToolEntry> _registry = [];
   Map<String, String> _badges = {};
+  bool _didAutoScroll = false;
 
   String _selectedCategory = 'all';
-  String _searchQuery = '';
 
   static const List<Map<String, String>> _categories = [
     {'key': 'all', 'label': 'All'},
@@ -236,6 +270,14 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
     super.initState();
     _creditService.initialize();
     _badges = _loadFirstBadge();
+
+    // For direct pushes (not pre-built as tab), trigger scroll immediately.
+    // For tab mode, MainNavigation calls onTabActivated().
+    if (!widget.isEmbeddedAsTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_didAutoScroll) _doScroll();
+      });
+    }
   }
 
   @override
@@ -246,9 +288,28 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
     }
   }
 
+  /// Called by MainNavigation when the user switches to this tab.
+  void onTabActivated() {
+    if (!_didAutoScroll) _doScroll();
+  }
+
+  void _doScroll() {
+    _didAutoScroll = true;
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (mounted && _popularScrollController.hasClients) {
+        final sw = MediaQuery.of(context).size.width;
+        _popularScrollController.animateTo(
+          sw * 0.38,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
   @override
   void dispose() {
-    _searchController.dispose();
+    _popularScrollController.dispose();
     super.dispose();
   }
 
@@ -258,19 +319,12 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
       _registry.where((e) => e.isPopular).toList();
 
   List<_ToolEntry> get _filteredTools {
-    final q = _searchQuery.toLowerCase().trim();
     return _registry.where((e) {
       // Tab filter: 'all' tab shows everything;
       // 'video'/'image' tabs show tools with that category OR 'all' category
-      final matchCat =
-          _selectedCategory == 'all' ||
+      return _selectedCategory == 'all' ||
           e.category == _selectedCategory ||
           e.category == 'all';
-      final matchSearch =
-          q.isEmpty ||
-          e.tool.label.toLowerCase().contains(q) ||
-          e.subtitle.toLowerCase().contains(q);
-      return matchCat && matchSearch;
     }).toList();
   }
 
@@ -288,8 +342,10 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              GenerationPage(initialCategory: tool.initialCategory ?? 'image'),
+          builder: (_) => GenerationPage(
+            showCategoryToggle: false,
+            initialCategory: tool.initialCategory ?? 'image',
+          ),
         ),
       );
     }
@@ -310,22 +366,17 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
         child: Column(
           children: [
             _buildHeader(isDark, sw, sh),
-            _buildSearchBar(isDark, sw, sh),
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(bottom: sh * 0.15),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: sh * 0.025),
-                    _buildPopularSection(isDark, sw, sh),
-                    SizedBox(height: sh * 0.025),
-                    _buildCategoryTabs(isDark, sw, sh),
-                    SizedBox(height: sh * 0.018),
-                    _buildToolsList(isDark, sw, sh),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: sh * 0.025),
+                  _buildPopularSection(isDark, sw, sh),
+                  SizedBox(height: sh * 0.025),
+                  _buildCategoryTabs(isDark, sw, sh),
+                  SizedBox(height: sh * 0.018),
+                  Expanded(child: _buildToolsList(isDark, sw, sh)),
+                ],
               ),
             ),
           ],
@@ -381,15 +432,8 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
               ),
             ),
           ),
-          _circleButton(
-            isDark: isDark,
-            sw: sw,
-            icon: Icons.settings_outlined,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            ),
-          ),
+          // Pro pill on the right — opens paywall for non-subscribers.
+          ProPill(w: sw, h: sh, isDark: isDark),
         ],
       ),
     );
@@ -411,53 +455,6 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: sw * 0.045, color: AppColors.textColor(isDark)),
-      ),
-    );
-  }
-
-  // ── Search Bar ─────────────────────────────────────────────────────────────
-  Widget _buildSearchBar(bool isDark, double sw, double sh) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: sw * 0.04),
-      child: Container(
-        height: sh * 0.055,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF222222) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(sw * 0.04),
-          border: Border.all(
-            color: isDark ? const Color(0xFF333333) : Colors.grey.shade300,
-          ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(width: sw * 0.04),
-            Icon(
-              Icons.search,
-              color: AppColors.secondaryTextColor(isDark),
-              size: sw * 0.05,
-            ),
-            SizedBox(width: sw * 0.03),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                style: TextStyle(
-                  color: AppColors.textColor(isDark),
-                  fontSize: sw * 0.038,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search tools...',
-                  hintStyle: TextStyle(
-                    color: AppColors.secondaryTextColor(isDark),
-                    fontSize: sw * 0.038,
-                  ),
-                  border: InputBorder.none,
-                  isDense: true,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -491,6 +488,7 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
         SizedBox(
           height: sh * 0.22,
           child: ListView.separated(
+            controller: _popularScrollController,
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: sw * 0.04),
             separatorBuilder: (_, _) => SizedBox(width: sw * 0.03),
@@ -641,25 +639,30 @@ class _AllAiToolsPageState extends State<AllAiToolsPage> {
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: sw * 0.04),
-      child: Column(
-        children: rows.map((row) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: sw * 0.03),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildToolCard(row[0], isDark, sw, sh)),
-                SizedBox(width: sw * 0.03),
-                row.length > 1
-                    ? Expanded(child: _buildToolCard(row[1], isDark, sw, sh))
-                    : const Expanded(child: SizedBox()),
-              ],
-            ),
-          );
-        }).toList(),
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.only(
+        left: sw * 0.04,
+        right: sw * 0.04,
+        bottom: sh * 0.15,
       ),
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        return Padding(
+          padding: EdgeInsets.only(bottom: sw * 0.03),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildToolCard(row[0], isDark, sw, sh)),
+              SizedBox(width: sw * 0.03),
+              row.length > 1
+                  ? Expanded(child: _buildToolCard(row[1], isDark, sw, sh))
+                  : const Expanded(child: SizedBox()),
+            ],
+          ),
+        );
+      },
     );
   }
 

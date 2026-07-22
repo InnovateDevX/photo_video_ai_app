@@ -2,9 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
 import 'package:image_collage_widget/utils/collage_type.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/generation_gate.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/generation_gate.dart';
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────
@@ -193,17 +192,14 @@ class CollageError extends CollageState {
 // ─────────────────────────────────────────────
 
 class CollageBloc extends Bloc<CollageEvent, CollageState> {
-  final AdService _adService;
   final CreditService _creditService;
 
   /// Credit cost for saving/exporting a collage (no Replicate call needed).
   static const int kCollageCreditCost = 1;
 
   CollageBloc({
-    required AdService adService,
     required CreditService creditService,
-  }) : _adService = adService,
-       _creditService = creditService,
+  }) : _creditService = creditService,
        super(const CollageInitial()) {
     on<CollageInit>(_onInit);
     on<CollageTypeSelected>(_onTypeSelected);
@@ -218,7 +214,6 @@ class CollageBloc extends Bloc<CollageEvent, CollageState> {
   Future<void> _onInit(CollageInit event, Emitter<CollageState> emit) async {
     try {
       await _creditService.initialize();
-      await _adService.initialize();
       emit(CollageSelecting(credits: _creditService.credits));
     } catch (e) {
       emit(CollageError("Initialization failed: $e"));
@@ -264,7 +259,6 @@ class CollageBloc extends Bloc<CollageEvent, CollageState> {
 
     final canProceed = await GenerationGate.check(
       context: event.context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: kCollageCreditCost,
     );

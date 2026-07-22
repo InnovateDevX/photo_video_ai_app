@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/routes.dart';
-import 'package:trail_ai_app/Widgets/main_navigation.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/routes.dart';
+import 'package:vidzeon/Widgets/main_navigation.dart';
 
 class ProfileHeader extends StatelessWidget {
   final double w;

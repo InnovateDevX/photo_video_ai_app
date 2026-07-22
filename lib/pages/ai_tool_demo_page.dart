@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Widgets/ai_tools_grid.dart';
-import 'package:trail_ai_app/Widgets/reel_video_player.dart';
-import 'package:trail_ai_app/pages/generation_page.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Widgets/ai_tools_grid.dart';
+import 'package:vidzeon/Widgets/reel_video_player.dart';
+import 'package:vidzeon/pages/generation_page.dart';
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -104,9 +104,9 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
       case '/headshot':
         modelConfig = rs.headshotModel;
         break;
-      case '/sticker':
-        modelConfig = rs.stickerTextModel ?? rs.stickerImageModel;
-        break;
+      // case '/sticker':
+      //   modelConfig = rs.stickerTextModel ?? rs.stickerImageModel;
+      //   break;
       case '/collage':
         modelConfig = rs.collageModel;
         break;
@@ -175,6 +175,7 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
         context,
         MaterialPageRoute(
           builder: (context) => GenerationPage(
+            showCategoryToggle: false,
             initialCategory: widget.tool.initialCategory ?? 'image',
           ),
         ),
@@ -216,7 +217,8 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                       placeholder: (context, url) => const Center(
                         child: CircularProgressIndicator(color: Colors.white),
                       ),
-                      errorWidget: (context, error, stackTrace) => const SizedBox.shrink(),
+                      errorWidget: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
                     )
                   : const Center(
                       child: CircularProgressIndicator(color: Colors.white),
@@ -265,7 +267,9 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width * 0.02,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white70,
                   shape: BoxShape.circle,
@@ -318,20 +322,6 @@ class _AiToolDemoPageState extends State<AiToolDemoPage> {
                         children: [
                           Text(
                             "Generate",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: sw * 0.045,
-                            ),
-                          ),
-                          SizedBox(width: MediaQuery.of(context).size.width * 0.01),
-                          const Icon(
-                            Icons.flash_on,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          Text(
-                            "$_creditCost",
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

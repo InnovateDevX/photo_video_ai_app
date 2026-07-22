@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
 import 'package:flutter/foundation.dart';
 import '../Core/user_session.dart';
 import '../repositories/device_repository.dart';
 import '../repositories/user_repository.dart';
+import '../repositories/subscription_ledger_repository.dart';
 
 /// Manages the user's credit balance backed by Firestore.
 /// Keeps a local in-memory cache so UI reads are instant.
@@ -46,47 +47,35 @@ class CreditService {
 
   Future<void> _doInitialize() async {
     // Use the UID resolved by AppInitializer (survives reinstall).
-    // Falls back to null if AppInitializer hasn't run yet.
-    final uid = UserSession.instance.uid;
+    // The previous version bailed silently if uid was null, which meant
+    // a purchase completing before AppInitializer finished would skip
+    // credit grants entirely. Now we wait — up to ~3s — for the uid to
+    // appear, so a purchase that fires "too early" still works.
+    String? uid = UserSession.instance.uid;
+    int attempts = 0;
+    while (uid == null && attempts < 12) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      uid = UserSession.instance.uid;
+      attempts++;
+    }
+
     if (uid == null) {
       debugPrint(
-        '⚠️ [CreditService] UserSession.uid not set — cannot initialize.',
+        '❌ [CreditService] UserSession.uid never resolved after 3s — aborting init.',
       );
+      _initFuture = null; // allow a retry next time initialize() is called
       return;
     }
 
     debugPrint('💳 [CreditService] Initializing for uid=$uid...');
 
-    // Fetch current balance from Firestore
-    final remoteCredits = await _userRepository.getCredits(uid);
-
-    if (remoteCredits == null) {
-      // User doc doesn't have credits yet — seed with initial value
-      final initial = _readInitialCreditsFromRemoteConfig();
-      debugPrint(
-        '💳 [CreditService] No credits field found — seeding with $initial',
-      );
-      await _userRepository.setCredits(uid, initial);
-      _credits = initial;
-    } else {
-      _credits = remoteCredits;
-    }
+    // Initialize balance from RemoteConfig (not linked to user document)
+    final initial = _readInitialCreditsFromRemoteConfig();
+    _credits = initial;
 
     _initialized = true;
     _creditStreamController.add(_credits);
     debugPrint('💳 [CreditService] Initialized — balance: $_credits');
-
-    // Subscribe to live Firestore updates (e.g. admin edits from console)
-    _firestoreSubscription?.cancel();
-    _firestoreSubscription = _userRepository.watchCredits(uid).listen((value) {
-      if (value != null && value != _credits) {
-        _credits = value;
-        _creditStreamController.add(_credits);
-        debugPrint(
-          '💳 [CreditService] Live update from Firestore — balance: $_credits',
-        );
-      }
-    });
   }
 
   // ── Credit operations ─────────────────────────────────────────────────────
@@ -105,9 +94,10 @@ class CreditService {
     await _persistToFirestore();
   }
 
-  /// Add [amount] credits
+  /// Add [amount] credits. Self-heals if not yet initialized.
   Future<void> addCredits(int amount) async {
     if (amount <= 0) return;
+    await initialize(); // idempotent: returns immediately if already init'd
     _credits += amount;
     _creditStreamController.add(_credits);
     debugPrint('💳 [CreditService] Added $amount — new balance: $_credits');
@@ -133,19 +123,11 @@ class CreditService {
       return;
     }
     try {
-      await _userRepository.setCredits(uid, _credits);
+      // Sync credits ONLY to subscription ledger (not user data)
+      await SubscriptionLedgerRepository().syncCredits(uid, _credits);
     } catch (e) {
       debugPrint(
-        '❌ [CreditService] Failed to persist credits to Firestore: $e',
-      );
-    }
-
-    // Keep device_map.credits in sync so future reinstalls restore correctly.
-    final deviceId = UserSession.instance.deviceId;
-    if (deviceId != null) {
-      await _deviceRepository.syncCredits(
-        deviceId: deviceId,
-        credits: _credits,
+        '❌ [CreditService] Failed to sync credits to subscription ledger: $e',
       );
     }
   }

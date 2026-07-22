@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'package:adjust_sdk/adjust.dart';
+import 'package:adjust_sdk/adjust_event.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trail_ai_app/Core/routes.dart';
+import 'package:vidzeon/Core/routes.dart';
 import 'package:video_player/video_player.dart';
-import 'package:trail_ai_app/Services/subscription_service.dart';
-import 'package:trail_ai_app/pages/paywall_page.dart';
-import 'package:trail_ai_app/Widgets/main_navigation.dart';
+import 'package:vidzeon/Services/subscription_service.dart';
+import 'package:vidzeon/pages/paywall_page.dart';
+import 'package:vidzeon/Widgets/main_navigation.dart';
+import 'package:in_app_review/in_app_review.dart';
 
 // --- Data Models ---
 
@@ -112,7 +116,6 @@ class GlowingHexagonBorder extends CustomPainter {
     return oldDelegate.isSelected != isSelected;
   }
 }
-// --- Main Onboarding Page ---
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -141,6 +144,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _selectedVideoIndex = 0;
   bool _isVideoInitialized = false;
 
+  // Rating State
+  int _rating = 0;
+
+  // Confetti State
+  late ConfettiController _confettiController;
+  bool _hasPlayedConfetti = false;
+
   // Timers
   Timer? _videoCycleTimer;
   Timer? _pageAdvanceTimer;
@@ -148,6 +158,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 1),
+    );
     _initVideo(kVideoThemes[_selectedVideoIndex].videoAsset);
     _startVideoCycleTimer();
     _startPageTimer(15); // Wait 15 seconds on the first page
@@ -156,6 +169,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void _startVideoCycleTimer() {
     _videoCycleTimer?.cancel();
     _videoCycleTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_currentPage == 0) {
         final nextIndex = (_selectedVideoIndex + 1) % kVideoThemes.length;
         _onVideoSelected(nextIndex);
@@ -166,6 +183,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void _startPageTimer(int seconds) {
     _pageAdvanceTimer?.cancel();
     _pageAdvanceTimer = Timer(Duration(seconds: seconds), () {
+      if (!mounted) return;
       _nextPage();
     });
   }
@@ -179,6 +197,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     try {
       await controller.initialize();
+      if (!mounted) {
+        controller.dispose();
+        return;
+      }
       controller.setLooping(true);
       controller.play();
       setState(() {
@@ -187,6 +209,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
       });
     } catch (e) {
       debugPrint("Video initialization failed for $path: $e");
+      if (!mounted) {
+        controller.dispose();
+        return;
+      }
       setState(() {
         _videoController = controller;
         _isVideoInitialized = false;
@@ -207,12 +233,45 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _initVideo(kVideoThemes[index].videoAsset);
   }
 
+  Future<void> _onRateApp(int rating) async {
+    // Cancel the timer so it doesn't auto-advance while processing
+    _pageAdvanceTimer?.cancel();
+
+    setState(() {
+      _rating = rating;
+    });
+
+    // Brief delay to let the user see the stars fill up
+    await Future.delayed(const Duration(milliseconds: 600));
+
+    try {
+      final InAppReview inAppReview = InAppReview.instance;
+      if (await inAppReview.isAvailable()) {
+        inAppReview.openStoreListing(); // Ensure store listing opens reliably
+      }
+    } catch (e) {
+      debugPrint("In-app review failed: $e");
+    }
+
+    if (mounted) {
+      _nextPage();
+    }
+  }
+
   void _nextPage() {
     if (_currentPage < _totalPages - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
+      _pageController
+          .nextPage(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+          )
+          .then((_) {
+            if (!mounted) return;
+            if (_currentPage == 2 && !_hasPlayedConfetti) {
+              _hasPlayedConfetti = true;
+              _confettiController.play();
+            }
+          });
     } else {
       _finishOnboarding();
     }
@@ -224,12 +283,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
       _startPageTimer(5); // 5 seconds on Rate App
     } else if (index == 2) {
       _startPageTimer(5); // 5 seconds on Trial
+      if (!_hasPlayedConfetti) {
+        _hasPlayedConfetti = true;
+        _confettiController.play();
+      }
     }
   }
 
   Future<void> _finishOnboarding() async {
     await OnboardingPage.markCompleted();
     if (mounted) {
+      AdjustEvent onboardingCompletedEvent = new AdjustEvent('vak5vz');
+
+      // Track the event
+      Adjust.trackEvent(onboardingCompletedEvent);
       final bool isPaid = SubscriptionService().isSubscribed;
       if (!isPaid) {
         // Load MainNavigation as the base route in background
@@ -239,10 +306,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         // And instantly push the PaywallPage on top of it
         Navigator.of(context).push(
           PageRouteBuilder<void>(
-            pageBuilder: (_, __, ___) => const PaywallPage(
-              isStartup: true,
-              showOnboarding: false,
-            ),
+            pageBuilder: (_, _, _) =>
+                const PaywallPage(isStartup: true, showOnboarding: false),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -255,6 +320,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   void dispose() {
+    _confettiController.dispose();
     _videoCycleTimer?.cancel();
     _pageAdvanceTimer?.cancel();
     _pageController.dispose();
@@ -275,7 +341,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Expanded(
               child: PageView(
                 controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Force using timers
+                physics:
+                    const NeverScrollableScrollPhysics(), // Force using timers
                 onPageChanged: _onPageChanged,
                 children: [
                   _buildVideoThemePage(w, h),
@@ -292,9 +359,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildBottomControls(double w, double h) {
-    if (_currentPage == 0) return const SizedBox.shrink();
-
-    final isLastPage = _currentPage == _totalPages - 1;
+    String buttonText = 'Next';
+    if (_currentPage == 0) {
+      buttonText = 'Start Creating';
+    } else if (_currentPage == _totalPages - 1) {
+      buttonText = 'Get Started';
+    }
 
     return Container(
       padding: EdgeInsets.fromLTRB(w * 0.06, h * 0.01, w * 0.06, h * 0.01),
@@ -319,7 +389,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    isLastPage ? 'Get Started' : 'Next',
+                    buttonText,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -338,261 +408,264 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildVideoThemePage(double w, double h) {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(height: h * 0.045),
 
-        // Top Video Area
-        Expanded(
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: w * 0.04),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFF161616),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white10),
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: _isVideoInitialized && _videoController != null
-                ? SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _videoController!.value.size.width,
-                        height: _videoController!.value.size.height,
-                        child: VideoPlayer(_videoController!),
+            // Top Video Area
+            Container(
+              height: h * 0.40,
+              margin: EdgeInsets.symmetric(horizontal: w * 0.04),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFF161616),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white10),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: _isVideoInitialized && _videoController != null
+                  ? SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
+                        ),
                       ),
-                    ),
-                  )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.video_library,
-                          color: Colors.white24,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "Add video at\n${kVideoThemes[_selectedVideoIndex].videoAsset}",
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 20),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 20),
 
-        // Thumbnail Row
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: w * 0.04),
-            itemCount: kVideoThemes.length,
-            itemBuilder: (context, index) {
-              final theme = kVideoThemes[index];
-              final isSelected = index == _selectedVideoIndex;
+            // Thumbnail Row
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: w * 0.04),
+                itemCount: kVideoThemes.length,
+                itemBuilder: (context, index) {
+                  final theme = kVideoThemes[index];
+                  final isSelected = index == _selectedVideoIndex;
 
-              return GestureDetector(
-                onTap: () => _onVideoSelected(index),
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 12.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Hexagon Thumbnail
-                      Container(
-                        width: 76, // 64 inner + padding
-                        height: 86, // 74 inner + padding
-                        padding: const EdgeInsets.all(
-                          6,
-                        ), // Margin for outer glow to bleed into
-                        child: CustomPaint(
-                          painter: GlowingHexagonBorder(isSelected: isSelected),
-                          child: ClipPath(
-                            clipper: HexagonClipper(),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Container(
-                                  color: const Color(0xFF2A2A2A),
-                                  child: Image.asset(
-                                    theme.thumbnailAsset,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, error, stackTrace) =>
-                                        const Center(
-                                          child: Icon(
-                                            Icons.image,
-                                            size: 20,
-                                            color: Colors.white24,
-                                          ),
-                                        ),
-                                  ),
-                                ),
-                                Container(
-                                  color: Colors.black26,
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.play_arrow,
-                                      color: Colors.white,
-                                      size: 24,
+                  return GestureDetector(
+                    onTap: () => _onVideoSelected(index),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Hexagon Thumbnail
+                          Container(
+                            width: 76, // 64 inner + padding
+                            height: 86, // 74 inner + padding
+                            padding: const EdgeInsets.all(
+                              6,
+                            ), // Margin for outer glow to bleed into
+                            child: CustomPaint(
+                              painter: GlowingHexagonBorder(
+                                isSelected: isSelected,
+                              ),
+                              child: ClipPath(
+                                clipper: HexagonClipper(),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Container(
+                                      color: const Color(0xFF2A2A2A),
+                                      child: Image.asset(
+                                        theme.thumbnailAsset,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, error, stackTrace) =>
+                                            const Center(
+                                              child: Icon(
+                                                Icons.image,
+                                                size: 20,
+                                                color: Colors.white24,
+                                              ),
+                                            ),
+                                      ),
                                     ),
-                                  ),
+                                    Container(
+                                      color: Colors.black26,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Text Area (Moved below thumbnails)
-        Text(
-          "SELECT YOUR VIDEO THEME",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: w * 0.055,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: w * 0.1),
-          child: Text(
-            "Transform your photos with top trending choreographies and visual effects in seconds.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white60,
-              fontSize: w * 0.035,
-              height: 1.4,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        
-        // Start Creating Button
-        SizedBox(
-          width: w * 0.8,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _nextPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
+                    ),
+                  );
+                },
               ),
-              elevation: 0,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Start Creating",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+            const SizedBox(height: 24),
+
+            // Text Area (Moved below thumbnails)
+            Text(
+              "SELECT YOUR VIDEO THEME",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: w * 0.055,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: w * 0.1),
+              child: Text(
+                "Transform your photos with top trending choreographies and visual effects in seconds.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: w * 0.035,
+                  height: 1.4,
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 20),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 20),
+          ],
         ),
-        const SizedBox(height: 20),
-      ],
+      ),
     );
   }
 
   Widget _buildRateAppPage(double w, double h) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.star_rounded, color: Color(0xFFFFCC80), size: 100),
-          const SizedBox(height: 24),
-          Text(
-            "Rate our App",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: w * 0.065,
-              fontWeight: FontWeight.w800,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.star_rounded, color: Color(0xFFFFCC80), size: 100),
+            const SizedBox(height: 24),
+            Text(
+              "Rate our App",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: w * 0.065,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: w * 0.1),
-            child: Text(
-              "Your feedback helps us improve and bring you more amazing features!",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white60, fontSize: w * 0.04),
+            const SizedBox(height: 12),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: w * 0.1),
+              child: Text(
+                "Your feedback helps us improve and bring you more amazing features!",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, fontSize: w * 0.04),
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-          // Fake stars
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Icon(
-                  Icons.star_border_rounded,
-                  color: Colors.white54,
-                  size: 40,
-                ),
-              );
-            }),
-          ),
-        ],
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                return GestureDetector(
+                  onTap: () => _onRateApp(index + 1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Icon(
+                      index < _rating
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: index < _rating
+                          ? const Color(0xFFFFCC80)
+                          : Colors.white54,
+                      size: 40,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTrialPage(double w, double h) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.celebration_rounded,
-            color: Color(0xFFFFCC80),
-            size: 80,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            "Your 7 day trial\nhas started",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: w * 0.07,
-              fontWeight: FontWeight.w900,
-              height: 1.2,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Page content on bottom
+        Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.celebration_rounded,
+                  color: Color(0xFFFFCC80),
+                  size: 80,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "Your 7 day trial\nhas started",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: w * 0.07,
+                    fontWeight: FontWeight.w900,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Enjoy full access to all premium features.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white60, fontSize: w * 0.04),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            "Enjoy full access to all premium features.",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white60, fontSize: w * 0.04),
+        ),
+
+        // Confetti on top with full screen fill
+        Positioned.fill(
+          child: SizedBox.expand(
+            child: Align(
+              alignment: Alignment.center,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                emissionFrequency: 0.1,
+                numberOfParticles: 40,
+                maxBlastForce: 25,
+                minBlastForce: 10,
+                gravity: 0.2,
+                colors: const [
+                  Color(0xFFFFCC80), // soft gold
+                  Color(0xFFFF9800), // orange
+                  Color(0xFFFFB74D), // warm amber
+                  Color(0xFFFFFFFF), // white
+                  Color(0xFFFF6D00), // deep orange
+                  Color(0xFFFFE082), // light gold
+                ],
+                createParticlePath: (size) {
+                  final path = Path();
+                  path.addOval(
+                    Rect.fromCircle(center: Offset.zero, radius: 10),
+                  );
+                  return path;
+                },
+              ),
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

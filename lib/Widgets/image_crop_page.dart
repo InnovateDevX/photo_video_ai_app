@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
 
 /// A full-screen crop page that wraps [ImageCropper].
 ///

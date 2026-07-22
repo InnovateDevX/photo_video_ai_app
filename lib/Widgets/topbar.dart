@@ -1,189 +1,81 @@
-import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Core/routes.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
 
-class TopBar extends StatefulWidget {
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/pages/profile_page.dart';
+import 'package:vidzeon/Widgets/pro_pill.dart';
+
+/// The home top bar.
+///
+/// Shows the VidZeon title, a Pro pill that opens the paywall when the user
+/// isn't subscribed (or a static "PRO" badge when they are), and the profile
+/// avatar.
+class TopBar extends StatelessWidget {
   const TopBar({super.key});
 
   @override
-  State<TopBar> createState() => _TopBarState();
-}
-
-class _TopBarState extends State<TopBar> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late StreamSubscription<int> _deductionSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.15,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.15,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.bounceIn)),
-        weight: 60,
-      ),
-    ]).animate(_controller);
-
-    _deductionSubscription = CreditService().onCreditDeducted.listen((_) {
-      if (mounted) {
-        _controller.forward(from: 0.0);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _deductionSubscription.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return StreamBuilder<int>(
-      stream: CreditService().creditStream,
-      initialData: CreditService().credits,
-      builder: (context, snapshot) {
-        final credits = snapshot.data ?? 0;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(width: width * 0.03),
-            Flexible(
-              child: Text(
-                'ai_generate_title'.i18n(),
-                style: TextStyle(
-                  fontSize: width * 0.055,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textColor(isDark),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(width: width * 0.03),
+        Flexible(
+          child: Text(
+            'VidZeon',
+            style: TextStyle(
+              fontSize: width * 0.055,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
+              color: AppColors.textColor(isDark),
             ),
-            const Spacer(),
-            Container(
-              alignment: Alignment.centerRight,
-              margin: EdgeInsets.symmetric(horizontal: width * 0.01),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.paywall);
-                    },
+            maxLines: 2,
+          ),
+        ),
+        const Spacer(),
+        // Pro pill — opens paywall if not subscribed.
+        ProPill(w: width, h: height, isDark: isDark),
+        SizedBox(width: width * 0.015),
+        Container(
+          alignment: Alignment.centerRight,
+          margin: EdgeInsets.only(right: width * 0.03),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Profile Photo
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(2), // Gradient outline width
+                  decoration: const ProGradientDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: width * 0.045,
+                    backgroundColor: isDark
+                        ? const Color(0xFF1E1E1E)
+                        : Colors.grey.shade300,
                     child: Icon(
-                      Icons.card_giftcard,
-                      color: AppColors.iconColor(isDark),
-                      size: width * 0.06,
+                      Icons.person,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      size: width * 0.055,
                     ),
                   ),
-                  SizedBox(width: width * 0.01),
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.paywall);
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(width * 0.05),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                          child: Container(
-                            height: height * 0.05,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : Colors.white.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(width * 0.05),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.15)
-                                    : Colors.white.withValues(alpha: 0.5),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.max,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  alignment: Alignment.center,
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: width * 0.03,
-                                    vertical: height * 0.006,
-                                  ),
-                                  decoration: ProGradientDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      width * 0.05,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'pro'.i18n(),
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize:
-                                          MediaQuery.of(context).size.width *
-                                          0.04,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: width * 0.005),
-                                Icon(
-                                  Icons.flash_on,
-                                  size: width * 0.04,
-                                  color: AppColors.textColor(isDark),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.only(right: width * 0.03),
-                                  child: Text(
-                                    '$credits',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textColor(isDark),
-                                      fontSize: width * 0.035,
-                                    ),
-                                    maxLines: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

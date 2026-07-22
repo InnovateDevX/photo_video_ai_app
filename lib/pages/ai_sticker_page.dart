@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/strings.dart'; // non-translatable
+import 'package:vidzeon/Core/gradient.dart';
 import 'dart:io';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/generation_gate.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
 
-import 'package:trail_ai_app/pages/ai_background_page.dart';
-import 'package:trail_ai_app/pages/ai_loading_screen.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/generation_gate.dart';
+
+import 'package:vidzeon/pages/ai_background_page.dart';
+import 'package:vidzeon/pages/ai_loading_screen.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
+import 'package:vidzeon/Widgets/ai_suggestion_box.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -35,7 +36,7 @@ class _AiStickerPageState extends State<AiStickerPage>
   String _selectedMood = 'Happy'; // Happy, Sad, Angry
 
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
+
   final CreditService _creditService = CreditService();
 
   _PageState _pageState = _PageState.selection;
@@ -88,13 +89,13 @@ class _AiStickerPageState extends State<AiStickerPage>
     if (_isTextMode && _promptController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('enter_text'.i18n())));
+      ).showSnackBar(SnackBar(content: Text('Enter text...')));
       return;
     }
     if (!_isTextMode && _selectedImage == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('choose_image'.i18n())));
+      ).showSnackBar(SnackBar(content: Text('Choose image')));
       return;
     }
 
@@ -105,7 +106,7 @@ class _AiStickerPageState extends State<AiStickerPage>
     if (model == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('no_model_selected'.i18n())));
+      ).showSnackBar(SnackBar(content: Text('No model selected or available')));
       return;
     }
 
@@ -156,7 +157,7 @@ class _AiStickerPageState extends State<AiStickerPage>
 
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
+
       creditService: _creditService,
       creditCost: model.creditUsed,
     );
@@ -190,10 +191,13 @@ class _AiStickerPageState extends State<AiStickerPage>
         await _creditService.deductCredits(model.creditUsed);
 
         if (mounted) {
-          ScaffoldMessenger.of(
+          showThemedDialog(
             context,
-          ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
-
+            title: 'Success',
+            message: 'Credits deducted',
+            icon: Icons.check_circle_outline,
+            iconColor: Colors.green,
+          );
           _progressController.stop();
           setState(() {
             _generatedImageUrl = url;
@@ -437,7 +441,7 @@ class _AiStickerPageState extends State<AiStickerPage>
         resultImageUrl: _generatedImageUrl!,
         isNsfw: _isNsfw,
         fit: BoxFit.contain,
-        customActionLabel: 'background_ai'.i18n(),
+        customActionLabel: 'Background AI',
         customActionIcon: Icons.layers_clear,
         onCustomAction: () => Navigator.push(
           context,
@@ -470,21 +474,20 @@ class _AiStickerPageState extends State<AiStickerPage>
         body: SafeArea(
           child: Column(
             children: [
-
               _buildTopBar(
                 isDark: isDark,
                 title: switch (_pageState) {
-                  _PageState.loading => 'generating'.i18n(),
-                  _PageState.result => 'sticker_ready'.i18n(),
-                  _PageState.selection => 'sticker_title'.i18n(),
+                  _PageState.loading => 'Generating',
+                  _PageState.result => 'Sticker Ready',
+                  _PageState.selection => 'Create Your Sticker',
                 },
                 subtitle: switch (_pageState) {
-                  _PageState.loading => 'sticker_text_desc'.i18n(),
-                  _PageState.result => 'big_sticker_preview'.i18n(),
+                  _PageState.loading => 'I turn this text into a sticker',
+                  _PageState.result => 'Big sticker preview',
                   _PageState.selection =>
                     _isTextMode
-                        ? 'sticker_text_desc'.i18n()
-                        : 'sticker_image_desc'.i18n(),
+                        ? 'I turn this text into a sticker'
+                        : 'I turn this photo into a sticker',
                 },
                 onBack: switch (_pageState) {
                   _PageState.loading => () {
@@ -503,12 +506,10 @@ class _AiStickerPageState extends State<AiStickerPage>
                   _PageState.loading => AILoadingScreen(
                     selectedImage: _isTextMode ? null : _selectedImage,
                     progressAnimation: _progressAnimation,
-                    aiTips: AppStrings.stickerAiTips
-                        .map((e) => e.i18n())
-                        .toList(),
-                    processingTitle: 'processing_title'.i18n(),
-                    applyingText: 'generating_sticker'.i18n(),
-                    waitText: 'take_few_seconds'.i18n(),
+                    aiTips: AppStrings.stickerAiTips,
+                    processingTitle: 'Processing ...',
+                    applyingText: 'Generating your sticker...',
+                    waitText: 'This may take a few seconds..',
                     customLogoAsset: 'assets/images/Sticker_logo.webp',
                     onCancel: () {
                       final sw = MediaQuery.of(context).size.width;
@@ -562,7 +563,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                             : null,
                         child: Center(
                           child: Text(
-                            'sticker_text_toggle'.i18n(),
+                            'Text',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: _isTextMode
@@ -588,7 +589,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                             : null,
                         child: Center(
                           child: Text(
-                            'sticker_image_toggle'.i18n(),
+                            'Images',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: !_isTextMode
@@ -625,7 +626,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                   expands: true,
                   style: TextStyle(color: AppColors.textColor(isDark)),
                   decoration: InputDecoration(
-                    hintText: 'prompt_hint'.i18n(),
+                    hintText: 'eg. an astronaut flying through a galaxy',
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     border: InputBorder.none,
                   ),
@@ -694,7 +695,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                                 ),
                                 SizedBox(height: h * 0.01),
                                 Text(
-                                  'tap_to_select_gallery'.i18n(),
+                                  'Tap to select from gallery',
                                   style: TextStyle(
                                     fontSize: w * 0.035,
                                     color: isDark
@@ -716,7 +717,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                                       ),
                                     ),
                                     child: Text(
-                                      'choose_image'.i18n(),
+                                      'Choose image',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -753,59 +754,14 @@ class _AiStickerPageState extends State<AiStickerPage>
             SizedBox(height: h * 0.02),
 
             // --- AI Suggestion Card ---
-            Container(
-              padding: EdgeInsets.all(w * 0.04),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[900] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(w * 0.06),
-                border: Border.all(
-                  color: isDark ? Colors.white10 : Colors.grey[300]!,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: Colors.brown,
-                        size: w * 0.05,
-                      ),
-                      SizedBox(width: w * 0.02),
-                      Text(
-                        'ai_suggestion'.i18n(),
-                        style: TextStyle(
-                          fontSize: w * 0.04,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textColor(isDark),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: h * 0.015),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(w * 0.03),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[800] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(w * 0.025),
-                    ),
-                    child: Text(
-                      'sticker_suggestion_desc'.i18n(),
-                      style: TextStyle(
-                        fontSize: w * 0.032,
-                        color: AppColors.secondaryTextColor(isDark),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            AiSuggestionBox(
+              text: AppStrings.stickerSuggestionDesc,
+              isDark: isDark,
             ),
 
             SizedBox(height: h * 0.02),
             Text(
-              'artistic_style'.i18n(),
+              'Artistic Style:',
               style: TextStyle(
                 fontSize: w * 0.045,
                 fontWeight: FontWeight.bold,
@@ -838,7 +794,7 @@ class _AiStickerPageState extends State<AiStickerPage>
             ),
             SizedBox(height: h * 0.015),
             Text(
-              'mood'.i18n(),
+              'Mood:',
               style: TextStyle(
                 fontSize: w * 0.045,
                 fontWeight: FontWeight.bold,
@@ -885,7 +841,7 @@ class _AiStickerPageState extends State<AiStickerPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '${'sticker_button_text'.i18n()} ${(_isTextMode ? _replicateService.stickerTextModel : _replicateService.stickerImageModel)?.creditUsed ?? 0}',
+                        'Generate ⚡',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

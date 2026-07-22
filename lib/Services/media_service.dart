@@ -5,17 +5,20 @@ import 'package:http/http.dart' as http;
 import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:localization/localization.dart';
+
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'background_generation_service.dart';
 import 'notification_service.dart';
 import 'local_storage_service.dart';
+import 'remote_config_service.dart';
 import '../Models/generated_asset.dart';
+import '../Widgets/themed_dialog.dart';
 
 class MediaService {
-  /// Downloads an image from a URL and saves it to the "Trail AI" gallery album.
+  /// Downloads an image from a URL and saves it to the "VidZeon" gallery album.
   /// Returns the local File if successful.
   static Future<File?> downloadImage(
     BuildContext context,
@@ -42,17 +45,17 @@ class MediaService {
         filePath = imageUrl;
       }
 
-
       final success = await GallerySaver.saveImage(
         filePath,
-        albumName: 'Trail AI',
+        albumName: 'VidZeon',
       );
       if (context.mounted && success == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Saved to gallery!'),
-            backgroundColor: Colors.green,
-          ),
+        showThemedDialog(
+          context,
+          title: 'Success',
+          message: 'Saved to gallery!',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
         );
         return File(filePath);
       } else if (context.mounted) {
@@ -62,12 +65,12 @@ class MediaService {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'download_failed'.i18n()}${e.toString()}')),
+          SnackBar(content: Text('Download failed${e.toString()}')),
         );
       } else {
         // Fallback to global notification if context is lost
         BackgroundGenerationService().reportFailure(
-          '${'download_failed'.i18n()}${e.toString()}',
+          'Download failed${e.toString()}',
         );
       }
       return null;
@@ -100,17 +103,17 @@ class MediaService {
         filePath = videoUrl;
       }
 
-
       final success = await GallerySaver.saveVideo(
         filePath,
-        albumName: 'Trail AI',
+        albumName: 'VidZeon',
       );
       if (context.mounted && success == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Video saved to gallery!'),
-            backgroundColor: Colors.green,
-          ),
+        showThemedDialog(
+          context,
+          title: 'Success',
+          message: 'Video saved to gallery!',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
         );
         return File(filePath);
       } else if (context.mounted) {
@@ -119,15 +122,34 @@ class MediaService {
       return null;
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'download_failed'.i18n()}${e.toString()}')),
+        showThemedDialog(
+          context,
+          title: 'Error',
+          message: 'Download failed${e.toString()}',
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
         );
       } else {
         BackgroundGenerationService().reportFailure(
-          '${'download_failed'.i18n()}${e.toString()}',
+          'Download failed${e.toString()}',
         );
       }
       return null;
+    }
+  }
+
+  /// Helper to append the app link to the shared text
+  static Future<String> _getShareTextWithAppLink(String baseText) async {
+    try {
+      String url = RemoteConfigService().shareAppUrl;
+      if (url.isEmpty) {
+        final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        final String packageName = packageInfo.packageName;
+        url = "https://play.google.com/store/apps/details?id=$packageName";
+      }
+      return "$baseText\n\nDownload this awesome app: $url";
+    } catch (_) {
+      return baseText;
     }
   }
 
@@ -149,19 +171,21 @@ class MediaService {
         filePath = imageUrl;
       }
 
+      final String baseText = shareText ?? 'Check my AI outfit! ✨';
+      final String finalText = await _getShareTextWithAppLink(baseText);
 
-      await Share.shareXFiles([
-        XFile(filePath),
-      ], text: shareText ?? 'share_outfit_text'.i18n());
+      await Share.shareXFiles([XFile(filePath)], text: finalText);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        showThemedDialog(
           context,
-        ).showSnackBar(SnackBar(content: Text('${'share_failed'.i18n()}$e')));
-      } else {
-        BackgroundGenerationService().reportFailure(
-          '${'share_failed'.i18n()}$e',
+          title: 'Error',
+          message: 'Share failed$e',
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
         );
+      } else {
+        BackgroundGenerationService().reportFailure('Share failed$e');
       }
     }
   }
@@ -184,22 +208,22 @@ class MediaService {
         filePath = videoUrl;
       }
 
+      final String baseText =
+          shareText ?? 'Check out this video I generated with VidZeon!';
+      final String finalText = await _getShareTextWithAppLink(baseText);
 
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        text:
-            shareText ??
-            'Check out this video I generated with Trail AI!'.i18n(),
-      );
+      await Share.shareXFiles([XFile(filePath)], text: finalText);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        showThemedDialog(
           context,
-        ).showSnackBar(SnackBar(content: Text('${'share_failed'.i18n()}$e')));
-      } else {
-        BackgroundGenerationService().reportFailure(
-          '${'share_failed'.i18n()}$e',
+          title: 'Error',
+          message: 'Share failed$e',
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
         );
+      } else {
+        BackgroundGenerationService().reportFailure('Share failed$e');
       }
     }
   }
@@ -296,7 +320,7 @@ class MediaService {
         );
         await LocalStorageService().saveAsset(asset);
         NotificationService().showGenerationCompleteNotification(
-          title: 'Trail AI Studio',
+          title: 'VidZeon',
           body:
               '✅ ${category == 'video' ? 'Video' : 'Image'} saved successfully!',
           payload: asset.id,
@@ -338,7 +362,7 @@ class MediaService {
     } catch (e) {
       debugPrint('❌ [MediaService] Failed to queue background download: $e');
       NotificationService().showGenerationCompleteNotification(
-        title: 'Trail AI Studio',
+        title: 'VidZeon',
         body: 'Failed to start downloading $category.',
       );
     }

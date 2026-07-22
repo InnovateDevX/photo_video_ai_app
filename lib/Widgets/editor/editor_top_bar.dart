@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
 
 /// Custom top bar widget for the image editor
 /// Provides undo, redo, reset, and done actions

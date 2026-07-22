@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -25,9 +28,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -40,49 +49,20 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCOmApFMqxJAOF3u7vrkeSnDK8xj2G_glI',
-    appId: '1:878335239927:web:b15a36863df1c4368a95f2',
-    messagingSenderId: '878335239927',
-    projectId: 'imagegen-trail',
-    authDomain: 'imagegen-trail.firebaseapp.com',
-    storageBucket: 'imagegen-trail.firebasestorage.app',
-    measurementId: 'G-YL6CFFCZ2Y',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBiEKEi6jbAXiDndhyq9GqrZJ0SvgbC7IQ',
-    appId: '1:878335239927:android:263634b1a789a19e8a95f2',
-    messagingSenderId: '878335239927',
-    projectId: 'imagegen-trail',
-    storageBucket: 'imagegen-trail.firebasestorage.app',
+    apiKey: 'AIzaSyDljx5v7lF-Jf_qgDOnbVSXz1UUgAaW3ZY',
+    appId: '1:160697788254:android:78fbaae648cf9504a251cf',
+    messagingSenderId: '160697788254',
+    projectId: 'ai-video-generator-c09ff',
+    storageBucket: 'ai-video-generator-c09ff.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBgNsj58I5lTHshyIPDxIGbwhqN_ZJjM7A',
-    appId: '1:878335239927:ios:dc1cda6f874a5a038a95f2',
-    messagingSenderId: '878335239927',
-    projectId: 'imagegen-trail',
-    storageBucket: 'imagegen-trail.firebasestorage.app',
-    iosBundleId: 'com.example.trailAiApp',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBgNsj58I5lTHshyIPDxIGbwhqN_ZJjM7A',
-    appId: '1:878335239927:ios:dc1cda6f874a5a038a95f2',
-    messagingSenderId: '878335239927',
-    projectId: 'imagegen-trail',
-    storageBucket: 'imagegen-trail.firebasestorage.app',
-    iosBundleId: 'com.example.trailAiApp',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDncGJeA3FtRy2aL94plnmXnXWnZIHspGY',
-    appId: '1:878335239927:web:584efea4a332aca18a95f2',
-    messagingSenderId: '878335239927',
-    projectId: 'imagegen-trail',
-    authDomain: 'imagegen-trail.firebaseapp.com',
-    storageBucket: 'imagegen-trail.firebasestorage.app',
-    measurementId: 'G-HN75QB64GM',
+    apiKey: 'AIzaSyALf01h3-xYh1ZF7OgjZkO8fjXzpKzEQRA',
+    appId: '1:160697788254:ios:a3b13ae4b2bdd2fea251cf',
+    messagingSenderId: '160697788254',
+    projectId: 'ai-video-generator-c09ff',
+    storageBucket: 'ai-video-generator-c09ff.firebasestorage.app',
+    iosBundleId: 'com.bravcotech.vidZeon.ai.video.generator',
   );
 }

@@ -83,11 +83,18 @@ void onStart(ServiceInstance service) async {
 
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
+        String notificationBody = 'Processing...';
+        if (pending.isNotEmpty) {
+          notificationBody = 'Generating ${pending.length} item(s) in background...';
+        } else if (pendingDownloads.isNotEmpty || _activeDownloads.isNotEmpty) {
+          notificationBody = 'Saving media to gallery...';
+        }
+
         // Keep the sticky notification updated with the number of pending tasks
         _flutterLocalNotificationsPlugin.show(
           id: 888, // Foreground service notification ID
-          title: 'Trail AI Studio',
-          body: 'Generating ${pending.length} item(s) in background...',
+          title: 'VidZeon',
+          body: notificationBody,
           notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'ai_generation_channel',
@@ -161,7 +168,7 @@ void onStart(ServiceInstance service) async {
 
           _showProgressNotification(
             id: notificationId,
-            title: 'Trail AI Studio',
+            title: 'VidZeon',
             body: 'Generating $category ($percent%)...',
             progress: percent,
           );
@@ -190,7 +197,7 @@ void onStart(ServiceInstance service) async {
           await _flutterLocalNotificationsPlugin.cancel(id: notificationId);
 
           _showCompletionNotification(
-            title: 'Trail AI Studio',
+            title: 'VidZeon',
             body: 'Background $category generation failed.',
           );
         }
@@ -273,7 +280,7 @@ Future<void> _downloadAndSaveAsset({
       await prefs.setStringList('background_completed_assets', completed);
 
       _showCompletionNotification(
-        title: 'Trail AI Studio',
+        title: 'VidZeon',
         body: 'Your $category generation is complete!',
       );
     }
@@ -345,7 +352,7 @@ Future<void> _processDownload(
   try {
     _showProgressNotification(
       id: notificationId,
-      title: 'Trail AI Studio',
+      title: 'VidZeon',
       body: 'Saving $category...',
       progress: 0,
     );
@@ -372,7 +379,7 @@ Future<void> _processDownload(
           lastPercent = percent;
           _showProgressNotification(
             id: notificationId,
-            title: 'Trail AI Studio',
+            title: 'VidZeon',
             body: 'Saving $category ($percent%)...',
             progress: percent,
           );
@@ -404,14 +411,14 @@ Future<void> _processDownload(
     await prefs.setStringList('background_completed_assets', completed);
 
     _showCompletionNotification(
-      title: 'Trail AI Studio',
+      title: 'VidZeon',
       body: '✅ ${category == 'video' ? 'Video' : 'Image'} saved successfully!',
     );
   } catch (e) {
     debugPrint('❌ [ForegroundTask] Background download failed: $e');
     await _flutterLocalNotificationsPlugin.cancel(id: notificationId);
     _showCompletionNotification(
-      title: 'Trail AI Studio',
+      title: 'VidZeon',
       body: 'Failed to save $category',
     );
   } finally {

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:trail_ai_app/Widgets/collage_grid.dart';
+import 'package:vidzeon/Widgets/collage_grid.dart';
 import 'package:image_collage_widget/utils/collage_type.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Models/collage_template.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
 
-import 'package:trail_ai_app/pages/ai_loading_screen.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Models/collage_template.dart';
+
+import 'package:vidzeon/pages/ai_loading_screen.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
 import '../Services/collage_bloc.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -28,8 +27,7 @@ class AiCollagePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          CollageBloc(adService: AdService(), creditService: CreditService()),
+      create: (_) => CollageBloc(creditService: CreditService()),
       child: const _AiCollageView(),
     );
   }
@@ -206,7 +204,7 @@ class _AiCollageViewState extends State<_AiCollageView>
           _progressController.stop();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${'error'.i18n()}${state.message}')),
+              SnackBar(content: Text('Error${state.message}')),
             );
           }
         }
@@ -226,7 +224,6 @@ class _AiCollageViewState extends State<_AiCollageView>
             child: Column(
               children: [
                 // ── Global credits top-bar ──
-
                 SizedBox(height: MediaQuery.of(context).size.height * 0.015),
 
                 // ── Page-level top bar ──
@@ -278,13 +275,13 @@ class _AiCollageViewState extends State<_AiCollageView>
                               );
                             },
                             aiTips: [
-                              'collage_ai_tips_1'.i18n(),
-                              'collage_ai_tips_2'.i18n(),
-                              'collage_ai_tips_3'.i18n(),
+                              'Use a mix of Photos',
+                              'Face clearly visible.',
+                              'Include diverse scenes',
                             ],
-                            processingTitle: 'processing_photos'.i18n(),
-                            applyingText: 'uploading_photo'.i18n(),
-                            waitText: 'checking_image_quality'.i18n(),
+                            processingTitle: 'processing_photos',
+                            applyingText: 'uploading_photo',
+                            waitText: 'checking_image_quality',
                           ),
                         ),
 
@@ -374,7 +371,7 @@ class _AiCollageViewState extends State<_AiCollageView>
 
             // ── Template strip ─────────────────────────────────────────
             Text(
-              'suggested_templates'.i18n(),
+              'Suggested Templates:',
               style: TextStyle(
                 fontSize: w * 0.04,
                 fontWeight: FontWeight.bold,
@@ -441,7 +438,7 @@ class _AiCollageViewState extends State<_AiCollageView>
 
             Center(
               child: Text(
-                'upscale_processing_time'.i18n(),
+                'Estimated processing time 5-10 seconds',
                 style: TextStyle(
                   fontSize: w * 0.03,
                   color: AppColors.secondaryTextColor(isDark),
@@ -489,7 +486,7 @@ class _AiCollageViewState extends State<_AiCollageView>
                           ),
                         )
                       : Text(
-                          'Save Collage ⚡ ${CollageBloc.kCollageCreditCost}',
+                          'Save Collage',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -527,13 +524,13 @@ class _TopBar extends StatelessWidget {
 
   String get _subtitle {
     if (state is CollageCheckingGate || state is CollageRendering) {
-      return 'generating_collage'.i18n();
+      return 'Processing Photos';
     }
     if (state is CollageResult) return 'Check the result';
     if (imageCount != null) {
       return '$imageCount images';
     }
-    return 'pic_collage_desc'.i18n();
+    return 'Create stunning photo collages\nwith AI';
   }
 
   @override
@@ -555,7 +552,7 @@ class _TopBar extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'pic_collage_title'.i18n(),
+                  'Pic Collage',
                   style: TextStyle(
                     fontSize: sw * 0.048,
                     fontWeight: FontWeight.bold,

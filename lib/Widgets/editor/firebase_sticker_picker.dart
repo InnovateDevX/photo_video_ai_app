@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
-import 'package:trail_ai_app/Services/firebase_sticker_service.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
+import 'package:vidzeon/Services/firebase_sticker_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';

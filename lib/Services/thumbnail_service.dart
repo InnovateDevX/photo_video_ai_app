@@ -1,20 +1,21 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:trail_ai_app/Models/generated_asset.dart';
-import 'package:trail_ai_app/Models/reel.dart';
-import 'package:trail_ai_app/Models/user_asset.dart';
-import 'package:trail_ai_app/Services/local_storage_service.dart';
+import 'package:vidzeon/Models/generated_asset.dart';
+import 'package:vidzeon/Models/reel.dart';
+import 'package:vidzeon/Models/user_asset.dart';
+import 'package:vidzeon/Services/local_storage_service.dart';
 
 class ThumbnailService {
   static final ThumbnailService _instance = ThumbnailService._internal();
   factory ThumbnailService() => _instance;
   ThumbnailService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   /// Extracts the first frame of a video (URL or local path) and saves it to a file.

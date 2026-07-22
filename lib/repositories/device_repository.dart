@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -11,7 +12,7 @@ class DeviceRepository {
   final FirebaseFirestore _firestore;
 
   DeviceRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
 
   // ── Read ───────────────────────────────────────────────────────────────────
 
@@ -49,14 +50,13 @@ class DeviceRepository {
     required WriteBatch batch,
     required String deviceId,
     required String uid,
-    required int credits,
+    int? credits,
   }) {
     debugPrint(
-      '💾 [DeviceRepository] createMapping($deviceId → $uid, credits=$credits)',
+      '💾 [DeviceRepository] createMapping($deviceId → $uid)',
     );
     batch.set(_firestore.collection('device_map').doc(deviceId), {
       'uid': uid,
-      'credits': credits,
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     });
@@ -66,15 +66,14 @@ class DeviceRepository {
   Future<void> migrateMapping({
     required String deviceId,
     required String newUid,
-    required int credits,
+    int? credits,
   }) async {
     debugPrint(
-      '♻️  [DeviceRepository] migrateMapping($deviceId → $newUid, credits=$credits)',
+      '♻️  [DeviceRepository] migrateMapping($deviceId → $newUid)',
     );
     try {
       await _firestore.collection('device_map').doc(deviceId).update({
         'uid': newUid,
-        'credits': credits,
         'updated_at': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -83,23 +82,11 @@ class DeviceRepository {
     }
   }
 
-  /// Syncs the current credit balance into device_map so future restores
-  /// can read it.  Called by CreditService after every credit change.
+  /// Syncs credits to device_map (No-op: credits are managed via SubscriptionLedgerRepository)
   Future<void> syncCredits({
     required String deviceId,
     required int credits,
   }) async {
-    debugPrint(
-      '💾 [DeviceRepository] syncCredits($deviceId, credits=$credits)',
-    );
-    try {
-      await _firestore.collection('device_map').doc(deviceId).update({
-        'credits': credits,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      // Non-fatal: credit sync failure only affects the NEXT reinstall.
-      debugPrint('⚠️  [DeviceRepository] syncCredits failed (non-fatal): $e');
-    }
+    // Credits are not stored on device_map
   }
 }

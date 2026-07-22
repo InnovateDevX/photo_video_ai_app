@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Services/reel_service.dart';
+import 'package:vidzeon/Core/colors.dart';
+
+import 'package:vidzeon/Services/reel_service.dart';
 
 class StatsRow extends StatelessWidget {
   final double w;
@@ -39,7 +39,7 @@ class StatsRow extends StatelessWidget {
                   h,
                   isDark,
                   Icons.download_outlined,
-                  '${saved.length} ${'downloads_stat_label'.i18n()}',
+                  '${saved.length} Downloads',
                 );
               },
             ),
@@ -55,7 +55,7 @@ class StatsRow extends StatelessWidget {
                   h,
                   isDark,
                   Icons.star_border,
-                  '${liked.length} ${'liked_stat_label'.i18n()}',
+                  '${liked.length} Liked',
                 );
               },
             ),

@@ -1,23 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
-import 'package:trail_ai_app/Models/filter_style.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/generation_gate.dart';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/strings.dart'; // non-translatable
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Models/filter_style.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/generation_gate.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
 
-import 'package:trail_ai_app/pages/ai_loading_screen.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
-import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
+import 'package:vidzeon/pages/ai_loading_screen.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Widgets/cancel_dialog.dart';
+import 'package:vidzeon/Widgets/ai_suggestion_box.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 enum _PageState { selection, loading, result }
@@ -36,7 +36,7 @@ class _AiFilterPageState extends State<AiFilterPage>
   FilterStyle? _selectedStyle;
 
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
+
   final CreditService _creditService = CreditService();
   final RemoteConfigService _remoteConfig = RemoteConfigService();
 
@@ -126,7 +126,6 @@ class _AiFilterPageState extends State<AiFilterPage>
 
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: model.creditUsed,
     );
@@ -152,9 +151,13 @@ class _AiFilterPageState extends State<AiFilterPage>
       if (url.isNotEmpty) {
         await _creditService.deductCredits(model.creditUsed);
         if (mounted) {
-          ScaffoldMessenger.of(
+          showThemedDialog(
             context,
-          ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
+            title: 'Success',
+            message: 'Credits deducted',
+            icon: Icons.check_circle_outline,
+            iconColor: Colors.green,
+          );
           _progressController.stop();
           setState(() {
             _generatedImageUrl = url;
@@ -181,7 +184,7 @@ class _AiFilterPageState extends State<AiFilterPage>
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+            SnackBar(content: Text('Error${e.toString()}')),
           );
         }
       }
@@ -230,19 +233,16 @@ class _AiFilterPageState extends State<AiFilterPage>
         body: SafeArea(
           child: Column(
             children: [
-
               _buildCustomNav(isDark),
               Expanded(
                 child: switch (_pageState) {
                   _PageState.loading => AILoadingScreen(
                     selectedImage: _selectedImage,
                     progressAnimation: _progressAnimation,
-                    aiTips: AppStrings.stickerAiTips
-                        .map((e) => e.i18n())
-                        .toList(),
-                    processingTitle: 'filter_processing'.i18n(),
-                    applyingText: 'filter_applying'.i18n(),
-                    waitText: 'take_few_seconds'.i18n(),
+                    aiTips: AppStrings.stickerAiTips,
+                    processingTitle: 'Creating Art...',
+                    applyingText: 'Applying selected style to your photo.',
+                    waitText: 'This may take a few seconds..',
                     onCancel: _showCancelWarningDialog,
                   ),
                   _PageState.result => const SizedBox.shrink(),
@@ -274,7 +274,7 @@ class _AiFilterPageState extends State<AiFilterPage>
             child: Column(
               children: [
                 Text(
-                  'ai_filter_title'.i18n(),
+                  'AI Style Filters',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -282,7 +282,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                   ),
                 ),
                 Text(
-                  'ai_filter_desc'.i18n(),
+                  'Transform your photo into art within AI filters',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.secondaryTextColor(isDark),
@@ -364,7 +364,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                                     MediaQuery.of(context).size.height * 0.01,
                               ),
                               Text(
-                                'tap_to_select_gallery'.i18n(),
+                                'Tap to select from gallery',
                                 style: TextStyle(color: Colors.grey[500]),
                               ),
                               SizedBox(
@@ -384,7 +384,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                                     ),
                                   ),
                                   child: Text(
-                                    'choose_image'.i18n(),
+                                    'Choose image',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
@@ -436,61 +436,14 @@ class _AiFilterPageState extends State<AiFilterPage>
             ),
             SizedBox(height: h * 0.02),
             // Suggestion
-            Container(
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[900] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(
-                  MediaQuery.of(context).size.width * 0.05,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.lightbulb,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
-                      SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                      Text(
-                        'ai_suggestion'.i18n(),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textColor(isDark),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(
-                      MediaQuery.of(context).size.width * 0.03,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[800] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(
-                        MediaQuery.of(context).size.width * 0.02,
-                      ),
-                    ),
-                    child: Text(
-                      'ai_filter_suggestion'.i18n(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondaryTextColor(isDark),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            AiSuggestionBox(
+              text: AppStrings.aiFilterSuggestion,
+              isDark: isDark,
             ),
             SizedBox(height: h * 0.02),
             // Artistic Style
             Text(
-              'artistic_style'.i18n(),
+              'Artistic Style:',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -603,7 +556,7 @@ class _AiFilterPageState extends State<AiFilterPage>
                 ),
                 child: Center(
                   child: Text(
-                    '${'generate_filter'.i18n()} ${_replicateService.filterModel?.creditUsed ?? 0}',
+                    'Generate ⚡',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

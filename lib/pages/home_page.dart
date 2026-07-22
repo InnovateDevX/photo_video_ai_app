@@ -1,21 +1,23 @@
-import 'package:trail_ai_app/Models/category_image.dart';
-import 'package:trail_ai_app/Models/reel.dart';
-import 'package:trail_ai_app/Widgets/topbar.dart';
+import 'package:adjust_sdk/adjust_event.dart';
+import 'package:adjust_sdk/adjust.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:vidzeon/Models/category_image.dart';
+import 'package:vidzeon/Models/reel.dart';
+import 'package:vidzeon/Widgets/topbar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
-import 'package:trail_ai_app/Services/thumbnail_service.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
+import 'package:vidzeon/Services/thumbnail_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:trail_ai_app/pages/generation_page.dart';
-
-import 'package:trail_ai_app/pages/trending_see_all_page.dart';
-import 'package:trail_ai_app/pages/category_preview_page.dart';
+import '../Widgets/firebase_image.dart';
+import 'package:vidzeon/pages/generation_page.dart';
+import 'package:vidzeon/pages/trending_see_all_page.dart';
+import 'package:vidzeon/pages/category_preview_page.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:shimmer/shimmer.dart';
-import 'package:localization/localization.dart';
 import '../Core/directory.dart';
 import '../Core/routes.dart';
 import '../Core/gradient.dart';
@@ -23,7 +25,7 @@ import '../Core/colors.dart';
 import '../Services/credit_service.dart';
 import '../Services/data_service.dart';
 import '../Widgets/main_navigation.dart';
-import '../Widgets/ai_tools_grid.dart';
+import 'package:vidzeon/Widgets/ai_tools_grid.dart';
 // NOTE: ReelVideoPlayer is used in this file for the top trending carousel,
 // but category lists show static thumbnails.
 import '../Widgets/reel_video_player.dart' show ReelVideoPlayer;
@@ -96,15 +98,24 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
+    AdjustEvent homePageOpenEvent = new AdjustEvent('fw8gsr');
+
+    // Track the event
+    Adjust.trackEvent(homePageOpenEvent);
     CreditService().initialize();
     _trendingPageController = PageController(viewportFraction: 0.88);
 
     final dataService = DataService();
+    // Always load cached categories immediately for fast display
     if (dataService.categories.isNotEmpty) {
       categories = List.from(dataService.categories);
     } else {
       _fetchCategories();
     }
+
+    // Always run a background refresh to pick up any newly added categories
+    // from Remote Config without requiring a reinstall or cache clear.
+    _refreshCategoriesInBackground();
 
     debugPrint(
       '🖼️ [HomePage] initState. DataService trending length: ${dataService.trendingItems.length}',
@@ -245,6 +256,26 @@ class _HomepageState extends State<Homepage> {
         '🖼️ [HomePage] _trendingItems updated. length: ${_trendingItems.length}',
       );
       _startTrendingAutoScroll();
+    }
+  }
+
+  /// Silently fetches the latest Remote Config in the background.
+  /// When new categories are detected, merges them into the displayed list
+  /// and triggers a lightweight setState — no existing cached data is discarded.
+  Future<void> _refreshCategoriesInBackground() async {
+    final hasChanges = await DataService().refreshCategories();
+    if (hasChanges && mounted) {
+      final freshCategories = List<String>.from(DataService().categories);
+      // Only rebuild if the list actually differs from what is shown
+      if (freshCategories.length != categories.length ||
+          !freshCategories.every((c) => categories.contains(c))) {
+        setState(() {
+          categories = freshCategories;
+        });
+        debugPrint(
+          '🖼️ [HomePage] Background refresh → UI updated with ${categories.length} categories',
+        );
+      }
     }
   }
 
@@ -492,9 +523,10 @@ class _HomepageState extends State<Homepage> {
 
           SliverToBoxAdapter(child: SizedBox(height: h * 0.025)),
 
-          // --- Sticky Category Chips ---
+          // --- Category Chips ---
           SliverPersistentHeader(
-            pinned: true,
+            pinned: false,
+            floating: false,
             delegate: _StickyCategoryDelegate(
               height: h * 0.065,
               child: Container(
@@ -575,6 +607,10 @@ class _HomepageState extends State<Homepage> {
       });
     }
 
+    final bool isVideo = ctrl.items.any(
+      (item) => item.videoUrl != null && item.videoUrl!.isNotEmpty,
+    );
+
     return Padding(
       padding: EdgeInsets.only(top: h * 0.035),
       child: Column(
@@ -586,13 +622,40 @@ class _HomepageState extends State<Homepage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  category,
-                  style: TextStyle(
-                    fontSize: w * 0.048,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textColor(isDark),
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      category,
+                      style: TextStyle(
+                        fontSize: w * 0.048,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textColor(isDark),
+                      ),
+                    ),
+                    if (isVideo) ...[
+                      SizedBox(width: w * 0.02),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFB8781B,
+                          ), // A brownish-orange color that fits the provided image
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'VIDEO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: w * 0.028,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 GestureDetector(
                   onTap: () {
@@ -605,7 +668,7 @@ class _HomepageState extends State<Homepage> {
                     );
                   },
                   child: Text(
-                    'see_all'.i18n(),
+                    'See all',
                     style: TextStyle(
                       fontSize: w * 0.034,
                       fontWeight: FontWeight.w600,
@@ -799,36 +862,36 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
   final tools = [
     AiTool(
       id: 'upscale',
-      label: 'tool_upscale'.i18n(),
+      label: 'Upscale',
       imagePath: AppDirectories.iconUpscale,
       route: AppRoutes.upscale,
     ),
     AiTool(
       id: 're_edit',
-      label: 'tool_re_edit'.i18n(),
+      label: 'Re-Edit',
       imagePath: AppDirectories.iconReEdit,
       autoTriggerImagePicker: true,
     ),
     AiTool(
       id: 'image',
-      label: 'tool_ai_image'.i18n(),
+      label: 'AI Image',
       imagePath: AppDirectories.iconAiImage,
     ),
     AiTool(
       id: 'video',
-      label: 'tool_ai_video'.i18n(),
+      label: 'AI Video',
       imagePath: AppDirectories.iconAiVideo,
       initialCategory: 'video',
     ),
     AiTool(
       id: 'cloth',
-      label: 'tool_cloth'.i18n(),
+      label: 'Cloth',
       imagePath: AppDirectories.iconCloth,
       route: AppRoutes.outfitChange,
     ),
     AiTool(
       id: 'background',
-      label: 'tool_bg_ai'.i18n(),
+      label: 'BG AI',
       imagePath: AppDirectories.iconBgAi,
       route: AppRoutes.background,
     ),
@@ -843,7 +906,7 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'quick_ai_tools'.i18n(),
+              'Quick AI Tools',
               style: TextStyle(
                 fontSize: w * 0.046,
                 fontWeight: FontWeight.bold,
@@ -854,14 +917,17 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
               onTap: () {
                 final navState = context
                     .findAncestorStateOfType<MainNavigationState>();
+                AdjustEvent all_aitools = new AdjustEvent('youurr');
+                Adjust.trackEvent(all_aitools);
+
                 if (navState != null) {
-                  navState.switchTab(5);
+                  navState.switchTab(4);
                 } else {
                   Navigator.pushNamed(context, AppRoutes.allTools);
                 }
               },
               child: Text(
-                'see_all'.i18n(),
+                'See all',
                 style: TextStyle(
                   fontSize: w * 0.036,
                   fontWeight: FontWeight.w600,
@@ -934,6 +1000,7 @@ Widget trendingView2(
     if (isTopCarousel && videoUrl != null && videoUrl.isNotEmpty) {
       return ReelVideoPlayer(
         videoUrl: videoUrl,
+        mute: true,
         seamlessLoop: true,
         enablePlayPauseGesture: false,
         showOverlayControls: false,
@@ -942,19 +1009,7 @@ Widget trendingView2(
         placeholder: ClipRRect(
           borderRadius: BorderRadius.circular(w * 0.05),
           child: (imageUrl != null && imageUrl.isNotEmpty)
-              ? CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-                    highlightColor: isDark
-                        ? Colors.grey[700]!
-                        : Colors.grey[100]!,
-                    child: Container(color: Colors.white),
-                  ),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.error_outline),
-                )
+              ? FirebaseImage(url: imageUrl, fit: BoxFit.cover, isDark: isDark)
               : Shimmer.fromColors(
                   baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
                   highlightColor: isDark
@@ -969,16 +1024,7 @@ Widget trendingView2(
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(w * 0.05),
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Shimmer.fromColors(
-            baseColor: isDark ? Colors.grey[850]! : Colors.grey[300]!,
-            highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-            child: Container(color: Colors.white),
-          ),
-          errorWidget: (context, url, error) => const Icon(Icons.error_outline),
-        ),
+        child: FirebaseImage(url: imageUrl, fit: BoxFit.cover, isDark: isDark),
       );
     }
 
@@ -1165,10 +1211,10 @@ class _ReelThumbnailWidgetState extends State<_ReelThumbnailWidget> {
     }
 
     try {
-      final reelDoc = await FirebaseFirestore.instance
-          .collection('reels')
-          .doc(widget.reelId)
-          .get();
+      final reelDoc = await FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'default',
+      ).collection('reels').doc(widget.reelId).get();
 
       if (!reelDoc.exists) {
         if (mounted) {
@@ -1298,17 +1344,10 @@ class _ReelThumbnailWidgetState extends State<_ReelThumbnailWidget> {
       onTap: widget.onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(widget.w * 0.05),
-        child: CachedNetworkImage(
-          imageUrl: _thumbnailUrl!,
+        child: FirebaseImage(
+          url: _thumbnailUrl!,
           fit: BoxFit.cover,
-          placeholder: (context, url) => Shimmer.fromColors(
-            baseColor: widget.isDark ? Colors.grey[850]! : Colors.grey[300]!,
-            highlightColor: widget.isDark
-                ? Colors.grey[700]!
-                : Colors.grey[100]!,
-            child: Container(color: Colors.white),
-          ),
-          errorWidget: (context, url, error) => const Icon(Icons.error_outline),
+          isDark: widget.isDark,
         ),
       ),
     );

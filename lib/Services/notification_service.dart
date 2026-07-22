@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
-import 'package:trail_ai_app/Services/local_storage_service.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
-import 'package:trail_ai_app/repositories/user_repository.dart';
-import 'package:trail_ai_app/Core/user_session.dart';
+import 'package:vidzeon/Services/local_storage_service.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
+import 'package:vidzeon/repositories/user_repository.dart';
+import 'package:vidzeon/Core/user_session.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 /// Top-level background message handler for FCM.
@@ -110,7 +110,7 @@ class NotificationService {
       );
       if (message.notification != null) {
         showGenerationCompleteNotification(
-          title: message.notification!.title ?? 'Trail AI Studio',
+          title: message.notification!.title ?? 'VidZeon',
           body: message.notification!.body ?? 'Generation complete!',
           payload: message.data['url'],
         );
@@ -238,7 +238,7 @@ class NotificationService {
           styleInformation: BigTextStyleInformation(
             body,
             contentTitle: title,
-            summaryText: 'Trail AI Studio',
+            summaryText: 'VidZeon',
           ),
         );
 

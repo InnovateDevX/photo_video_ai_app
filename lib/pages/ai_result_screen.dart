@@ -1,17 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:trail_ai_app/Core/colors.dart';
+import 'package:vidzeon/Core/colors.dart';
 import 'dart:ui';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Services/media_service.dart';
-import 'package:trail_ai_app/pages/upscale_page.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Services/media_service.dart';
+import 'package:vidzeon/pages/upscale_page.dart';
 import 'package:video_player/video_player.dart';
-import 'package:trail_ai_app/Services/review_service.dart';
-import 'package:trail_ai_app/Services/asset_service.dart';
-import 'package:trail_ai_app/Services/subscription_service.dart';
+import 'package:vidzeon/Services/review_service.dart';
+import 'package:vidzeon/Services/asset_service.dart';
 import '../Helpers/feedback_helper.dart';
+import '../Widgets/themed_dialog.dart';
+import 'package:vidzeon/Services/local_storage_service.dart';
+import 'package:vidzeon/Models/generated_asset.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:path_provider/path_provider.dart';
+
 class AIResultScreen extends StatefulWidget {
   final File? originalImage;
   final String resultImageUrl;
@@ -64,16 +68,52 @@ class _AIResultScreenState extends State<AIResultScreen> {
     _isNsfw = widget.isNsfw;
     _checkAndInitVideo();
     _checkAndInitImage();
+    _autoSaveAsset();
     // Trigger in-app review check after a short delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ReviewService().requestReviewIfAppropriate(context);
     });
   }
 
+  bool _hasAutoSaved = false;
+
+  Future<void> _autoSaveAsset() async {
+    // Only auto-save if it's a remote URL (newly generated and not from profile cache)
+    if (_hasAutoSaved || !widget.resultImageUrl.startsWith('http')) return;
+    _hasAutoSaved = true;
+
+    try {
+      final isVideo = widget.resultImageUrl.toLowerCase().endsWith('.mp4');
+      final category = isVideo ? 'video' : 'image';
+      
+      // Download the file via cache manager
+      final file = await DefaultCacheManager().getSingleFile(widget.resultImageUrl);
+      
+      // Copy the file from cache to a permanent location in app documents
+      final appDir = await getApplicationDocumentsDirectory();
+      final extension = isVideo ? 'mp4' : 'jpg';
+      final fileName = 'auto_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final savedFile = await file.copy('${appDir.path}/$fileName');
+
+      final asset = GeneratedAsset(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        filePath: savedFile.path,
+        category: category,
+        prompt: 'Generated Media', // Generic prompt
+        createdAt: DateTime.now(),
+      );
+      
+      await LocalStorageService().saveAsset(asset);
+      debugPrint('✅ [AIResultScreen] Auto-saved asset to Profile data.');
+    } catch (e) {
+      debugPrint('❌ [AIResultScreen] Auto-save failed: $e');
+    }
+  }
+
   void _checkAndInitImage() {
     final isVideo = widget.resultImageUrl.toLowerCase().endsWith('.mp4');
     if (isVideo) return;
-    
+
     if (!widget.resultImageUrl.startsWith('http')) {
       _isImageLoaded = true;
       return;
@@ -86,7 +126,11 @@ class _AIResultScreenState extends State<AIResultScreen> {
         if (mounted && !_isImageLoaded) setState(() => _isImageLoaded = true);
       },
       onError: (error, stackTrace) {
-        if (mounted && !_isImageLoaded) setState(() => _isImageLoaded = true); // allow interaction even on error
+        if (mounted && !_isImageLoaded) {
+          setState(
+            () => _isImageLoaded = true,
+          ); // allow interaction even on error
+        }
       },
     );
     imageStream.addListener(listener);
@@ -183,14 +227,19 @@ class _AIResultScreenState extends State<AIResultScreen> {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: sw * 0.04, vertical: sh * 0.01),
+              padding: EdgeInsets.symmetric(
+                horizontal: sw * 0.04,
+                vertical: sh * 0.01,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
                     onTap: widget.onBack ?? () => Navigator.pop(context),
                     child: Container(
-                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                      padding: EdgeInsets.all(
+                        MediaQuery.of(context).size.width * 0.02,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark ? Colors.white12 : Colors.grey.shade200,
                         shape: BoxShape.circle,
@@ -208,11 +257,12 @@ class _AIResultScreenState extends State<AIResultScreen> {
                         setState(() {
                           _isNsfw = true;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Content flagged as inappropriate.'),
-                            backgroundColor: Colors.red,
-                          ),
+                        showThemedDialog(
+                          context,
+                          title: 'Flagged',
+                          message: 'Content flagged as inappropriate.',
+                          icon: Icons.flag_outlined,
+                          iconColor: Colors.red,
                         );
                         FeedbackHelper.showFeedbackSheet(
                           context,
@@ -221,7 +271,9 @@ class _AIResultScreenState extends State<AIResultScreen> {
                         );
                       },
                       child: Container(
-                        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                        padding: EdgeInsets.all(
+                          MediaQuery.of(context).size.width * 0.02,
+                        ),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.white12 : Colors.grey.shade200,
                           shape: BoxShape.circle,
@@ -271,16 +323,24 @@ class _AIResultScreenState extends State<AIResultScreen> {
                               );
                             },
                             child: Container(
-                              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                              padding: EdgeInsets.all(
+                                MediaQuery.of(context).size.width * 0.02,
+                              ),
                               decoration: BoxDecoration(
                                 color: _isLiked == true
                                     ? Colors.green.withValues(alpha: 0.2)
-                                    : (isDark ? Colors.white12 : Colors.grey.shade200),
+                                    : (isDark
+                                          ? Colors.white12
+                                          : Colors.grey.shade200),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                _isLiked == true ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
-                                color: _isLiked == true ? Colors.green : AppColors.textColor(isDark),
+                                _isLiked == true
+                                    ? Icons.thumb_up_rounded
+                                    : Icons.thumb_up_outlined,
+                                color: _isLiked == true
+                                    ? Colors.green
+                                    : AppColors.textColor(isDark),
                                 size: 20,
                               ),
                             ),
@@ -296,16 +356,24 @@ class _AIResultScreenState extends State<AIResultScreen> {
                               );
                             },
                             child: Container(
-                              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                              padding: EdgeInsets.all(
+                                MediaQuery.of(context).size.width * 0.02,
+                              ),
                               decoration: BoxDecoration(
                                 color: _isLiked == false
                                     ? Colors.red.withValues(alpha: 0.2)
-                                    : (isDark ? Colors.white12 : Colors.grey.shade200),
+                                    : (isDark
+                                          ? Colors.white12
+                                          : Colors.grey.shade200),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                _isLiked == false ? Icons.thumb_down_rounded : Icons.thumb_down_outlined,
-                                color: _isLiked == false ? Colors.red : AppColors.textColor(isDark),
+                                _isLiked == false
+                                    ? Icons.thumb_down_rounded
+                                    : Icons.thumb_down_outlined,
+                                color: _isLiked == false
+                                    ? Colors.red
+                                    : AppColors.textColor(isDark),
                                 size: 20,
                               ),
                             ),
@@ -360,10 +428,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
                         placeholder: (context, url) =>
                             _buildPlaceholder(isDark),
                       )
-                    : Image.file(
-                        File(widget.resultImageUrl),
-                        fit: widget.fit,
-                      ),
+                    : Image.file(File(widget.resultImageUrl), fit: widget.fit),
               ),
             ),
             Positioned(
@@ -389,39 +454,35 @@ class _AIResultScreenState extends State<AIResultScreen> {
       // Default Video/Image Display
       mediaWidget = isVideo
           ? (_isVideoInitialized && _videoController != null
-              ? AspectRatio(
-                  aspectRatio: _videoController!.value.aspectRatio > 0
-                      ? _videoController!.value.aspectRatio
-                      : 1.0,
-                  child: FittedBox(
-                    fit: widget.fit,
-                    child: SizedBox(
-                      width: _videoController!.value.size.width > 0
-                          ? _videoController!.value.size.width
-                          : 100, // Fallback width
-                      height: _videoController!.value.size.height > 0
-                          ? _videoController!.value.size.height
-                          : 100, // Fallback height
-                      child: VideoPlayer(_videoController!),
+                ? AspectRatio(
+                    aspectRatio: _videoController!.value.aspectRatio > 0
+                        ? _videoController!.value.aspectRatio
+                        : 1.0,
+                    child: FittedBox(
+                      fit: widget.fit,
+                      child: SizedBox(
+                        width: _videoController!.value.size.width > 0
+                            ? _videoController!.value.size.width
+                            : 100, // Fallback width
+                        height: _videoController!.value.size.height > 0
+                            ? _videoController!.value.size.height
+                            : 100, // Fallback height
+                        child: VideoPlayer(_videoController!),
+                      ),
                     ),
-                  ),
-                )
-              : _buildPlaceholder(isDark))
+                  )
+                : _buildPlaceholder(isDark))
           : InteractiveViewer(
               maxScale: 3.0,
               child: widget.resultImageUrl.startsWith('http')
                   ? CachedNetworkImage(
                       imageUrl: widget.resultImageUrl,
                       fit: widget.fit,
-                      placeholder: (context, url) =>
-                          _buildPlaceholder(isDark),
+                      placeholder: (context, url) => _buildPlaceholder(isDark),
                       errorWidget: (context, url, err) =>
                           const Icon(Icons.error_outline),
                     )
-                  : Image.file(
-                      File(widget.resultImageUrl),
-                      fit: widget.fit,
-                    ),
+                  : Image.file(File(widget.resultImageUrl), fit: widget.fit),
             );
     }
 
@@ -451,18 +512,20 @@ class _AIResultScreenState extends State<AIResultScreen> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: widget.originalImage != null && !isVideo ? sh * 0.75 : sh * 0.72,
+        maxHeight: widget.originalImage != null && !isVideo
+            ? sh * 0.75
+            : sh * 0.72,
       ), // Flexible vertical limit
       child: _mediaWrapper(child: mediaWidget, isDark: isDark),
     );
   }
 
   Widget _mediaWrapper({required Widget child, required bool isDark}) {
-    final bool showWatermark = !SubscriptionService().isSubscribed;
-
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06),
+        borderRadius: BorderRadius.circular(
+          MediaQuery.of(context).size.width * 0.06,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -472,24 +535,10 @@ class _AIResultScreenState extends State<AIResultScreen> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.06),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            child,
-            if (showWatermark)
-              Positioned(
-                right: 20,
-                bottom: 20,
-                child: IgnorePointer(
-                  child: Image.asset(
-                    'assets/images/watermark.png',
-                    width: 120,
-                  ),
-                ),
-              ),
-          ],
+        borderRadius: BorderRadius.circular(
+          MediaQuery.of(context).size.width * 0.06,
         ),
+        child: Stack(fit: StackFit.expand, children: [child]),
       ),
     );
   }
@@ -509,7 +558,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
             context: context,
             isDark: isDark,
             icon: widget.customActionIcon ?? Icons.auto_fix_high,
-            label: widget.customActionLabel ?? 'enhance'.i18n(),
+            label: widget.customActionLabel ?? 'Enhance',
             onTap:
                 widget.onCustomAction ??
                 () => Navigator.push(
@@ -530,7 +579,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
             context: context,
             isDark: isDark,
             icon: Icons.edit_rounded,
-            label: 're_edit'.i18n(),
+            label: 'Re-Edit',
             onTap: widget.onReEdit!,
           ),
         if (widget.onReEdit != null && widget.onTryAgain != null)
@@ -540,7 +589,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
             context: context,
             isDark: isDark,
             icon: Icons.refresh_rounded,
-            label: 'try_again'.i18n(),
+            label: 'Try again',
             onTap: widget.onTryAgain!,
           ),
       ],
@@ -564,14 +613,18 @@ class _AIResultScreenState extends State<AIResultScreen> {
               onTap: (_isDownloading || widget.isNsfw) ? null : _downloadImage,
               child: Container(
                 height: sh * 0.07,
-                decoration: widget.isNsfw 
-                  ? BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.07),
-                    )
-                  : ProGradientDecoration(
-                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.07),
-                    ),
+                decoration: widget.isNsfw
+                    ? BoxDecoration(
+                        color: Colors.grey,
+                        borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.07,
+                        ),
+                      )
+                    : ProGradientDecoration(
+                        borderRadius: BorderRadius.circular(
+                          MediaQuery.of(context).size.width * 0.07,
+                        ),
+                      ),
                 child: Center(
                   child: _isDownloading
                       ? SizedBox(
@@ -592,7 +645,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
                             ),
                             SizedBox(width: sw * 0.02),
                             Text(
-                              'download'.i18n(),
+                              'Download',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -618,7 +671,9 @@ class _AIResultScreenState extends State<AIResultScreen> {
                   color: (isDark || widget.isNsfw)
                       ? Colors.white.withValues(alpha: 0.08)
                       : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.07),
+                  borderRadius: BorderRadius.circular(
+                    MediaQuery.of(context).size.width * 0.07,
+                  ),
                   border: Border.all(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.12)
@@ -641,14 +696,18 @@ class _AIResultScreenState extends State<AIResultScreen> {
                           children: [
                             Icon(
                               Icons.share_rounded,
-                              color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
+                              color: AppColors.textColor(
+                                isDark,
+                              ).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
                               size: sw * 0.055,
                             ),
                             SizedBox(width: sw * 0.02),
                             Text(
-                              'share'.i18n(),
+                              'Share',
                               style: TextStyle(
-                                color: AppColors.textColor(isDark).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
+                                color: AppColors.textColor(
+                                  isDark,
+                                ).withValues(alpha: widget.isNsfw ? 0.3 : 1.0),
                                 fontWeight: FontWeight.bold,
                                 fontSize: sw * 0.04,
                               ),

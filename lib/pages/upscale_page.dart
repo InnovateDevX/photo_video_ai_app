@@ -4,14 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../Core/colors.dart';
 import '../Core/strings.dart'; // non-translatable
-import 'package:localization/localization.dart';
+
 import '../Core/gradient.dart';
 import '../Core/directory.dart';
 import '../Services/data_service.dart';
 import 'dart:io';
 import '../Helpers/image_picker_helper.dart';
 import '../Services/replicate_service.dart';
-import '../Services/ad_service.dart';
 import '../Services/credit_service.dart';
 import '../Services/generation_gate.dart';
 import '../pages/ai_loading_screen.dart';
@@ -19,6 +18,7 @@ import '../pages/ai_result_screen.dart';
 
 import '../Widgets/cancel_dialog.dart';
 import '../Services/media_service.dart';
+import '../Widgets/themed_dialog.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -38,7 +38,6 @@ class _UpscalePageState extends State<UpscalePage>
   late Future<String> _upscalePreviewUrl;
 
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
   final CreditService _creditService = CreditService();
 
   _PageState _pageState = _PageState.selection;
@@ -135,16 +134,24 @@ class _UpscalePageState extends State<UpscalePage>
 
   Future<void> _generateUpscale() async {
     if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an image first.')),
+      showThemedDialog(
+        context,
+        title: 'Upload Photo',
+        message: 'Please select an image first.',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
       );
       return;
     }
 
     final model = _replicateService.upscaleModel;
     if (model == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upscale model not configured.')),
+      showThemedDialog(
+        context,
+        title: 'Error',
+        message: 'Upscale model not configured.',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
       );
       return;
     }
@@ -154,7 +161,6 @@ class _UpscalePageState extends State<UpscalePage>
 
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: model.creditUsed,
     );
@@ -187,9 +193,13 @@ class _UpscalePageState extends State<UpscalePage>
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(
+        showThemedDialog(
           context,
-        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
+          title: 'Success',
+          message: 'Credits deducted',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+        );
       }
 
       if (mounted) {
@@ -216,14 +226,18 @@ class _UpscalePageState extends State<UpscalePage>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('ok'.i18n()),
+                  child: Text('OK'),
                 ),
               ],
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
+          showThemedDialog(
+            context,
+            title: 'Error',
+            message: 'Error${e.toString()}',
+            icon: Icons.error_outline,
+            iconColor: Colors.red,
           );
         }
       }
@@ -251,7 +265,7 @@ class _UpscalePageState extends State<UpscalePage>
             child: Column(
               children: [
                 Text(
-                  'tool_upscale'.i18n(),
+                  'Upscale',
                   style: TextStyle(
                     fontSize: sw * 0.048,
                     fontWeight: FontWeight.bold,
@@ -338,14 +352,14 @@ class _UpscalePageState extends State<UpscalePage>
         body: SafeArea(
           child: Column(
             children: [
-
               SizedBox(height: MediaQuery.of(context).size.height * 0.015),
               _buildTopBar(
                 isDark: isDark,
                 subtitle: switch (_pageState) {
-                  _PageState.loading => 'outfit_processing_subtitle'.i18n(),
-                  _PageState.result => 'outfit_result_subtitle'.i18n(),
-                  _PageState.selection => 'upscale_subtitle'.i18n(),
+                  _PageState.loading => 'Processing ......',
+                  _PageState.result => 'Result',
+                  _PageState.selection =>
+                    'Describe your screen below and start creating AI video',
                 },
                 onBack: switch (_pageState) {
                   _PageState.loading => _showCancelWarningDialog,
@@ -361,13 +375,10 @@ class _UpscalePageState extends State<UpscalePage>
                   _PageState.loading => AILoadingScreen(
                     selectedImage: _selectedImage,
                     progressAnimation: _progressAnimation,
-                    aiTips: AppStrings.outfitAiTips
-                        .map((e) => e.i18n())
-                        .toList(),
-                    processingTitle: 'processing_title'.i18n(),
-                    applyingText: 'Processing ...'
-                        .i18n(), // Or 'upscaling_photo' if added
-                    waitText: 'take_few_seconds'.i18n(),
+                    aiTips: AppStrings.outfitAiTips,
+                    processingTitle: 'Processing ...',
+                    applyingText: 'Processing ...', // Or 'upscaling_photo' if added
+                    waitText: 'This may take a few seconds..',
                     onCancel: _showCancelWarningDialog,
                   ),
                   _PageState.result => const SizedBox.shrink(),
@@ -450,7 +461,7 @@ class _UpscalePageState extends State<UpscalePage>
                               ),
                               SizedBox(height: h * 0.01),
                               Text(
-                                'tap_to_select_gallery'.i18n(),
+                                'Tap to select from gallery',
                                 style: TextStyle(
                                   fontSize: w * 0.035,
                                   color: isDark
@@ -472,7 +483,7 @@ class _UpscalePageState extends State<UpscalePage>
                                     ),
                                   ),
                                   child: Text(
-                                    'choose_image'.i18n(),
+                                    'Choose image',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w600,
@@ -508,7 +519,7 @@ class _UpscalePageState extends State<UpscalePage>
 
             // --- Upscale Options ---
             Text(
-              'upscale_options'.i18n(),
+              'Upscale Options',
               style: TextStyle(
                 fontSize: w * 0.045,
                 fontWeight: FontWeight.bold,
@@ -542,7 +553,7 @@ class _UpscalePageState extends State<UpscalePage>
                       ),
                       child: Center(
                         child: Text(
-                          _factors[index].i18n(),
+                          _factors[index],
                           style: TextStyle(
                             color: isSelected
                                 ? (isDark ? Colors.black : Colors.white)
@@ -594,7 +605,7 @@ class _UpscalePageState extends State<UpscalePage>
             SizedBox(height: h * 0.012),
             Center(
               child: Text(
-                'upscale_processing_time'.i18n(),
+                'Estimated processing time 5-10 seconds',
                 style: TextStyle(
                   fontSize: w * 0.032,
                   color: AppColors.secondaryTextColor(isDark),
@@ -617,7 +628,7 @@ class _UpscalePageState extends State<UpscalePage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '${'upscale_button_text'.i18n()} ${_replicateService.upscaleModel?.creditUsed ?? 0}',
+                        'Upscale ⚡ ',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

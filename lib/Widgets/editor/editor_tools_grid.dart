@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
 
 /// Main tools grid for the image editor
 /// Shows all available editing tools

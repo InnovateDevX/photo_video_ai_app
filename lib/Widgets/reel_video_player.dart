@@ -24,7 +24,7 @@ class ReelVideoPlayer extends StatefulWidget {
     this.enablePlayPauseGesture = true,
     this.showOverlayControls = true,
     this.borderRadius,
-    this.mute = true,
+    this.mute = false,
     this.fit = BoxFit.contain,
     this.alignment = Alignment.center,
   });
@@ -80,29 +80,29 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
 
   Future<void> _initializePlayer() async {
     try {
-      // 1. Try to get the file from cache first
-      final fileInfo = await DefaultCacheManager().getFileFromCache(
-        widget.videoUrl,
-      );
-
       File? videoFile;
-      if (fileInfo != null) {
-        debugPrint("📦 [VideoPlayer] Playing from CACHE: ${widget.videoUrl}");
-        videoFile = fileInfo.file;
-      } else {
-        debugPrint("🌐 [VideoPlayer] Downloading to CACHE: ${widget.videoUrl}");
-        // We don't await the full download here to avoid blocking UI,
-        // but we can use the stream to get the file as soon as it's available.
-        // For simplicity, we'll just download it once.
-        try {
-          videoFile = await DefaultCacheManager().getSingleFile(
-            widget.videoUrl,
-          );
-        } catch (e) {
-          debugPrint(
-            "❌ [VideoPlayer] Cache download failed, falling back to network: $e",
-          );
+      try {
+        final fileInfo = await DefaultCacheManager().getFileFromCache(widget.videoUrl);
+        if (fileInfo != null && fileInfo.file.existsSync() && fileInfo.file.lengthSync() > 1024) {
+          debugPrint("📦 [VideoPlayer] Playing from CACHE: ${widget.videoUrl}");
+          videoFile = fileInfo.file;
+        } else if (fileInfo != null) {
+          debugPrint("⚠️ [VideoPlayer] Corrupted cache file detected (<1KB), removing...");
+          await DefaultCacheManager().removeFile(widget.videoUrl);
         }
+      } catch (e) {
+        debugPrint("⚠️ [VideoPlayer] Cache check error: $e");
+      }
+
+      if (videoFile == null) {
+        debugPrint(
+          "🌐 [VideoPlayer] Cache miss, playing from network & downloading to cache in background: ${widget.videoUrl}",
+        );
+        // Trigger background cache download without awaiting it, so we don't block playback!
+        DefaultCacheManager().downloadFile(widget.videoUrl).catchError((e) {
+          debugPrint("❌ [VideoPlayer] Background cache download failed: $e");
+          return null;
+        });
       }
 
       if (!mounted) return;
@@ -116,6 +116,9 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
             videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
           );
           await _controller!.initialize().timeout(const Duration(seconds: 4));
+          if (_controller!.value.hasError) {
+            throw Exception("Controller initialization reported error: ${_controller!.value.errorDescription}");
+          }
           initialized = true;
         } catch (e) {
           debugPrint("⚠️ [VideoPlayer] Cache init failed or timed out: $e. Falling back to network...");
@@ -133,12 +136,13 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
           Uri.parse(widget.videoUrl),
           videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
-        await _controller!.initialize().timeout(const Duration(seconds: 10));
+        await _controller!.initialize().timeout(const Duration(seconds: 25));
       }
 
       if (mounted) {
         setState(() {
           _isInitialized = true;
+          _hasError = false;
         });
 
         _controller!.setLooping(!widget.seamlessLoop);
@@ -177,12 +181,16 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
   Widget build(BuildContext context) {
     // On error, show the placeholder (shimmer) or just shrink away cleanly
     if (_hasError) {
-      return widget.placeholder ?? const SizedBox.expand();
+      return SizedBox.expand(
+        child: widget.placeholder ?? const SizedBox.expand(),
+      );
     }
 
     if (!_isInitialized) {
-      return widget.placeholder ??
-          const Center(child: CircularProgressIndicator(color: Colors.white));
+      return SizedBox.expand(
+        child: widget.placeholder ??
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
     }
 
     final videoWidget = LayoutBuilder(

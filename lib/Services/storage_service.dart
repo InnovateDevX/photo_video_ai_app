@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
 
 class StorageService {
   static final StorageService _instance = StorageService._internal();

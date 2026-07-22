@@ -125,7 +125,7 @@ class ReelService {
         '📋 [ReelService] Loaded ${jsonList.length} reels from Remote Config',
       );
 
-      return jsonList.asMap().entries.map((entry) {
+      final reels = jsonList.asMap().entries.map((entry) {
         final Map<String, dynamic> data = Map<String, dynamic>.from(
           entry.value,
         );
@@ -138,6 +138,8 @@ class ReelService {
 
         return Reel.fromJson(data);
       }).toList();
+      reels.shuffle();
+      return reels;
     } catch (e) {
       debugPrint('❌ [ReelService] Error parsing reels from remote config: $e');
       return [];

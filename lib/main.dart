@@ -1,20 +1,18 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:adjust_sdk/adjust.dart';
+import 'package:adjust_sdk/adjust_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/routes.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:trail_ai_app/Core/theme_notifier.dart';
-import 'package:trail_ai_app/Core/locale_notifier.dart';
-import 'package:trail_ai_app/Services/notification_service.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Widgets/global_notification_overlay.dart';
-import 'package:trail_ai_app/pages/splash_screen.dart';
 
-import 'package:trail_ai_app/Services/localization_service.dart';
+import 'package:vidzeon/Core/routes.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:vidzeon/Core/theme_notifier.dart';
+import 'package:vidzeon/Services/notification_service.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Widgets/global_notification_overlay.dart';
+import 'package:vidzeon/pages/splash_screen.dart';
 
 void main() {
   // We intentionally do NOT await anything here.
@@ -31,7 +29,11 @@ void main() {
   // navigate to the home/onboarding screen when done. The splash screen
   // itself has a hard ceiling that guarantees the user is never stuck.
   WidgetsFlutterBinding.ensureInitialized();
-  LocalizationService.init();
+  AdjustConfig config = new AdjustConfig(
+    'yq9vjjzvklq8',
+    AdjustEnvironment.sandbox,
+  );
+  Adjust.initSdk(config);
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.top],
@@ -51,13 +53,24 @@ void main() {
   // Route uncaught errors to Crashlytics without blocking startup. Crashlytics
   // is initialized lazily; the first recordError call will initialize it.
   FlutterError.onError = (FlutterErrorDetails details) {
+    final errStr = details.exception.toString();
+    if (errStr.contains('flutter_background_service') ||
+        errStr.contains('main isolate')) {
+      debugPrint('⚠️ [Ignored non-fatal plugin exception]: $errStr');
+      return;
+    }
     FlutterError.presentError(details);
-    // Fire and forget — don't block UI on the crashlytics round-trip.
     unawaited(
       _safeRecordFatal(details.exception, details.stack ?? StackTrace.empty),
     );
   };
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    final errStr = error.toString();
+    if (errStr.contains('flutter_background_service') ||
+        errStr.contains('main isolate')) {
+      debugPrint('⚠️ [Ignored non-fatal platform error]: $errStr');
+      return true;
+    }
     debugPrint('🛑 [PlatformDispatcher] Uncaught error: $error\n$stack');
     unawaited(_safeRecordFatal(error, stack));
     return true;
@@ -117,71 +130,47 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Locale>(
-      valueListenable: localeNotifier,
-      builder: (context, locale, _) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: themeNotifier,
-          builder: (context, isDark, child) {
-            SystemChrome.setSystemUIOverlayStyle(
-              SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: isDark
-                    ? Brightness.light
-                    : Brightness.dark,
-                systemNavigationBarColor: Colors.transparent,
-                systemNavigationBarDividerColor: Colors.transparent,
-                systemNavigationBarIconBrightness: isDark
-                    ? Brightness.light
-                    : Brightness.dark,
-                systemNavigationBarContrastEnforced: false,
-              ),
-            );
-            return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              navigatorKey: NotificationService().navigatorKey,
-              themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-              theme: ThemeData(
-                brightness: Brightness.light,
-                scaffoldBackgroundColor: Colors.white,
-              ),
-              darkTheme: ThemeData(
-                brightness: Brightness.dark,
-                scaffoldBackgroundColor: isDark
-                    ? Color(0xFF161616)
-                    : Colors.white,
-              ),
-              locale: locale,
-              localizationsDelegates: [
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-                LocalJsonLocalization.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en'), // English
-                Locale('es'), // Spanish
-                Locale('fr'), // French
-                Locale('hi'), // Hindi
-                Locale('ne'), // Nepali
-                Locale('zh'), // Chinese
-                Locale('de'), // German
-                Locale('id'), // Indonesian
-                Locale('pt'), // Portuguese
-                Locale('tr'), // Turkish
-              ],
-              // ──────────────────────────────────────────────────────────────────
-              builder: (context, child) {
-                return GlobalNotificationOverlay(child: child!);
-              },
-              // Always start at the splash screen. The splash screen performs
-              // all initialization in the background and navigates to either
-              // OnboardingPage or MainNavigation when done (or after a hard
-              // 25s ceiling). This guarantees the user is never stuck.
-              home: const SplashScreen(),
-              routes: getAppRoutes(),
-            );
+    return ValueListenableBuilder<bool>(
+      valueListenable: themeNotifier,
+      builder: (context, isDark, child) {
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            systemNavigationBarContrastEnforced: false,
+          ),
+        );
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          navigatorKey: NotificationService().navigatorKey,
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: Colors.white,
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: isDark
+                ? const Color(0xFF161616)
+                : Colors.white,
+          ),
+          // ──────────────────────────────────────────────────────────────────
+          builder: (context, child) {
+            return GlobalNotificationOverlay(child: child!);
           },
+          // Always start at the splash screen. The splash screen performs
+          // all initialization in the background and navigates to either
+          // OnboardingPage or MainNavigation when done (or after a hard
+          // 25s ceiling). This guarantees the user is never stuck.
+          home: const SplashScreen(),
+          routes: getAppRoutes(),
         );
       },
     );

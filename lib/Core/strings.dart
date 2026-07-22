@@ -1,249 +1,271 @@
 class AppStrings {
   // Core
-  static const String aiGenerateTitle = 'ai_generate_title';
-  static const String trending = 'trending';
-  static const String pro = 'pro';
-  static const String seeAll = 'see_all';
+  static const String aiGenerateTitle = 'AI Generate';
+  static const String trending = 'Trending';
+  static const String pro = 'Pro';
+  static const String seeAll = 'See all';
   static const String seeAllRoute = '/seeAll';
-  static const String startCreate = 'start_create';
-  static const String all = 'all';
-  static const String aiImage = 'ai_image';
-  static const String aiVideo = 'ai_video';
+  static const String startCreate = 'Start Creating';
+  static const String all = 'All';
+  static const String aiImage = 'AI Images';
+  static const String aiVideo = 'AI Videos';
 
   // Selection Page Strings
-  static const String selectionTitle = 'selection_title';
-  static const String selectionSubtitle = 'selection_subtitle';
+  static const String selectionTitle = 'Craft your\nmasterpiece\'s';
+  static const String selectionSubtitle = 'No magic made yet, let\'s create!';
   static const List<String> selectionCategories = [all, aiImage, aiVideo];
 
   // Generation Page Strings
-  static const String pleaseEnterPrompt = 'please_enter_prompt';
-  static const String describeImageHint = 'describe_image_hint';
-  static const String promptHint = 'prompt_hint';
-  static const String generatingImage = 'generating_image';
-  static const String failedToLoadImage = 'failed_to_load_image';
-  static const String imagePlaceholder = 'image_placeholder';
-  static const String recreate = 'recreate';
-  static const String useSetting = 'use_setting';
-  static const String downloadBatch = 'download_batch';
-  static const String delete = 'delete';
+  static const String pleaseEnterPrompt = 'Please enter a prompt';
+  static const String describeImageHint =
+      'Describe your image below and start creating';
+  static const String promptHint = 'eg. an astronaut flying through a galaxy';
+  static const String generatingImage = 'Generating your image...';
+  static const String failedToLoadImage = 'Failed to load image';
+  static const String imagePlaceholder =
+      'Your generated image will appear here';
+  static const String recreate = 'Recreate';
+  static const String useSetting = 'Use Setting';
+  static const String downloadBatch = 'Download batch';
+  static const String delete = 'Delete';
 
   // New Generation Page Strings
-  static const String noModelSelected = 'no_model_selected';
-  static const String adsSetupRequired = 'ads_setup_required';
-  static const String adsSetupMessage = 'ads_setup_message';
-  static const String ok = 'ok';
-  static const String watchCompleteAd = 'watch_complete_ad';
-  static const String error = 'error';
-  static const String settings = 'settings';
-  static const String aspectRatio = 'aspect_ratio';
-  static const String dimensions = 'dimensions';
-  static const String width = 'width';
-  static const String height = 'height';
-  static const String cleared = 'cleared';
-  static const String editPrompt = 'edit_prompt';
-  static const String generating = 'generating';
-  static const String selectModel = 'select_model';
-  static const String enterPromptHint = 'enter_prompt_hint';
-  static const String describeContent = 'describe_content';
-  static const String promptPlaceholder = 'prompt_placeholder';
-  static const String timeoutTitle = 'timeout_title';
-  static const String timeoutMessage = 'timeout_message';
-  static const String create = 'create';
-  static const String creating = 'creating';
+  static const String noModelSelected = 'No model selected or available';
+  static const String adsSetupRequired = 'Ads Setup Required';
+  static const String adsSetupMessage =
+      'Please configure the ad unit ID in Remote Config.\nKey: admob_rewarded_interstitial_ad_unit_id';
+  static const String ok = 'OK';
+  static const String watchCompleteAd =
+      'Please watch the complete ad to generate content';
+  static const String error = 'Error';
+  static const String settings = 'Settings';
+  static const String aspectRatio = 'Aspect Ratio';
+  static const String dimensions = 'Dimensions';
+  static const String width = 'Width';
+  static const String height = 'Height';
+  static const String cleared = 'Cleared';
+  static const String editPrompt = 'Edit Prompt';
+  static const String generating = 'Generating';
+  static const String selectModel = 'Select Model';
+  static const String enterPromptHint = 'Enter a prompt to generate a';
+  static const String describeContent = 'Describe your content';
+  static const String promptPlaceholder =
+      'A futuristic city with flying cars...';
+  static const String timeoutTitle = 'Generation Timed Out';
+  static const String timeoutMessage =
+      'The AI is taking longer than expected to generate your content. Please try again or check your internet connection.';
+  static const String create = 'Create';
+  static const String creating = 'Creating...';
   static const String creditCount = '56';
   static const String creditDisplay = '...';
 
   // Credit Management
-  static const String insufficientCredits = 'insufficient_credits';
-  static const String watchAdForCredits = 'watch_ad_for_credits';
-  static const String creditsEarned = 'credits_earned';
-  static const String creditDeducted = 'credit_deducted';
-  static const String cancel = 'cancel';
+  static const String insufficientCredits = 'Not Enough Credits';
+  static const String watchAdForCredits = 'Watch Ad to Earn Credits';
+  static const String creditsEarned = 'Credits earned!';
+  static const String creditDeducted = 'Credits deducted';
+  static const String cancel = 'Cancel';
 
   // Settings Page Strings
-  static const String settingsTitle = 'settings_title';
-  static const String myCredits = 'my_credits';
-  static const String proLabel = 'pro_label';
-  static const String general = 'general';
-  static const String appTheme = 'app_theme';
-  static const String helpCenter = 'help_center';
-  static const String shareApp = 'share_app';
-  static const String privacyPolicy = 'privacy_policy';
-  static const String customerSupport = 'customer_support';
-  static const String language = 'language';
-  static const String faq = 'faq';
-  static const String termsOfUse = 'terms_of_use';
-  static const String rateUs = 'rate_us';
-  static const String login = 'login';
+  static const String settingsTitle = 'Settings';
+  static const String myCredits = 'My Credits';
+  static const String proLabel = 'Pro';
+  static const String general = 'General';
+  static const String appTheme = 'App Theme';
+  static const String helpCenter = 'Help Center';
+  static const String shareApp = 'Share App';
+  static const String privacyPolicy = 'Privacy Policy';
+  static const String customerSupport = 'Customer Support';
+  static const String language = 'Language';
+  static const String faq = 'FAQ';
+  static const String termsOfUse = 'Terms of Use';
+  static const String rateUs = 'Rate us';
+  static const String login = 'Login';
   static const String appVersion = 'Imagine AI v3.0.3(112)';
 
   // Bottom Bar Strings
-  static const String addReferenceImage = 'add_reference_image';
-  static const String chooseSource = 'choose_source';
-  static const String gallery = 'gallery';
-  static const String camera = 'camera';
-  static const String models = 'models';
-  static const String noModelsConfigured = 'no_models_configured';
-  static const String landscape = 'landscape';
-  static const String portrait = 'portrait';
-  static const String square = 'square';
-  static const String wide = 'wide';
-  static const String duration = 'duration';
-  static const String resolution = 'resolution';
-  static const String model = 'model';
-  static const String enhancePrompt = 'enhance_prompt';
+  static const String addReferenceImage = 'Add Reference Image';
+  static const String chooseSource = 'Choose a source';
+  static const String gallery = 'Gallery';
+  static const String camera = 'Camera';
+  static const String models = 'Models';
+  static const String noModelsConfigured = 'No models configured';
+  static const String landscape = 'Landscape';
+  static const String portrait = 'Portrait';
+  static const String square = 'Square';
+  static const String wide = 'Wide';
+  static const String duration = 'Duration';
+  static const String resolution = 'Resolution';
+  static const String model = 'Model';
+  static const String enhancePrompt = 'Enhance Prompt';
 
   // Quick AI Tools Section
-  static const String quickAiTools = 'quick_ai_tools';
-  static const String toolUpscale = 'tool_upscale';
-  static const String toolReEdit = 'tool_re_edit';
-  static const String toolAiImage = 'tool_ai_image';
-  static const String toolAiVideo = 'tool_ai_video';
-  static const String toolCloth = 'tool_cloth';
-  static const String toolBgAi = 'tool_bg_ai';
+  static const String quickAiTools = 'Quick AI Tools';
+  static const String toolUpscale = 'Upscale';
+  static const String toolReEdit = 'Re-Edit';
+  static const String toolAiImage = 'AI Image';
+  static const String toolAiVideo = 'AI Video';
+  static const String toolCloth = 'Cloth';
+  static const String toolBgAi = 'BG AI';
 
   // Outfit Change Flow Strings
-  static const String outfitChangeTitle = 'outfit_change_title';
-  static const String outfitProcessingSubtitle = 'outfit_processing_subtitle';
-  static const String outfitResultSubtitle = 'outfit_result_subtitle';
-  static const String outfitSelectionSubtitle = 'outfit_selection_subtitle';
+  static const String outfitChangeTitle = 'Outfit Change';
+  static const String outfitProcessingSubtitle = 'Processing ......';
+  static const String outfitResultSubtitle = 'Result';
+  static const String outfitSelectionSubtitle = 'Select your look';
 
-  static const String uploadPhotoTitle = 'upload_photo_title';
-  static const String uploadPhotoDesc = 'upload_photo_desc';
-  static const String noCategoriesFound = 'no_categories_found';
-  static const String noOutfitsFound = 'no_outfits_found';
-  static const String pleaseUploadPhotoFirst = 'please_upload_photo_first';
-  static const String appConfigNotReady = 'app_config_not_ready';
+  static const String uploadPhotoTitle = 'Upload Photo';
+  static const String uploadPhotoDesc = 'Select a clear front photo.';
+  static const String noCategoriesFound = 'No categories found';
+  static const String noOutfitsFound = 'No outfits found for this category';
+  static const String pleaseUploadPhotoFirst = 'Please upload a photo first';
+  static const String appConfigNotReady =
+      'App configuration not ready. Please try again.';
   static const String selectCategoryWithOutfits =
-      'select_category_with_outfits';
+      'Please select an outfit category with outfits.';
 
-  static const String enhanceComingSoon = 'enhance_coming_soon';
-  static const String enhance = 'enhance';
-  static const String reEdit = 're_edit';
-  static const String tryAgain = 'try_again';
-  static const String download = 'download';
-  static const String share = 'share';
-  static const String savedToGallery = 'saved_to_gallery';
-  static const String downloadFailed = 'download_failed';
-  static const String shareFailed = 'share_failed';
-  static const String shareOutfitText = 'share_outfit_text';
+  static const String enhanceComingSoon = 'Enhance coming soon!';
+  static const String enhance = 'Enhance';
+  static const String reEdit = 'Re-Edit';
+  static const String tryAgain = 'Try again';
+  static const String download = 'Download';
+  static const String share = 'Share';
+  static const String savedToGallery = '✅ Saved to gallery!';
+  static const String downloadFailed = 'Download failed';
+  static const String shareFailed = 'Share failed';
+  static const String shareOutfitText = 'Check my AI outfit! ✨';
 
-  static const String processingTitle = 'processing_title';
-  static const String applyingOutfit = 'applying_outfit';
-  static const String takeFewSeconds = 'take_few_seconds';
-  static const String aiTipsTitle = 'ai_tips_title';
+  static const String processingTitle = 'Processing ...';
+  static const String applyingOutfit =
+      'Applying the selected outfit to your photo.';
+  static const String takeFewSeconds = 'This may take a few seconds..';
+  static const String aiTipsTitle = 'AI Tips:';
 
   // All AI Tools Page Strings
-  static const String allAiTools = 'all_ai_tools';
-  static const String searchToolsHint = 'search_tools_hint';
-  static const String clothswap = 'clothswap';
-  static const String videoCategory = 'video_category';
-  static const String imageCategory = 'image_category';
-  static const String aiVideoTool = 'ai_video_tool';
-  static const String backgroundAi = 'background_ai';
-  static const String aiFilterStyle = 'ai_filter_style';
-  static const String aiFilterTitle = 'ai_filter_title';
-  static const String aiFilterDesc = 'ai_filter_desc';
-  static const String aiFilterSuggestion = 'ai_filter_suggestion';
-  static const String generateFilter = 'generate_filter';
-  static const String filterProcessing = 'filter_processing';
-  static const String filterApplying = 'filter_applying';
-  static const String aiRestore = 'ai_restore';
-  static const String aiSticker = 'ai_sticker';
-  static const String aiHeadshot = 'ai_headshot';
-  static const String picCollage = 'pic_collage';
-  static const String aiLogo = 'ai_logo';
+  static const String allAiTools = 'All AI Tools';
+  static const String searchToolsHint = 'Search tools...';
+  static const String clothswap = 'Cloth-Changer';
+  static const String videoCategory = 'Video';
+  static const String imageCategory = 'Image';
+  static const String aiVideoTool = 'AI Video';
+  static const String backgroundAi = 'Background AI';
+  static const String aiFilterStyle = 'AI Filter Style';
+  static const String aiFilterTitle = 'AI Style Filters';
+  static const String aiFilterDesc =
+      'Transform your photo into art within AI filters';
+  static const String aiFilterSuggestion = 'Pick a clear photo of person';
+  static const String generateFilter = 'Generate ⚡';
+  static const String filterProcessing = 'Creating Art...';
+  static const String filterApplying = 'Applying selected style to your photo.';
+  static const String aiRestore = 'Restore AI';
+  static const String aiSticker = 'Sticker AI';
+  static const String aiHeadshot = 'Headshot Pic AI';
+  static const String picCollage = 'Pic Collage';
+  static const String aiLogo = 'Logo AI';
 
   static const List<String> outfitAiTips = [
-    'outfit_tip_clear_photo',
-    'outfit_tip_good_lighting',
-    'outfit_tip_full_body',
-    'outfit_tip_high_quality',
+    'Choose a clear, front-facing photo for best results.',
+    'Well-lit photos with plain backgrounds work best.',
+    'Full-body shots give the most accurate outfit fitting.',
+    'Higher quality source images produce sharper results.',
   ];
 
   static const List<String> stickerAiTips = [
-    'sticker_tip_bright_lighting',
-    'sticker_tip_simple_background',
-    'sticker_tip_style_keywords',
+    'Bright lighting and clear focus yield the best stickers.',
+    'Simple backgrounds make it easier for stickers to pop.',
+    'Try adding style keywords like 3D or Cartoon to your prompt.',
   ];
 
   // Upscale Page Strings
-  static const String upscaleSubtitle = 'upscale_subtitle';
-  static const String tapToSelectGallery = 'tap_to_select_gallery';
-  static const String chooseImage = 'choose_image';
-  static const String upscaleOptions = 'upscale_options';
+  static const String upscaleSubtitle =
+      'Describe your screen below and start creating AI video';
+  static const String tapToSelectGallery = 'Tap to select from gallery';
+  static const String chooseImage = 'Choose image';
+  static const String upscaleOptions = 'Upscale Options';
   static const List<String> upscaleFactors = ['2x', '4x', '8x'];
-  static const String upscaleProcessingTime = 'upscale_processing_time';
-  static const String upscaleButtonText = 'upscale_button_text';
+  static const String upscaleProcessingTime =
+      'Estimated processing time 5-10 seconds';
+  static const String upscaleButtonText = 'Upscale ⚡ ';
 
   // Language Settings
-  static const String chooseLanguage = 'choose_language';
+  static const String chooseLanguage = 'Choose Language';
 
   // AI Restore
-  static const String restoreStrength = 'restore_strength';
-  static const String restoreStrengthDesc = 'restore_strength_desc';
-  static const String aiSuggestion = 'ai_suggestion';
-  static const String restoreSuggestionDesc = 'restore_suggestion_desc';
-  static const String restoreTitle = 'restore_title';
-  static const String restoreDesc = 'restore_desc';
-  static const String restoreButtonText = 'restore_button_text';
+  static const String restoreStrength = 'Restore Strength';
+  static const String restoreStrengthDesc =
+      'Higher = sharper & more detailed result';
+  static const String aiSuggestion = 'AI Suggestion:';
+  static const String restoreSuggestionDesc =
+      'AI will automatically enhance the image quality, fix damage & improve details';
+  static const String restoreTitle = 'AI Restore';
+  static const String restoreDesc =
+      'Transform your photo into art within AI filters';
+  static const String restoreButtonText = 'Restore ⚡';
 
   // AI Headshot
-  static const String headshotTitle = 'headshot_title';
-  static const String headshotDesc = 'headshot_desc';
-  static const String headshotResultDesc = 'headshot_result_desc';
-  static const String headshotSuggestionDesc = 'headshot_suggestion_desc';
-  static const String headshotButtonText = 'headshot_button_text';
+  static const String headshotTitle = 'Professional Headshot';
+  static const String headshotDesc =
+      'Convert any photo into a professional business portrait';
+  static const String headshotResultDesc =
+      'Here\'s your business headshot tailored just for you';
+  static const String headshotSuggestionDesc =
+      'Choose a clear upper body photo';
+  static const String headshotButtonText = 'Create Headshot ⚡';
 
   // AI Sticker
-  static const String stickerTitle = 'sticker_title';
-  static const String stickerImageDesc = 'sticker_image_desc';
-  static const String stickerTextDesc = 'sticker_text_desc';
-  static const String stickerSuggestionDesc = 'sticker_suggestion_desc';
-  static const String stickerButtonText = 'sticker_button_text';
-  static const String generatingSticker = 'generating_sticker';
-  static const String stickerTextToggle = 'sticker_text_toggle';
-  static const String stickerImageToggle = 'sticker_image_toggle';
-  static const String mood = 'mood';
-  static const String stickerReady = 'sticker_ready';
-  static const String bigStickerPreview = 'big_sticker_preview';
-  static const String artisticStyle = 'artistic_style';
+  static const String stickerTitle = 'Create Your Sticker';
+  static const String stickerImageDesc = 'I turn this photo into a sticker';
+  static const String stickerTextDesc = 'I turn this text into a sticker';
+  static const String stickerSuggestionDesc = 'Choose a clear body photo';
+  static const String stickerButtonText = 'Generate ⚡';
+  static const String generatingSticker = 'Generating your sticker...';
+  static const String stickerTextToggle = 'Text';
+  static const String stickerImageToggle = 'Images';
+  static const String mood = 'Mood:';
+  static const String stickerReady = 'Sticker Ready';
+  static const String bigStickerPreview = 'Big sticker preview';
+  static const String artisticStyle = 'Artistic Style:';
 
   // AI Background
-  static const String backgroundAiTitle = 'background_ai_title';
-  static const String backgroundAiDesc = 'background_ai_desc';
-  static const String backgroundAiSuggestion = 'background_ai_suggestion';
-  static const String blurBackground = 'blur_background';
-  static const String removeBackground = 'remove_background';
-  static const String generatingBackground = 'generating_background';
-  static const String backgroundAiResultTitle = 'background_ai_result_title';
+  static const String backgroundAiTitle = 'Background AI';
+  static const String backgroundAiDesc =
+      'Change your photo background\nconvert into blur background';
+  static const String backgroundAiSuggestion =
+      'Pick a clear photo of a person, subject centered';
+  static const String blurBackground = 'Blur Background';
+  static const String removeBackground = 'Remove Background';
+  static const String generatingBackground = 'Processing Photo';
+  static const String backgroundAiResultTitle = 'Check the Result';
 
   // Pic Collage
-  static const String picCollageTitle = 'pic_collage_title';
-  static const String picCollageDesc = 'pic_collage_desc';
-  static const String uploadMultiplePhotos = 'upload_multiple_photos';
-  static const String suggestedTemplates = 'suggested_templates';
-  static const String collageAiTips1 = 'collage_ai_tips_1';
-  static const String collageAiTips2 = 'collage_ai_tips_2';
-  static const String collageAiTips3 = 'collage_ai_tips_3';
-  static const String generatingCollage = 'generating_collage';
+  static const String picCollageTitle = 'Pic Collage';
+  static const String picCollageDesc =
+      'Create stunning photo collages\nwith AI';
+  static const String uploadMultiplePhotos =
+      'Upload 2-10 photos to create a collage';
+  static const String suggestedTemplates = 'Suggested Templates:';
+  static const String collageAiTips1 = 'Use a mix of Photos';
+  static const String collageAiTips2 = 'Face clearly visible.';
+  static const String collageAiTips3 = 'Include diverse scenes';
+  static const String generatingCollage = 'Processing Photos';
 
   // AI Logo Maker
-  static const String logoMakerTitle = 'logo_maker_title';
-  static const String logoMakerDesc = 'logo_maker_desc';
-  static const String logoStyle = 'logo_style';
-  static const String businessLogo = 'business_logo';
-  static const String gamingLogo = 'gaming_logo';
-  static const String minimalLogo = 'minimal_logo';
-  static const String logoSuggestion = 'logo_suggestion';
-  static const String creatingLogo = 'creating_logo';
-  static const String enhancingLogo = 'enhancing_logo';
+  static const String logoMakerTitle = 'AI Logo Maker';
+  static const String logoMakerDesc = 'I turn this text into a\nlogo';
+  static const String logoStyle = 'Style:';
+  static const String businessLogo = 'Business Logo';
+  static const String gamingLogo = 'Gaming Logo';
+  static const String minimalLogo = 'Minimal';
+  static const String logoSuggestion = 'Choose a clear prompt and sentence';
+  static const String creatingLogo = 'Create your logo..';
+  static const String enhancingLogo =
+      'Enhancing your image.\nThis may take a few seconds..';
 
   // Reels Page Strings
-  static const String signInToViewGallery = 'sign_in_to_view_gallery';
-  static const String noReelsFound = 'no_reels_found';
-  static const String craftMasterpiece = 'craft_masterpiece';
-  static const String useTemplate = 'use_template';
-  static const String shareAction = 'share_action';
-  static const String shareMessage = 'share_message';
+  //static const String signInToViewGallery = 'Please sign in to view gallery';
+  static const String noReelsFound = 'No reels found';
+  static const String craftMasterpiece = 'Craft your masterpiece\'s';
+  static const String useTemplate = 'Use template';
+  static const String shareAction = 'Share';
+  static const String shareMessage = 'Check out this creation!';
 }

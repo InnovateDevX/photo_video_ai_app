@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:trail_ai_app/Models/reel.dart';
-import 'package:trail_ai_app/Services/reel_service.dart';
-import 'package:trail_ai_app/Widgets/reel_video_player.dart';
-import 'package:trail_ai_app/pages/generation_page.dart';
-import 'package:trail_ai_app/Services/auth_service.dart';
+import 'package:vidzeon/Models/reel.dart';
+import 'package:vidzeon/Services/reel_service.dart';
+import 'package:vidzeon/Widgets/reel_video_player.dart';
+import 'package:vidzeon/pages/generation_page.dart';
+import 'package:vidzeon/Services/auth_service.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Widgets/firebase_image.dart';
+
+import 'package:vidzeon/Services/replicate_service.dart';
 
 class ReelsPage extends StatefulWidget {
   const ReelsPage({super.key});
@@ -41,10 +42,6 @@ class _ReelsPageState extends State<ReelsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_authService.currentUser == null) {
-      return Center(child: Text('sign_in_to_view_gallery'.i18n()));
-    }
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: FutureBuilder<List<Reel>>(
@@ -70,7 +67,7 @@ class _ReelsPageState extends State<ReelsPage> {
                   ),
                   SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                   Text(
-                    'no_reels_found'.i18n(),
+                    'No reels found',
                     style: TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ],
@@ -133,6 +130,7 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
       context,
       MaterialPageRoute(
         builder: (context) => GenerationPage(
+          showCategoryToggle: false,
           initialPrompt: widget.reel.videoPrompt,
           initialCategory: widget.reel.imageEdit ? 'image' : widget.reel.type,
           initialIsEditable: widget.reel.isEditable,
@@ -184,6 +182,14 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
             videoUrl: reel.videoUrl,
             seamlessLoop: true,
             enablePlayPauseGesture: false,
+            placeholder: reel.previewUrl.isNotEmpty
+                ? SizedBox.expand(
+                    child: FirebaseImage(
+                      url: reel.previewUrl,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : null,
           )
         else
           Container(color: Colors.black),
@@ -236,7 +242,7 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'craft_masterpiece'.i18n(),
+                  'Craft your masterpiece\'s',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -267,7 +273,7 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
                     ),
                     child: Center(
                       child: Text(
-                        '${'use_template'.i18n()} ⚡ $creditCost',
+                        'Use template',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -293,9 +299,9 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
               SizedBox(height: sh * 0.03),
               _ActionButton(
                 icon: Icons.share_outlined,
-                label: 'share_action'.i18n(),
+                label: 'Share',
                 onTap: () {
-                  Share.share("${'share_message'.i18n()} ${reel.videoUrl}");
+                  Share.share("Check out this creation! ${reel.videoUrl}");
                 },
               ),
               SizedBox(height: sh * 0.03),

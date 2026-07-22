@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Reels (Publicly read, publicly update likes/views)
+    match /reels/{reelId} {
+      allow read: if true;
+      allow update: if true;
+      allow create, delete: if false;
+    }
+
+    // Device map (Public read/write for device tracking)
+    match /device_map/{deviceId} {
+      allow read, write: if true;
+    }
+
+    // Users (Public read/write for anonymous profiles)
+    match /users/{uid} {
+      allow read, write: if true;
+
+      match /liked_reels/{reelId} {
+        allow read, write: if true;
+      }
+
+      match /saved_reels/{reelId} {
+        allow read, write: if true;
+      }
+
+      match /assets/{assetId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Usernames
+    match /usernames/{username} {
+      allow read, write: if true;
+    }
+
+    // Subscription Ledger
+    match /subscription_ledgers/{tokenHash} {
+      allow read, write: if true;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -9,9 +10,9 @@ import '../Services/device_service.dart';
 import '../Services/auth_service.dart';
 import '../Services/data_service.dart';
 import '../Services/reel_service.dart';
+import '../Services/credit_service.dart';
 import '../repositories/device_repository.dart';
 import '../repositories/user_repository.dart';
-import '../Services/localization_service.dart';
 import '../Services/notification_service.dart';
 import '../Services/subscription_service.dart';
 
@@ -32,7 +33,12 @@ class AppInitializer {
        _authService = authService ?? AuthService(),
        _deviceRepository = deviceRepository ?? DeviceRepository(),
        _userRepository = userRepository ?? UserRepository(),
-       _firestore = firestore ?? FirebaseFirestore.instance;
+       _firestore =
+           firestore ??
+           FirebaseFirestore.instanceFor(
+             app: Firebase.app(),
+             databaseId: 'default',
+           );
 
   Future<String?> initializeUser() async {
     debugPrint('🚀 [AppInitializer] Starting user initialization…');
@@ -42,7 +48,6 @@ class AppInitializer {
     await RemoteConfigService().initialize();
     await ReelService().initialize();
     await SubscriptionService().initialize();
-    LocalizationService.init();
 
     try {
       // ── Step 1: Stable hardware device ID ─────────────────────────────────
@@ -67,54 +72,49 @@ class AppInitializer {
       final String uid; // always == authUid going forward
 
       if (deviceData != null) {
-        // ── RETURN / REINSTALL: migrate credits to the new auth uid ──────────
-        final int restoredCredits =
-            (deviceData['credits'] as int?) ?? _readInitialCredits();
+        // ── RETURN / REINSTALL ──────────────────────────────────────────────
         debugPrint(
-          '♻️  [AppInitializer] Returning device – restoring $restoredCredits credits → uid=$authUid',
+          '♻️  [AppInitializer] Returning device → uid=$authUid',
         );
 
-        // Create a fresh user doc under the NEW auth uid with restored credits.
-        // Uses merge:true so it's idempotent if the doc already exists
-        // (e.g. in a loop crash re-run).
-        await _userRepository.createUserIfMissing(
-          authUid,
-          initialCredits: restoredCredits,
-        );
+        await _userRepository.createUserIfMissing(authUid);
 
         // Point device_map to the new auth uid.
-        await _deviceRepository.migrateMapping(
-          deviceId: deviceId,
-          newUid: authUid,
-          credits: restoredCredits,
-        );
+        try {
+          await _deviceRepository.migrateMapping(
+            deviceId: deviceId,
+            newUid: authUid,
+          );
+        } catch (e) {
+          debugPrint(
+            '⚠️ [AppInitializer] migrateMapping failed (likely Firestore security rules): $e. '
+            'Continuing startup anyway with authUid: $authUid',
+          );
+        }
 
         uid = authUid;
         debugPrint(
-          '✅ [AppInitializer] Restoration complete. uid=$uid, credits=$restoredCredits',
+          '✅ [AppInitializer] Restoration complete. uid=$uid',
         );
       } else {
         // ── NEW DEVICE: create everything atomically ───────────────────────
         debugPrint('🆕 [AppInitializer] New device → uid=$authUid');
-        final int initialCredits = _readInitialCredits();
 
         final batch = _firestore.batch();
         _deviceRepository.createMapping(
           batch: batch,
           deviceId: deviceId,
           uid: authUid,
-          credits: initialCredits,
         );
         await _userRepository.createUserIfMissing(
           authUid,
           batch: batch,
-          initialCredits: initialCredits,
         );
         await batch.commit();
 
         uid = authUid;
         debugPrint(
-          '✅ [AppInitializer] New user created. uid=$uid, credits=$initialCredits',
+          '✅ [AppInitializer] New user created. uid=$uid',
         );
       }
 
@@ -122,9 +122,49 @@ class AppInitializer {
       UserSession.instance.uid = uid;
       UserSession.instance.deviceId = deviceId;
 
+      // ── Step 4.1: Initialize CreditService EARLY ──────────────────────────
+      // CreditService.initialize() previously was only called lazily from
+      // HomePage.initState / SelectionPage.initState. That meant if the user
+      // completed a subscription purchase from the splash-paywall overlay
+      // (MainNavigationWithPaywall) before ever opening HomePage, the
+      // CreditService singleton was never initialized when _completePurchase
+      // tried to grant credits — leading to silently-skipped credit grants.
+      // We now initialize it here, immediately after uid is set, so it's
+      // ready by the time any purchase can fire.
+      unawaited(
+        CreditService().initialize().catchError((Object e) {
+          debugPrint(
+            '⚠️ [AppInitializer] CreditService.initialize() failed: $e',
+          );
+        }),
+      );
+
       // ── Step 4.2: Sync Subscription State from Firestore ──────────────────
       final isProDB = await _userRepository.getProStatus(uid);
       await SubscriptionService().syncIsSubscribed(isProDB);
+
+      // ── Step 4.3: Late-confirm subscription status (background) ───────────
+      // Re-checks Firestore ~5 s after startup to catch edge cases where:
+      //   • The first sync hit a transient Firestore error and returned stale data.
+      //   • A subscription revocation arrived at Google Play just before launch.
+      //   • The billing client hadn't finished processing pending state changes.
+      // syncIsSubscribed() is a no-op when the value hasn't changed, so this
+      // is cheap and safe to run on every startup.
+      unawaited(
+        Future.delayed(const Duration(seconds: 5), () async {
+          try {
+            final isProLate = await _userRepository.getProStatus(uid);
+            debugPrint(
+              '🛒 [AppInitializer] Late subscription re-check: isPro=$isProLate',
+            );
+            await SubscriptionService().syncIsSubscribed(isProLate);
+          } catch (e) {
+            debugPrint(
+              '⚠️ [AppInitializer] Late subscription re-check failed: $e',
+            );
+          }
+        }),
+      );
 
       // ── Step 4.5: Sync FCM Token ──────────────────────────────────────────
       // Now that UID is set, we can link the device token to the Firestore doc.
@@ -179,7 +219,8 @@ class AppInitializer {
             if (url != null && url.isNotEmpty) {
               imageUrls.add(url);
             }
-            final String? videoUrl = toolData['videoUrl'] ?? toolData['videourl'];
+            final String? videoUrl =
+                toolData['videoUrl'] ?? toolData['videourl'];
             if (videoUrl != null && videoUrl.isNotEmpty) {
               imageUrls.add(videoUrl);
             }
@@ -190,9 +231,12 @@ class AppInitializer {
       // 2. Categories
       for (final category in DataService().categoryData) {
         for (final item in category.images) {
-          if (item.type == 'video' && item.thumbnailUrl != null && item.thumbnailUrl!.isNotEmpty) {
+          if (item.type == 'video' &&
+              item.thumbnailUrl != null &&
+              item.thumbnailUrl!.isNotEmpty) {
             imageUrls.add(item.thumbnailUrl!);
-          } else if (item.imageUrl.isNotEmpty && !item.imageUrl.endsWith('.mp4')) {
+          } else if (item.imageUrl.isNotEmpty &&
+              !item.imageUrl.endsWith('.mp4')) {
             imageUrls.add(item.imageUrl);
           }
         }
@@ -200,9 +244,12 @@ class AppInitializer {
 
       // 3. Trending
       for (final item in DataService().trendingItems) {
-        if (item.type == 'video' && item.thumbnailUrl != null && item.thumbnailUrl!.isNotEmpty) {
+        if (item.type == 'video' &&
+            item.thumbnailUrl != null &&
+            item.thumbnailUrl!.isNotEmpty) {
           imageUrls.add(item.thumbnailUrl!);
-        } else if (item.imageUrl.isNotEmpty && !item.imageUrl.endsWith('.mp4')) {
+        } else if (item.imageUrl.isNotEmpty &&
+            !item.imageUrl.endsWith('.mp4')) {
           imageUrls.add(item.imageUrl);
         }
       }

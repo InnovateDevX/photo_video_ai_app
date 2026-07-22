@@ -1,20 +1,20 @@
-import 'dart:io';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gal/gal.dart';
-import 'package:image_picker/image_picker.dart';
 
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/pages/home_page.dart';
-import 'package:trail_ai_app/pages/all_ai_tools_page.dart';
-import 'package:trail_ai_app/pages/selection.dart';
-import 'package:trail_ai_app/pages/settings_page.dart';
-import 'package:trail_ai_app/pages/reels_page.dart';
-import 'package:trail_ai_app/pages/profile_page.dart';
-import 'package:trail_ai_app/pages/image_editor_page.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Services/subscription_service.dart';
+import 'package:vidzeon/Widgets/main_navigation_with_paywall.dart';
+import 'package:vidzeon/pages/home_page.dart';
+import 'package:vidzeon/pages/all_ai_tools_page.dart';
+import 'package:vidzeon/pages/generation_page.dart';
+import 'package:vidzeon/pages/reels_page.dart';
+import 'package:vidzeon/pages/profile_page.dart';
+import 'package:adjust_sdk/adjust.dart';
+import 'package:adjust_sdk/adjust_event.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -25,25 +25,85 @@ class MainNavigation extends StatefulWidget {
 
 class MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
-  final List<Widget> _pages = const [
-    Homepage(),
-    ReelsPage(),
-    Selection(),
-    ProfilePage(),
-    SettingsPage(),
-    AllAiToolsPage(),
-  ];
+
+  // GlobalKeys let us call methods on the page states when tabs become active.
+  final _generationKey = GlobalKey<GenerationPageState>();
+  final _allAiToolsKey = GlobalKey<AllAiToolsPageState>();
+
+  late final List<Widget> _pages;
+
+  /// Tracks whether the user was subscribed when this widget was built.
+  /// Used to detect a live revocation (true → false transition) vs.
+  /// a normal non-subscribed startup (false at init).
+  late bool _wasSubscribed;
+  StreamSubscription<bool>? _subRevocationSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const Homepage(),
+      const ReelsPage(),
+      GenerationPage(key: _generationKey, isEmbeddedAsTab: true),
+      const ProfilePage(),
+      AllAiToolsPage(key: _allAiToolsKey, isEmbeddedAsTab: true),
+    ];
+    _requestPermissions();
+
+    // Snapshot the subscription state at mount time.
+    _wasSubscribed = SubscriptionService().isSubscribed;
+
+    // Listen for live subscription revocation (cancellation / expiry).
+    // When the stream emits false AND the user was previously subscribed,
+    // replace this route with MainNavigationWithPaywall so the paywall
+    // reappears immediately without requiring a restart.
+    _subRevocationSub = SubscriptionService().subscriptionStream.listen((
+      isSubscribed,
+    ) {
+      if (!isSubscribed && _wasSubscribed && mounted) {
+        debugPrint(
+          '🛒 [MainNavigation] Subscription revoked — showing paywall.',
+        );
+        // Lazy import avoids a circular dependency at the top of the file.
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder<void>(
+            pageBuilder: (ctx, anim, secondaryAnim) =>
+                const MainNavigationWithPaywall(),
+            transitionsBuilder: (ctx, anim, secondaryAnim, child) =>
+                FadeTransition(
+                  opacity: CurvedAnimation(parent: anim, curve: Curves.easeIn),
+                  child: child,
+                ),
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      }
+      // Keep _wasSubscribed in sync for the next transition.
+      _wasSubscribed = isSubscribed;
+    });
+  }
 
   void switchTab(int index) {
     setState(() {
       _currentIndex = index;
     });
+    // Notify the relevant page that it just became visible.
+    if (index == 1) {
+      // Reels tab clicked - track Adjust event
+      final adjustEvent = AdjustEvent('wn44jx');
+      Adjust.trackEvent(adjustEvent);
+    } else if (index == 2) {
+      _generationKey.currentState?.onTabActivated();
+    } else if (index == 4) {
+      _allAiToolsKey.currentState?.onTabActivated();
+    }
+    print('swiching tab $index');
   }
 
   @override
-  void initState() {
-    super.initState();
-    _requestPermissions();
+  void dispose() {
+    _subRevocationSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _requestPermissions() async {
@@ -69,10 +129,8 @@ class MainNavigationState extends State<MainNavigation> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildNavItem('assets/iconoir_home.svg', 0, isDark),
-        _buildNavItem('assets/Group 48095580.svg', 1, isDark),
         _buildCentralItem(isDark),
-        _buildNavItem('assets/iconamoon_profile-light.svg', 3, isDark),
-        _buildNavItem('assets/weui_setting-outlined.svg', 4, isDark),
+        _buildNavItem('assets/Group 48095580.svg', 1, isDark),
       ],
     );
 
@@ -80,42 +138,44 @@ class MainNavigationState extends State<MainNavigation> {
       backgroundColor: AppColors.backgroundColor(isDark),
       extendBody: true, // Always extend body to allow the blur/glass effect
       body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(
-          left: w * 0.09,
-          right: w * 0.09,
-          bottom: MediaQuery.of(context).padding.bottom > 0
-              ? MediaQuery.of(context).padding.bottom
-              : h * 0.03,
-        ),
-        child: Container(
-          height: h * 0.083, // Slightly larger height
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(w * 0.09),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(w * 0.09),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+      bottomNavigationBar: _currentIndex == 2
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(
+                left: w * 0.09,
+                right: w * 0.09,
+                bottom: MediaQuery.of(context).padding.bottom > 0
+                    ? MediaQuery.of(context).padding.bottom
+                    : h * 0.03,
+              ),
               child: Container(
+                height: h * 0.083, // Slightly larger height
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(w * 0.09),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.15)
-                        : Colors.white.withValues(alpha: 0.5),
-                    width: 1.2,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(w * 0.09),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.white.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(w * 0.09),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.15)
+                              : Colors.white.withValues(alpha: 0.5),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: navRow,
+                    ),
                   ),
                 ),
-                child: navRow,
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -130,7 +190,7 @@ class MainNavigationState extends State<MainNavigation> {
     final verticalPadding = w * 0.022; // Increased padding
 
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () => switchTab(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
@@ -169,166 +229,12 @@ class MainNavigationState extends State<MainNavigation> {
     final iconSize = w * 0.07; // Increased icon size
 
     return GestureDetector(
-      onTap: _onCentralButtonTapped,
+      onTap: () => switchTab(2),
       child: Container(
         width: circleSize,
         height: circleSize,
         decoration: const ProGradientDecoration(shape: BoxShape.circle),
         child: Icon(Icons.add, color: Colors.white, size: iconSize),
-      ),
-    );
-  }
-
-  Future<void> _onCentralButtonTapped() async {
-    // Show image source selection bottom sheet
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final w = MediaQuery.of(ctx).size.width;
-        return ClipRRect(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(MediaQuery.of(context).size.width * 0.06)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: EdgeInsets.fromLTRB(
-                w * 0.05,
-                w * 0.04,
-                w * 0.05,
-                w * 0.06,
-              ),
-              decoration: BoxDecoration(
-                color: Color.fromRGBO(0, 0, 0, 0.5),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(MediaQuery.of(context).size.width * 0.06),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: w * 0.1,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white30,
-                      borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.2475),
-                    ),
-                  ),
-                  const Text(
-                    'Create New',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-                  const Text(
-                    'Choose an image to edit',
-                    style: TextStyle(color: Colors.white60, fontSize: 14),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SourceTile(
-                          icon: Icons.photo_library_outlined,
-                          label: 'Gallery',
-                          onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-                        ),
-                      ),
-                      SizedBox(width: w * 0.04),
-                      Expanded(
-                        child: _SourceTile(
-                          icon: Icons.camera_alt_outlined,
-                          label: 'Camera',
-                          onTap: () => Navigator.pop(ctx, ImageSource.camera),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.white54, fontSize: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (source == null) return;
-
-    // Pick image using helper to include safety check
-    final File? pickedFile = await ImagePickerHelper.pickImage(
-      context: context,
-      crop: false,
-      source: source,
-    );
-
-    if (pickedFile == null || !mounted) return;
-
-    // Navigate to image editor
-    final result = await Navigator.push<File?>(
-      context,
-      MaterialPageRoute(builder: (_) => ImageEditorPage(imageFile: pickedFile)),
-    );
-
-    // Optionally navigate to selection page after editing
-    if (result != null && mounted) {
-      setState(() => _currentIndex = 2);
-    }
-  }
-}
-
-class _SourceTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _SourceTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: w * 0.05),
-        decoration: BoxDecoration(
-          color: const Color.fromRGBO(255, 255, 255, 0.12),
-          borderRadius: BorderRadius.circular(w * 0.04),
-          border: Border.all(
-            color: const Color.fromRGBO(255, 255, 255, 0.2),
-            width: 0.8,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: w * 0.08),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

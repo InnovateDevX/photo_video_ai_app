@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
+import 'package:vidzeon/Core/gradient.dart';
 
 class CropBottomPanel extends StatefulWidget {
   final dynamic editor;

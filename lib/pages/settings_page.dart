@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/theme_notifier.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // AppStrings.appVersion
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/routes.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:vidzeon/Core/theme_notifier.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
+// AppStrings.appVersion
+
+import 'package:vidzeon/Core/routes.dart';
+import 'package:vidzeon/Services/review_service.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/auth_service.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:trail_ai_app/Widgets/main_navigation.dart';
+import 'package:vidzeon/Widgets/main_navigation.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:vidzeon/Services/subscription_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -21,18 +25,39 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = '${info.appName} v${info.version}(${info.buildNumber})';
+      });
+    }
+  }
+
   Future<void> _launchUrl(String urlString) async {
     final Uri url = Uri.parse(urlString);
     try {
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
         if (mounted) {
-          ScaffoldMessenger.of(
+          showThemedDialog(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Could not launch URL')));
+            title: 'Error',
+            message: 'Could not launch URL',
+            icon: Icons.error_outline,
+            iconColor: Colors.red,
+          );
         }
       }
     } catch (e) {
-      debugPrint('Error launching URL: \$e');
+      debugPrint('Error launching URL: $e');
     }
   }
 
@@ -88,7 +113,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SizedBox(width: w * 0.04), // Space between button and title
                   Text(
-                    'settings_title'.i18n(),
+                    'Settings',
                     style: TextStyle(
                       fontSize: w * 0.055,
                       fontWeight: FontWeight.bold,
@@ -121,7 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // General section
-                    _sectionHeader('general'.i18n(), darkTheme),
+                    _sectionHeader('General', darkTheme),
                     _settingsTile(
                       isDark: darkTheme,
                       icon: Image.asset(
@@ -178,8 +203,85 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     SizedBox(height: h * 0.02),
 
+                    // Subscription section
+                    _sectionHeader('Subscription', darkTheme),
+                    _settingsTile(
+                      isDark: darkTheme,
+                      icon: Icon(
+                        Icons.restore,
+                        size: w * 0.055,
+                        color: AppColors.iconColor(darkTheme),
+                      ),
+                      label: 'Restore Purchases',
+                      onTap: () async {
+                        try {
+                          ErrorDialogHelper.showLoadingDialog(
+                            context,
+                            message: 'Restoring purchases...',
+                          );
+                          final result = await SubscriptionService()
+                              .restorePurchases();
+                          if (context.mounted) {
+                            ErrorDialogHelper.hideLoadingDialog(context);
+                            if (result.success) {
+                              ErrorDialogHelper.showSuccessDialog(
+                                context,
+                                title: 'Success',
+                                message: result.message,
+                              );
+                            } else {
+                              ErrorDialogHelper.showErrorDialog(
+                                context,
+                                title: 'Restore Failed',
+                                message: result.message,
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ErrorDialogHelper.hideLoadingDialog(context);
+                            ErrorDialogHelper.showErrorDialog(
+                              context,
+                              title: 'Error',
+                              message: 'Failed to restore: $e',
+                            );
+                          }
+                        }
+                      },
+                    ),
+                    _settingsTile(
+                      isDark: darkTheme,
+                      icon: Icon(
+                        Icons.cancel_presentation_outlined,
+                        size: w * 0.055,
+                        color: AppColors.iconColor(darkTheme),
+                      ),
+                      label: 'Cancel Subscription',
+                      onTap: () {
+                        ErrorDialogHelper.showConfirmationDialog(
+                          context,
+                          title: 'Cancel Subscription',
+                          message:
+                              'You will be redirected to the Google Play Store to manage or cancel your active subscriptions. Do you want to proceed?',
+                          confirmText: 'Proceed',
+                          onConfirm: () async {
+                            const url =
+                                'https://play.google.com/store/account/subscriptions';
+                            if (await canLaunchUrl(Uri.parse(url))) {
+                              await launchUrl(
+                                Uri.parse(url),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
+
+                    SizedBox(height: h * 0.02),
+
                     // Help Center section
-                    _sectionHeader('help_center'.i18n(), darkTheme),
+                    _sectionHeader('Help Center', darkTheme),
                     _settingsTile(
                       isDark: darkTheme,
                       icon: Icon(
@@ -187,15 +289,32 @@ class _SettingsPageState extends State<SettingsPage> {
                         size: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'share_app'.i18n(),
-                      onTap: () {
-                        final url = RemoteConfigService().shareAppUrl;
-                        if (url.isNotEmpty) {
-                          Share.share(url);
-                        } else {
-                          debugPrint(
-                            'Share App URL is not configured in Remote Config.',
-                          );
+                      label: 'Share App',
+                      onTap: () async {
+                        try {
+                          String url = RemoteConfigService().shareAppUrl;
+                          if (url.isEmpty) {
+                            PackageInfo packageInfo =
+                                await PackageInfo.fromPlatform();
+                            String packageName = packageInfo.packageName;
+                            url =
+                                "https://play.google.com/store/apps/details?id=$packageName";
+                          }
+
+                          String subject = "Check out this Amazing App!";
+                          String message = "Download this awesome app: $url";
+
+                          await Share.share(message, subject: subject);
+                        } catch (e) {
+                          if (context.mounted) {
+                            showThemedDialog(
+                              context,
+                              title: 'Error',
+                              message: "Error sharing app: $e",
+                              icon: Icons.error_outline,
+                              iconColor: Colors.red,
+                            );
+                          }
                         }
                       },
                     ),
@@ -206,7 +325,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         size: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'privacy_policy'.i18n(),
+                      label: 'Privacy Policy',
                       onTap: () =>
                           _launchUrl(RemoteConfigService().privacyPolicyUrl),
                     ),
@@ -217,30 +336,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         size: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'customer_support'.i18n(),
+                      label: 'Customer Support',
                       onTap: () =>
                           _launchUrl(RemoteConfigService().customerSupportUrl),
-                    ),
-                    _settingsTile(
-                      isDark: darkTheme,
-                      icon: Icon(
-                        Icons.language_outlined,
-                        size: w * 0.055,
-                        color: AppColors.iconColor(darkTheme),
-                      ),
-                      label: 'language'.i18n(),
-                      onTap: () =>
-                          Navigator.pushNamed(context, AppRoutes.language),
-                    ),
-                    _settingsTile(
-                      isDark: darkTheme,
-                      icon: Icon(
-                        Icons.help_outline,
-                        size: w * 0.055,
-                        color: AppColors.iconColor(darkTheme),
-                      ),
-                      label: 'faq'.i18n(),
-                      onTap: () => _launchUrl(RemoteConfigService().faqUrl),
                     ),
                     _settingsTile(
                       isDark: darkTheme,
@@ -249,7 +347,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         size: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'terms_of_use'.i18n(),
+                      label: 'Terms of Use',
                       onTap: () =>
                           _launchUrl(RemoteConfigService().termsOfUseUrl),
                     ),
@@ -260,27 +358,61 @@ class _SettingsPageState extends State<SettingsPage> {
                         size: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'rate_us'.i18n(),
-                      onTap: () => debugPrint('Rate Us tapped'),
+                      label: 'Rate us',
+                      onTap: () => ReviewService().openStoreListing(),
                     ),
 
-                    SizedBox(height: h * 0.03),
+                    SizedBox(height: h * 0.02),
 
-                    // Login button
-                    _LoginButton(w: w, h: h),
+                    // Account section (Replaced standalone Delete Button)
+                    _sectionHeader('Account', darkTheme),
+                    _settingsTile(
+                      isDark: darkTheme,
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: w * 0.055,
+                        color: AppColors.iconColor(darkTheme),
+                      ),
+                      label: 'Delete Account',
+                      onTap: () {
+                        ErrorDialogHelper.showConfirmationDialog(
+                          context,
+                          title: 'Delete Account',
+                          message:
+                              'Are you sure you want to delete your account? This action cannot be undone.',
+                          confirmText: 'Delete',
+                          onConfirm: () async {
+                            ErrorDialogHelper.showLoadingDialog(
+                              context,
+                              message: 'Deleting account...',
+                            );
+                            await AuthService().deleteAccount();
+                            if (context.mounted) {
+                              ErrorDialogHelper.hideLoadingDialog(context);
+                              // Generate a new session by navigating home
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                AppRoutes.home,
+                                (route) => false,
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
 
                     SizedBox(height: h * 0.02),
 
                     // Version
-                    Center(
-                      child: Text(
-                        AppStrings.appVersion,
-                        style: TextStyle(
-                          color: AppColors.secondaryTextColor(darkTheme),
-                          fontSize: w * 0.03,
+                    if (_version.isNotEmpty)
+                      Center(
+                        child: Text(
+                          _version,
+                          style: TextStyle(
+                            color: AppColors.secondaryTextColor(darkTheme),
+                            fontSize: w * 0.03,
+                          ),
                         ),
                       ),
-                    ),
 
                     SizedBox(height: h * 0.02),
                   ],
@@ -387,7 +519,7 @@ class _CreditsCard extends StatelessWidget {
               SizedBox(width: w * 0.03),
               Expanded(
                 child: Text(
-                  'my_credits'.i18n(),
+                  'My Credits',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: w * 0.04,
@@ -453,7 +585,7 @@ class _CreditsCard extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'pro_label'.i18n(),
+                        'Pro',
                         style: TextStyle(
                           color: Colors
                               .white, // Pro gradient text is fine as white
@@ -466,68 +598,6 @@ class _CreditsCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---------- Login Button ----------
-class _LoginButton extends StatelessWidget {
-  const _LoginButton({required this.w, required this.h});
-  final double w;
-  final double h;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: AuthService().authStateChanges,
-      builder: (context, snapshot) {
-        final user = snapshot.data;
-        final isGuest = user == null || user.isAnonymous;
-
-        return GestureDetector(
-          onTap: () async {
-            if (isGuest) {
-              Navigator.pushNamed(context, AppRoutes.login);
-            } else {
-              // Sign out and re-initialize to get a fresh anonymous session
-              await AuthService().signOutWithCleanup();
-              // To ensure the app resets gracefully to the home page:
-              if (context.mounted) {
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
-              }
-            }
-          },
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: h * 0.018),
-            decoration: ProGradientDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(w * 0.08)),
-              blurSigma: 15.0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isGuest ? Icons.login : Icons.logout,
-                  color: Colors.white,
-                  size: w * 0.05,
-                ),
-                SizedBox(width: w * 0.02),
-                Text(
-                  isGuest ? 'login'.i18n() : 'Log Out',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: w * 0.04,
-                  ),
-                ),
-              ],
-            ),
           ),
         );
       },

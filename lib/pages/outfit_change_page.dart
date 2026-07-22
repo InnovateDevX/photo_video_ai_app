@@ -1,25 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
-import 'package:localization/localization.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Core/strings.dart'; // non-translatable
 
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/generation_gate.dart';
-import 'package:trail_ai_app/pages/ai_loading_screen.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/generation_gate.dart';
+import 'package:vidzeon/pages/ai_loading_screen.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
-import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
 import 'dart:convert';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
-import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
-import 'package:trail_ai_app/Services/base64_image_encoder.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Widgets/cancel_dialog.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
+import 'package:vidzeon/Services/base64_image_encoder.dart';
 import 'package:path_provider/path_provider.dart';
 
 // ── Page state ─────────────────────────────────────────────────────────────
@@ -37,8 +36,6 @@ class _OutfitChangePageState extends State<OutfitChangePage>
   // ── Services ───────────────────────────────────────────────────────────────
   final CreditService _creditService = CreditService();
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
-
   // ── Selection state ────────────────────────────────────────────────────────
   File? _selectedImage;
   List<String> categories = [];
@@ -89,7 +86,9 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       _isLoadingOutfits = true;
     });
     try {
-      final result = await FirebaseStorage.instance.ref('Dress Images').listAll();
+      final result = await FirebaseStorage.instance
+          .ref('Dress Images')
+          .listAll();
       final folderNames = result.prefixes.map((ref) => ref.name).toList();
 
       Map<String, List<Reference>> refsMap = {};
@@ -210,6 +209,13 @@ class _OutfitChangePageState extends State<OutfitChangePage>
           _isLoadingCategories = false;
           _isLoadingOutfits = false;
         });
+        showThemedDialog(
+          context,
+          title: 'Error Fetching Outfits',
+          message: e.toString(),
+          icon: Icons.error_outline,
+          iconColor: Colors.red,
+        );
       }
     }
   }
@@ -230,20 +236,32 @@ class _OutfitChangePageState extends State<OutfitChangePage>
 
   Future<void> _generateOutfit() async {
     if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('please_upload_photo_first'.i18n())),
+      showThemedDialog(
+        context,
+        title: 'Upload Photo',
+        message: 'Please upload a photo first',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
       );
       return;
     }
     if (_replicateService.clothModel == null) {
-      ScaffoldMessenger.of(
+      showThemedDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text('app_config_not_ready'.i18n())));
+        title: 'Error',
+        message: 'App configuration not ready. Please try again.',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      );
       return;
     }
     if (_outfitRefs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('select_category_with_outfits'.i18n())),
+      showThemedDialog(
+        context,
+        title: 'Select Outfit',
+        message: 'Please select an outfit category with outfits.',
+        icon: Icons.info_outline,
+        iconColor: Colors.blue,
       );
       return;
     }
@@ -256,7 +274,6 @@ class _OutfitChangePageState extends State<OutfitChangePage>
     final cost = _replicateService.clothModel?.creditUsed ?? 50;
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: cost,
     );
@@ -293,7 +310,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
       try {
         final b64Image1 = await Base64ImageEncoder.encodeFile(_selectedImage!);
         final b64Image2 = await Base64ImageEncoder.encodeFile(tempFile);
-        
+
         final debugJson = jsonEncode({
           'user_image_index_0': b64Image1,
           'cloth_image_index_1': b64Image2,
@@ -301,16 +318,19 @@ class _OutfitChangePageState extends State<OutfitChangePage>
 
         // We use path_provider to get external storage so you can access it via File Manager
         final directory = await getExternalStorageDirectory();
-        final debugFile = File('${directory!.path}/debug_base64_${DateTime.now().millisecondsSinceEpoch}.json');
+        final debugFile = File(
+          '${directory!.path}/debug_base64_${DateTime.now().millisecondsSinceEpoch}.json',
+        );
         await debugFile.writeAsString(debugJson);
-        
+
         debugPrint('✅ [DEBUG] Base64 JSON saved locally to: ${debugFile.path}');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Debug JSON saved locally! Path in console.'),
-              duration: Duration(seconds: 5),
-            ),
+          showThemedDialog(
+            context,
+            title: 'Debug JSON Saved',
+            message: 'Debug JSON saved locally! Path in console.',
+            icon: Icons.save_alt_outlined,
+            iconColor: Colors.green,
           );
         }
       } catch (e) {
@@ -349,9 +369,13 @@ class _OutfitChangePageState extends State<OutfitChangePage>
             messageKey: e.messageKey,
           );
         } else {
-          ScaffoldMessenger.of(
+          showThemedDialog(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+            title: 'Error',
+            message: 'Error: $e',
+            icon: Icons.error_outline,
+            iconColor: Colors.red,
+          );
         }
       }
     }
@@ -391,7 +415,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
           Column(
             children: [
               Text(
-                'outfit_change_title'.i18n(),
+                'Outfit Change',
                 style: TextStyle(
                   fontSize: sw * 0.048,
                   fontWeight: FontWeight.bold,
@@ -475,14 +499,13 @@ class _OutfitChangePageState extends State<OutfitChangePage>
             children: [
               // Credits top bar
 
-
               // Navigation bar (changes subtitle per state)
               _buildTopBar(
                 isDark: isDark,
                 subtitle: switch (_pageState) {
-                  _PageState.loading => 'outfit_processing_subtitle'.i18n(),
-                  _PageState.result => 'outfit_result_subtitle'.i18n(),
-                  _PageState.selection => 'outfit_selection_subtitle'.i18n(),
+                  _PageState.loading => 'Processing ......',
+                  _PageState.result => 'Result',
+                  _PageState.selection => 'Select your look',
                 },
                 onBack: switch (_pageState) {
                   _PageState.loading => _showCancelWarningDialog,
@@ -499,12 +522,11 @@ class _OutfitChangePageState extends State<OutfitChangePage>
                   _PageState.loading => AILoadingScreen(
                     selectedImage: _selectedImage,
                     progressAnimation: _progressAnimation,
-                    aiTips: AppStrings.outfitAiTips
-                        .map((e) => e.i18n())
-                        .toList(),
-                    processingTitle: 'processing_title'.i18n(),
-                    applyingText: 'applying_outfit'.i18n(),
-                    waitText: 'take_few_seconds'.i18n(),
+                    // Pass the list of strings directly
+                    aiTips: AppStrings.outfitAiTips,
+                    processingTitle: 'Processing ...',
+                    applyingText: 'Applying the selected outfit to your photo.',
+                    waitText: 'This may take a few seconds..',
                     onCancel: _showCancelWarningDialog,
                   ),
                   _PageState.result => const SizedBox.shrink(),
@@ -581,7 +603,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'upload_photo_title'.i18n(),
+                        'Upload Photo',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppColors.textColor(isDark),
@@ -589,7 +611,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
                         ),
                       ),
                       Text(
-                        'upload_photo_desc'.i18n(),
+                        'Select a clear front photo.',
                         style: TextStyle(
                           fontSize: sw * 0.03,
                           color: AppColors.secondaryTextColor(isDark),
@@ -610,7 +632,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
               : categories.isEmpty
               ? Center(
                   child: Text(
-                    'no_categories_found'.i18n(),
+                    'No categories found',
                     style: TextStyle(color: AppColors.textColor(isDark)),
                   ),
                 )
@@ -675,11 +697,11 @@ class _OutfitChangePageState extends State<OutfitChangePage>
           _isLoadingCategories
               ? const SizedBox.shrink()
               : _isLoadingOutfits
-                  ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : _outfitRefs.isEmpty
               ? Center(
                   child: Text(
-                    'no_outfits_found'.i18n(),
+                    'No outfits found for this category',
                     style: TextStyle(color: AppColors.textColor(isDark)),
                   ),
                 )
@@ -775,17 +797,7 @@ class _OutfitChangePageState extends State<OutfitChangePage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'create'.i18n(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: sw * 0.045,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: sw * 0.02),
-                      Icon(Icons.bolt, color: Colors.white, size: sw * 0.05),
-                      Text(
-                        '${_replicateService.clothModel?.creditUsed ?? 0}',
+                        'Generate Outfit',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: sw * 0.045,

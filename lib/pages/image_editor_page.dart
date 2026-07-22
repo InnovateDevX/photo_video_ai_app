@@ -6,28 +6,29 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
-import 'package:trail_ai_app/Models/effect_overlay.dart';
-import 'package:trail_ai_app/Widgets/effect_overlay_preview.dart';
-import 'package:trail_ai_app/Services/image_editor_bloc.dart';
-import 'package:trail_ai_app/Services/effect_engine.dart';
-import 'package:trail_ai_app/Models/curves_data.dart';
-import 'package:trail_ai_app/Widgets/curves_editor.dart';
-import 'package:trail_ai_app/Services/curves_processor.dart';
-import 'package:trail_ai_app/Core/theme_notifier.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
-import 'package:trail_ai_app/Widgets/editor/editor_top_bar.dart';
-import 'package:trail_ai_app/Widgets/editor/editor_bottom_panel.dart';
-import 'package:trail_ai_app/Widgets/editor/editor_controls.dart';
-import 'package:trail_ai_app/Widgets/editor/editor_tools_grid.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
+import 'package:vidzeon/Models/effect_overlay.dart';
+import 'package:vidzeon/Widgets/effect_overlay_preview.dart';
+import 'package:vidzeon/Services/image_editor_bloc.dart';
+import 'package:vidzeon/Services/effect_engine.dart';
+import 'package:vidzeon/Models/curves_data.dart';
+import 'package:vidzeon/Widgets/curves_editor.dart';
+import 'package:vidzeon/Services/curves_processor.dart';
+import 'package:vidzeon/Core/theme_notifier.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
+import 'package:vidzeon/Widgets/editor/editor_top_bar.dart';
+import 'package:vidzeon/Widgets/editor/editor_bottom_panel.dart';
+import 'package:vidzeon/Widgets/editor/editor_controls.dart';
+import 'package:vidzeon/Widgets/editor/editor_tools_grid.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:trail_ai_app/Widgets/editor/crop_bottom_panel.dart';
+import 'package:vidzeon/Widgets/editor/crop_bottom_panel.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:trail_ai_app/Widgets/editor/firebase_sticker_picker.dart';
-import 'package:trail_ai_app/Widgets/editor/firebase_frame_picker.dart';
+import 'package:vidzeon/Widgets/editor/firebase_sticker_picker.dart';
+import 'package:vidzeon/Widgets/editor/firebase_frame_picker.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
 
 import 'package:pro_image_editor/core/models/layers/layer_interaction.dart';
-import 'package:trail_ai_app/Services/effect_service.dart';
+import 'package:vidzeon/Services/effect_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 class ImageEditorPage extends StatelessWidget {
@@ -826,18 +827,12 @@ class _ImageEditorViewState extends State<_ImageEditorView>
           (c.closeToolTrigger && !p.closeToolTrigger),
       listener: (ctx, state) {
         if (state.message != null) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(
-              content: Text(state.message!),
-              backgroundColor: AppEditorConstants.accent,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.only(bottom: 340, left: 20, right: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  MediaQuery.of(context).size.width * 0.03,
-                ),
-              ),
-            ),
+          showThemedDialog(
+            ctx,
+            title: 'Notice',
+            message: state.message!,
+            icon: Icons.info_outline,
+            iconColor: Colors.blue,
           );
           if (state.message == 'Background removed!' ||
               state.message == 'Background blurred!') {

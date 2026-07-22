@@ -97,4 +97,27 @@ class LocalStorageService {
 
     assetsNotifier.value = updatedList;
   }
+
+  /// Clears local generated assets and media files without touching credits or ledger data
+  Future<void> clearAllData() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final asset in assetsNotifier.value) {
+      try {
+        final file = File(asset.filePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+        if (asset.thumbnailPath != null) {
+          final thumb = File(asset.thumbnailPath!);
+          if (await thumb.exists()) {
+            await thumb.delete();
+          }
+        }
+      } catch (e) {
+        debugPrint('Error deleting file on clearAllData: $e');
+      }
+    }
+    await prefs.remove(_assetsKey);
+    assetsNotifier.value = [];
+  }
 }

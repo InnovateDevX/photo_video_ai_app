@@ -1,68 +1,60 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:trail_ai_app/Core/user_session.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
+import 'package:vidzeon/Core/user_session.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/repositories/user_repository.dart';
+import 'package:vidzeon/Services/local_storage_service.dart';
 
 /// Service responsible for Firebase Authentication.
 /// Architecture Decision: Dependency injection ready structure.
 class AuthService {
   final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
 
-  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
+  AuthService({FirebaseAuth? auth})
+    : _auth = auth ?? FirebaseAuth.instance;
 
   /// Starts an anonymous Firebase session.
   Future<UserCredential> signInAnonymously() async {
     return await _auth.signInAnonymously();
   }
 
-  /// Sign in with Email and Password
-  Future<UserCredential> signInWithEmail(String email, String password) async {
-    return await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-  }
-
-  /// Sign up with Email and Password
-  Future<UserCredential> signUpWithEmail(String email, String password) async {
-    return await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-  }
-
-  /// Sign in with Google
-  Future<UserCredential?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-      final authorization = await googleUser.authorizationClient
-          .authorizationForScopes(['email', 'profile']);
-
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: authorization?.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      return await _auth.signInWithCredential(credential);
-    } catch (e) {
-      if (e is GoogleSignInException &&
-          e.code == GoogleSignInExceptionCode.canceled) {
-        return null;
-      }
-      rethrow;
-    }
-  }
-
   /// Ends the current Firebase session.
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _auth.signOut();
+  }
+
+  /// Deletes user's local app data and session while leaving credits and subscription ledgers intact.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    
+    // Clear user local app data (generated assets, media files)
+    try {
+      await LocalStorageService().clearAllData();
+    } catch (e) {
+      debugPrint('⚠️ [AuthService] Failed to clear local app data: $e');
+    }
+
+    if (user != null) {
+      final uid = user.uid;
+      
+      // Delete user profile document in Firestore (leaves subscription_ledgers intact)
+      try {
+        await UserRepository().deleteUser(uid);
+      } catch (e) {
+        debugPrint('⚠️ [AuthService] Failed to delete user doc: $e');
+      }
+      
+      // Delete the Firebase Auth user
+      try {
+        await user.delete();
+      } catch (e) {
+        debugPrint('⚠️ [AuthService] Failed to delete auth user: $e');
+      }
+      
+      // Clear local session (credits in subscription ledgers remain safe)
+      UserSession.instance.uid = null;
+      UserSession.instance.deviceId = null;
+    }
   }
 
   /// Signs out and performs cleanup to prevent permission errors.
@@ -78,8 +70,7 @@ class AuthService {
     //    after authentication state changes
     CreditService().resetForLogout();
 
-    // 3. Sign out from Firebase and Google
-    await _googleSignIn.signOut();
+    // 3. Sign out from Firebase
     await _auth.signOut();
   }
 

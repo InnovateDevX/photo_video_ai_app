@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../Models/user_model.dart';
@@ -8,7 +9,7 @@ class UserRepository {
   final FirebaseFirestore _firestore;
 
   UserRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
 
   // ── Document creation ───────────────────────────────────────────────────
 
@@ -255,16 +256,24 @@ class UserRepository {
   Future<bool> getProStatus(String uid) async {
     debugPrint('🔍 [UserRepository] getProStatus(uid=$uid)');
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (doc.exists) {
-        final isPro = doc.data()?['isPro'] as bool? ?? false;
-        debugPrint('🔍 [UserRepository] isPro: $isPro');
-        return isPro;
+      final docSnapshot = await _firestore.collection('users').doc(uid).get();
+      if (docSnapshot.exists && docSnapshot.data()!.containsKey('isPro')) {
+        return docSnapshot.data()!['isPro'] as bool;
       }
     } catch (e) {
-      debugPrint('❌ [UserRepository] getProStatus FAILED: $e');
+      debugPrint('❌ [UserRepository] Failed to fetch pro status for uid=$uid: $e');
     }
     return false;
   }
-}
 
+  /// Deletes a user document.
+  Future<void> deleteUser(String uid) async {
+    try {
+      await _firestore.collection('users').doc(uid).delete();
+      debugPrint('💾 [UserRepository] Deleted users/$uid');
+    } catch (e) {
+      debugPrint('❌ [UserRepository] Failed to delete user $uid: $e');
+      rethrow;
+    }
+  }
+}

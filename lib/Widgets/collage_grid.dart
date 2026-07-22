@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
-import 'package:trail_ai_app/Models/collage_template.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Models/collage_template.dart';
 
 class CollageGrid extends StatelessWidget {
   final CollageTemplate template;

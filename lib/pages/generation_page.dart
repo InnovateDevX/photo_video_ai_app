@@ -1,21 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:localization/localization.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
 import '../Helpers/feedback_helper.dart';
 import '../Services/replicate_service.dart';
-import '../Services/ad_service.dart';
 import '../Services/credit_service.dart';
 import '../Services/generation_gate.dart';
+import '../Widgets/main_navigation.dart';
 import '../Widgets/generation_bottom_bar.dart';
-import '../Widgets/menu_overlay.dart';
+
 import '../Widgets/prompt_input.dart';
 import '../Widgets/video_result_view.dart';
+import '../Widgets/themed_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
 import 'dart:ui';
 import '../Services/background_generation_service.dart';
 import '../Helpers/image_picker_helper.dart';
@@ -23,9 +22,11 @@ import '../Services/content_safety_service.dart';
 import '../Helpers/error_dialog_helper.dart';
 import '../Services/media_service.dart';
 import '../Services/data_service.dart';
-import '../Services/subscription_service.dart';
+import '../Services/remote_config_service.dart';
+import '../Helpers/image_dedup_helper.dart';
 import '../Models/category_image.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GenerationPage extends StatefulWidget {
   final String initialCategory;
@@ -49,6 +50,14 @@ class GenerationPage extends StatefulWidget {
   final bool autoTriggerImagePicker;
 
   final String? initialImageUrl;
+  final bool showCategoryToggle;
+
+  /// Set to true when this page is pre-built inside MainNavigation's IndexedStack.
+  /// When true, the first-visit intro animation is only triggered by MainNavigation
+  /// calling [GenerationPageState.onTabActivated()] rather than from initState.
+  final bool isEmbeddedAsTab;
+  final String? sourceCategoryName;
+  final int noOfUploadable;
 
   const GenerationPage({
     super.key,
@@ -62,13 +71,18 @@ class GenerationPage extends StatefulWidget {
     this.initialImageModelId,
     this.autoTriggerImagePicker = false,
     this.initialImageUrl,
+    this.isEmbeddedAsTab = false,
+    this.showCategoryToggle = true,
+    this.sourceCategoryName,
+    this.noOfUploadable = 1,
   });
 
   @override
-  State<GenerationPage> createState() => _GenerationPageState();
+  State<GenerationPage> createState() => GenerationPageState();
 }
 
-class _GenerationPageState extends State<GenerationPage> {
+// Public so MainNavigation can hold a GlobalKey<GenerationPageState>.
+class GenerationPageState extends State<GenerationPage> {
   final TextEditingController _promptController = TextEditingController();
   final FocusNode _promptFocusNode = FocusNode();
   final TextEditingController _widthController = TextEditingController(
@@ -79,13 +93,13 @@ class _GenerationPageState extends State<GenerationPage> {
   );
 
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
   final CreditService _creditService = CreditService();
 
   bool _isGenerating = false;
   String? _generatedImageUrl;
   String? _generatedVideoUrl;
-  bool _showMenu = false;
+  bool _isResultFromGeneration = false;
+
   bool _isNsfw = false;
   bool? _isLiked;
   bool _isDownloading = false;
@@ -94,11 +108,104 @@ class _GenerationPageState extends State<GenerationPage> {
   String? _currentCancelUrl;
   bool _isCancelled = false;
 
-  // Reference image picked via + button
-  File? _selectedImage;
+  // Reference images picked via + button
+  List<File> _selectedImages = [];
 
-  void _onImageUploaded(File file) {
-    setState(() => _selectedImage = file);
+  // Fingerprints (SHA-256 + perceptual dHash) of [_selectedImages], used to
+  // detect duplicate uploads. Kept in lock-step with [_selectedImages].
+  List<ImageFingerprint> _selectedImageHashes = [];
+
+  /// Handles a newly picked image. Computes a fingerprint, blocks duplicates
+  /// (exact-byte match via SHA-256, or visually-identical via dHash), and
+  /// appends to [_selectedImages] + [_selectedImageHashes] only when unique.
+  /// Also auto-switches to an editable model if the current model does not
+  /// support image input.
+  Future<void> _onImageUploaded(File file) async {
+    // ── 0. Auto-switch to an editable model if needed ─────────────────────
+    if (_selectedModel != null && !_selectedModel!.iseditable) {
+      final editableModels = _selectedCategory == 'image'
+          ? _replicateService.imageModels.where((m) => m.iseditable).toList()
+          : _replicateService.videoModels.where((m) => m.iseditable).toList();
+      if (editableModels.isNotEmpty && mounted) {
+        setState(() {
+          _selectedModel = editableModels.first;
+          _syncOptionsToModel();
+        });
+      }
+    }
+
+    // ── 1. Compute fingerprint of the new file ────────────────────────
+    ImageFingerprint fingerprint;
+    try {
+      fingerprint = await ImageDedupHelper.fingerprint(file);
+    } catch (e) {
+      debugPrint('⚠️ [GenerationPage] Failed to fingerprint image: $e');
+      // Fail-open: if we can't hash it, just allow the upload so the user
+      // isn't blocked by an infrastructure error.
+      if (mounted) {
+        setState(() {
+          _selectedImages = [..._selectedImages, file];
+        });
+      }
+      return;
+    }
+
+    // ── 2. Check against already-selected images ──────────────────────
+    final dup = await ImageDedupHelper.isDuplicate(
+      candidate: fingerprint,
+      existing: _selectedImageHashes,
+    );
+
+    if (dup.isDuplicate) {
+      debugPrint(
+        '🚫 [GenerationPage] Duplicate image blocked (${dup.reason}).',
+      );
+      if (!mounted) return;
+      final message = dup.reason == 'exact'
+          ? 'This photo has already been added. Please pick a different image.'
+          : 'This photo looks identical to one you\'ve already added. Please pick a different image.';
+      showThemedDialog(
+        context,
+        title: 'Duplicate Photo',
+        message: message,
+        icon: Icons.warning_amber_rounded,
+        iconColor: Colors.orange,
+      );
+      return;
+    }
+
+    // ── 3. Unique — append file + fingerprint ─────────────────────────
+    if (mounted) {
+      setState(() {
+        _selectedImages = [..._selectedImages, file];
+        _selectedImageHashes = [..._selectedImageHashes, fingerprint];
+      });
+    }
+  }
+
+  void _onRemoveImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+      if (index < _selectedImageHashes.length) {
+        _selectedImageHashes.removeAt(index);
+      }
+    });
+
+    // Auto-switch back to a non-editable model when all images are cleared
+    // (only if the current model requires image input).
+    if (_selectedImages.isEmpty &&
+        _selectedModel != null &&
+        _selectedModel!.iseditable) {
+      final nonEditableModels = _selectedCategory == 'image'
+          ? _replicateService.imageModels.where((m) => !m.iseditable).toList()
+          : _replicateService.videoModels.where((m) => !m.iseditable).toList();
+      if (nonEditableModels.isNotEmpty && mounted) {
+        setState(() {
+          _selectedModel = nonEditableModels.first;
+          _syncOptionsToModel();
+        });
+      }
+    }
   }
 
   // Selection State
@@ -114,10 +221,15 @@ class _GenerationPageState extends State<GenerationPage> {
   AIModelConfig? _selectedImageModel; // Stage 1 — image edit
   AIModelConfig? _selectedVideoModel; // Stage 2 — video generation
 
+  // First-visit intro animation flag
+  bool _showIntroAnimation = false;
+  bool _didCheckFirstVisit = false;
+
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
+
     if (widget.initialPrompt != null) {
       _promptController.text = widget.initialPrompt!;
     }
@@ -136,6 +248,18 @@ class _GenerationPageState extends State<GenerationPage> {
 
     _initializeService();
 
+    // When pushed directly (not pre-built as a tab), check first visit immediately.
+    // When embedded as a tab in IndexedStack, MainNavigation calls onTabActivated()
+    // at the moment the tab becomes visible.
+    if (!widget.isEmbeddedAsTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_didCheckFirstVisit) {
+          _didCheckFirstVisit = true;
+          _checkFirstVisit();
+        }
+      });
+    }
+
     // Auto-trigger image picker if requested by tool or imageEditMode
     if (widget.imageEditMode ||
         widget.initialIsEditable ||
@@ -146,11 +270,34 @@ class _GenerationPageState extends State<GenerationPage> {
     }
   }
 
+  /// Called by MainNavigation when this tab becomes the active/visible one.
+  /// This is the correct place to start first-visit flows for tab-embedded pages.
+  void onTabActivated() {
+    if (!_didCheckFirstVisit) {
+      _didCheckFirstVisit = true;
+      _checkFirstVisit();
+    }
+  }
+
   Future<void> _triggerAutoImagePicker() async {
     if (!mounted) return;
     final file = await ImagePickerHelper.pickAndCropImage(context);
     if (file != null && mounted) {
-      setState(() => _selectedImage = file);
+      _onImageUploaded(file);
+    }
+  }
+
+  /// Checks if this is the first visit to the generation page
+  Future<void> _checkFirstVisit() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasSeen = prefs.getBool('has_seen_generation_intro') ?? false;
+      if (!hasSeen && mounted) {
+        setState(() => _showIntroAnimation = true);
+        await prefs.setBool('has_seen_generation_intro', true);
+      }
+    } catch (e) {
+      debugPrint('⚠️ [GenerationPage] Error checking first visit: $e');
     }
   }
 
@@ -257,8 +404,22 @@ class _GenerationPageState extends State<GenerationPage> {
     }
     if (options.hasAspectRatios) {
       if (!options.aspectRatios.contains(_selectedAspectRatio)) {
+        debugPrint(
+          '🔄 [GenerationPage] aspect_ratio "$_selectedAspectRatio" not in '
+          '${model.name} options; switching to "${options.aspectRatios.first}".',
+        );
         _selectedAspectRatio = options.aspectRatios.first;
       }
+    } else if (_selectedModel!.supportsAspectRatio == false &&
+        _selectedAspectRatio.isNotEmpty) {
+      // Model doesn't expose aspect_ratio options AND its template doesn't
+      // use {{aspect_ratio}} either. Drop the local default to avoid
+      // sending a key Replicate will reject.
+      debugPrint(
+        '🔄 [GenerationPage] ${model.name} has no aspect_ratio support; '
+        'clearing _selectedAspectRatio.',
+      );
+      _selectedAspectRatio = '';
     }
   }
 
@@ -271,8 +432,47 @@ class _GenerationPageState extends State<GenerationPage> {
     super.dispose();
   }
 
-  bool _hasImagesArray(AIModelConfig model) {
-    return jsonEncode(model.requestBodyTemplate).contains('"images"');
+  int get _noOfUploadable {
+    // If the caller explicitly requested multiple slots (e.g., from a Category
+    // that defines "no_of_uploadable: 2"), respect that first.
+    if (widget.noOfUploadable > 1) {
+      return widget.noOfUploadable;
+    }
+    // Otherwise, fall back to the model's own template-derived slot count.
+    if (_selectedModel != null && _selectedModel!.iseditable) {
+      final modelSlots = _selectedModel!.noOfUploadable;
+      return modelSlots > 0 ? modelSlots : 1;
+    }
+    return 1;
+  }
+
+  int get _effectiveCreditCost {
+    if (widget.imageEditMode) {
+      final imageModel = _selectedImageModel ?? _selectedModel;
+      final videoModel =
+          _selectedVideoModel ?? _replicateService.videoModels.firstOrNull;
+      if (imageModel == null || videoModel == null) return 0;
+
+      final imgCost = imageModel.computeCreditCost(
+        resolution: _selectedResolution,
+      );
+      final vidCost = videoModel.computeCreditCost(
+        duration: _selectedDuration,
+        resolution: _selectedResolution,
+      );
+      return imgCost + vidCost;
+    }
+
+    if (_selectedModel == null) return 0;
+
+    if (_selectedCategory == 'video') {
+      return _selectedModel!.computeCreditCost(
+        duration: _selectedDuration,
+        resolution: _selectedResolution,
+      );
+    }
+
+    return _selectedModel!.computeCreditCost(resolution: _selectedResolution);
   }
 
   Future<void> _generateContent() async {
@@ -290,16 +490,24 @@ class _GenerationPageState extends State<GenerationPage> {
     }
 
     if (prompt.isEmpty) {
-      ScaffoldMessenger.of(
+      showThemedDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text('please_enter_prompt'.i18n())));
+        title: 'Error',
+        message: 'Please enter a prompt',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      );
       return;
     }
 
     if (_selectedModel == null) {
-      ScaffoldMessenger.of(
+      showThemedDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text('no_model_selected'.i18n())));
+        title: 'Error',
+        message: 'No model selected or available',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      );
       return;
     }
 
@@ -365,9 +573,8 @@ class _GenerationPageState extends State<GenerationPage> {
     debugPrint('🔥 [GenerationPage] Checking GenerationGate...');
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
-      creditCost: _selectedModel?.creditUsed ?? 0,
+      creditCost: _effectiveCreditCost,
     );
     debugPrint('🔥 [GenerationPage] GenerationGate result: $canProceed');
 
@@ -432,7 +639,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
                       // Title
                       Text(
-                        'generating'.i18n(),
+                        'Generating',
                         style: TextStyle(
                           color: AppColors.textColor(isDark),
                           fontSize: sw * 0.055,
@@ -529,16 +736,16 @@ class _GenerationPageState extends State<GenerationPage> {
       }
 
       // Deduct credits immediately
-      _creditService.deductCredits(_selectedModel?.creditUsed ?? 0);
+      _creditService.deductCredits(_effectiveCreditCost);
 
       if (mounted) {
         setState(() => _isGenerating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Generation started in background. Credits deducted.',
-            ),
-          ),
+        showThemedDialog(
+          context,
+          title: 'Started',
+          message: 'Generation started in background. Credits deducted.',
+          icon: Icons.info_outline,
+          iconColor: Colors.blue,
         );
         Navigator.pop(context); // Exit page
       }
@@ -550,16 +757,8 @@ class _GenerationPageState extends State<GenerationPage> {
         aspectRatio: aspectRatio,
         width: width,
         height: height,
-        referenceImage:
-            _selectedModel!.iseditable && !_hasImagesArray(_selectedModel!)
-            ? _selectedImage
-            : null,
-        images:
-            _selectedModel!.iseditable &&
-                _hasImagesArray(_selectedModel!) &&
-                _selectedImage != null
-            ? [_selectedImage!]
-            : null,
+        referenceImage: _selectedImages.isNotEmpty ? _selectedImages.first : null,
+        images: _selectedImages.isNotEmpty ? _selectedImages : null,
         extraVariables: extraVariables,
       );
       return;
@@ -583,16 +782,8 @@ class _GenerationPageState extends State<GenerationPage> {
         aspectRatio: aspectRatio,
         width: width,
         height: height,
-        referenceImage:
-            _selectedModel!.iseditable && !_hasImagesArray(_selectedModel!)
-            ? _selectedImage
-            : null,
-        images:
-            _selectedModel!.iseditable &&
-                _hasImagesArray(_selectedModel!) &&
-                _selectedImage != null
-            ? [_selectedImage!]
-            : null,
+        referenceImage: _selectedImages.isNotEmpty ? _selectedImages.first : null,
+        images: _selectedImages.isNotEmpty ? _selectedImages : null,
         extraVariables: _selectedCategory == 'video'
             ? {
                 'duration': int.tryParse(_selectedDuration.replaceAll('s', '')),
@@ -608,7 +799,7 @@ class _GenerationPageState extends State<GenerationPage> {
       );
 
       // Deduct credits on success
-      await _creditService.deductCredits(_selectedModel?.creditUsed ?? 0);
+      await _creditService.deductCredits(_effectiveCreditCost);
 
       if (mounted) {
         setState(() {
@@ -617,6 +808,7 @@ class _GenerationPageState extends State<GenerationPage> {
           } else {
             _generatedVideoUrl = url;
           }
+          _isResultFromGeneration = true;
         });
 
         // Also save locally immediately for "My Assets"
@@ -678,19 +870,25 @@ class _GenerationPageState extends State<GenerationPage> {
             '$actualVideoPrompt, masterpiece, best quality, highly detailed, 4k, 8k, ultra-detailed, cinematic lighting, photorealistic';
       }
     }
-    if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload a photo to use the two-stage pipeline.'),
-        ),
+    if (_selectedImages.isEmpty) {
+      showThemedDialog(
+        context,
+        title: 'Upload Photo',
+        message: 'Please upload a photo to use the two-stage pipeline.',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
       );
       return;
     }
 
     if (_selectedModel == null) {
-      ScaffoldMessenger.of(
+      showThemedDialog(
         context,
-      ).showSnackBar(SnackBar(content: Text('no_model_selected'.i18n())));
+        title: 'Error',
+        message: 'No model selected or available',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
+      );
       return;
     }
 
@@ -698,8 +896,12 @@ class _GenerationPageState extends State<GenerationPage> {
     final videoModel =
         _selectedVideoModel ?? _replicateService.videoModels.firstOrNull;
     if (videoModel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No video model available.')),
+      showThemedDialog(
+        context,
+        title: 'Error',
+        message: 'No video model available.',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
       );
       return;
     }
@@ -707,7 +909,7 @@ class _GenerationPageState extends State<GenerationPage> {
     // --- Safety Check ---
 
     // Credit gate — charge cost of both models
-    final totalCost = (imageModel.creditUsed) + (videoModel.creditUsed);
+    final totalCost = _effectiveCreditCost;
 
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
@@ -723,7 +925,6 @@ class _GenerationPageState extends State<GenerationPage> {
     // ── 2. Ad gate ──────────────────────────────────────────────────────────
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: totalCost,
     );
@@ -788,7 +989,7 @@ class _GenerationPageState extends State<GenerationPage> {
 
                     // Title
                     Text(
-                      'generating'.i18n(),
+                      'Generating',
                       style: TextStyle(
                         color: AppColors.textColor(isDark),
                         fontSize: sw * 0.055,
@@ -872,12 +1073,13 @@ class _GenerationPageState extends State<GenerationPage> {
 
       if (mounted) {
         setState(() => _isGenerating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
+        showThemedDialog(
+          context,
+          title: 'Started',
+          message:
               'Two-stage generation started in background. Credits deducted.',
-            ),
-          ),
+          icon: Icons.info_outline,
+          iconColor: Colors.blue,
         );
         Navigator.pop(context); // Exit page
       }
@@ -887,7 +1089,9 @@ class _GenerationPageState extends State<GenerationPage> {
         videoModel: videoModel,
         imagePrompt: actualImagePrompt,
         videoPrompt: actualVideoPrompt,
-        referenceImage: _selectedImage,
+        referenceImage: _selectedImages.isNotEmpty
+            ? _selectedImages.first
+            : null,
         aspectRatio: _selectedAspectRatio,
       );
       return;
@@ -900,7 +1104,9 @@ class _GenerationPageState extends State<GenerationPage> {
       final editedImageUrl = await _replicateService.generateContent(
         modelConfig: imageModel,
         prompt: actualImagePrompt,
-        referenceImage: _selectedImage,
+        referenceImage: _selectedImages.isNotEmpty
+            ? _selectedImages.first
+            : null,
         aspectRatio: imageModel.supportsAspectRatio
             ? _selectedAspectRatio
             : null,
@@ -929,6 +1135,7 @@ class _GenerationPageState extends State<GenerationPage> {
         setState(() {
           _generatedVideoUrl = videoUrl;
           _selectedCategory = 'video';
+          _isResultFromGeneration = true;
         });
 
         // Also save locally immediately for "My Assets"
@@ -1003,9 +1210,21 @@ class _GenerationPageState extends State<GenerationPage> {
     try {
       final tempFile = await _downloadToTempFile(_generatedImageUrl!);
 
+      // Compute fingerprint for the freshly-downloaded reference image so the
+      // dedup list stays in lock-step with [_selectedImages].
+      ImageFingerprint? fingerprint;
+      try {
+        fingerprint = await ImageDedupHelper.fingerprint(tempFile);
+      } catch (e) {
+        debugPrint(
+          '⚠️ [GenerationPage] Failed to fingerprint animated image: $e',
+        );
+      }
+
       if (mounted) {
         setState(() {
-          _selectedImage = tempFile;
+          _selectedImages = [tempFile];
+          _selectedImageHashes = fingerprint != null ? [fingerprint] : [];
           _selectedCategory = 'video';
           _updateSelectedModel();
           _isDownloading = false;
@@ -1251,9 +1470,25 @@ class _GenerationPageState extends State<GenerationPage> {
                         isDark: isDark,
                         controller: _promptController,
                         focusNode: _promptFocusNode,
-                        selectedImage: _selectedImage,
-                        onRemoveImage: () =>
-                            setState(() => _selectedImage = null),
+                        selectedImages: _selectedImages,
+                        noOfUploadable: _noOfUploadable,
+                        onRemoveImage: _onRemoveImage,
+                        onAddImagePressed: () async {
+                          final file = await ImagePickerHelper.pickAndCropImage(
+                            context,
+                          );
+                          if (file != null) {
+                            _onImageUploaded(file);
+                          }
+                        },
+                        showCategoryToggle: widget.showCategoryToggle,
+                        selectedCategory: _selectedCategory,
+                        onCategoryChanged: (cat) {
+                          setState(() {
+                            _selectedCategory = cat;
+                            _updateSelectedModel();
+                          });
+                        },
                       ),
                       SizedBox(height: screenHeight * 0.015),
                       Padding(
@@ -1268,16 +1503,17 @@ class _GenerationPageState extends State<GenerationPage> {
                           isImageSelected: _selectedCategory == 'image',
                           isVideoSelected: _selectedCategory == 'video',
                           currentCredits: currentCredits,
-                          creditCost: widget.imageEditMode
-                              ? (_selectedImageModel?.creditUsed ?? 0) +
-                                    (_selectedVideoModel?.creditUsed ?? 0)
-                              : (_selectedModel?.creditUsed ?? 0),
+                          creditCost: _effectiveCreditCost,
+                          showCategoryToggle: widget.showCategoryToggle,
+                          noOfUploadable: _noOfUploadable,
                           // Models
                           imageModels: _replicateService.imageModels,
                           videoModels: _replicateService.videoModels,
                           selectedModel: _selectedModel,
                           modelOptions: _selectedModel?.options,
-                          selectedImage: _selectedImage,
+                          selectedImage: _selectedImages.isNotEmpty
+                              ? _selectedImages.first
+                              : null,
                           imageEditMode: widget.imageEditMode,
                           selectedImageModel: _selectedImageModel,
                           selectedVideoModel: _selectedVideoModel,
@@ -1319,77 +1555,12 @@ class _GenerationPageState extends State<GenerationPage> {
                               _updateSelectedModel();
                             });
                           },
+                          // First-visit intro animation
+                          showIntroAnimation: _showIntroAnimation,
                         ),
                       ),
                     ],
                   ),
-
-                  // Menu Overlay Background
-                  if (_showMenu)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _showMenu = false),
-                        behavior: HitTestBehavior.opaque,
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-
-                  // Menu Overlay
-                  if (_showMenu)
-                    MenuOverlay(
-                      screenWidth: screenWidth,
-                      screenHeight: screenHeight,
-                      isDark: isDark,
-                      onRecreate: () {
-                        setState(() => _showMenu = false);
-                        _generateContent();
-                      },
-                      onUseSettings: () {
-                        setState(() => _showMenu = false);
-                        // TODO: Implement using settings from generated content
-                      },
-                      onDownload: () async {
-                        if (_isDownloading) return;
-                        setState(() {
-                          _isDownloading = true;
-                          _showMenu = false;
-                        });
-
-                        // Fire-and-forget background download with progress notification
-                        if (_selectedCategory == 'image' &&
-                            _generatedImageUrl != null) {
-                          MediaService.downloadImageInBackground(
-                            _generatedImageUrl!,
-                          );
-                        } else if (_selectedCategory == 'video' &&
-                            _generatedVideoUrl != null) {
-                          MediaService.downloadVideoInBackground(
-                            _generatedVideoUrl!,
-                          );
-                        }
-
-                        if (mounted) {
-                          setState(() => _isDownloading = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Download started. Check notifications for progress.',
-                              ),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      },
-                      onDelete: () {
-                        setState(() {
-                          _showMenu = false;
-                          _generatedImageUrl = null;
-                          _generatedVideoUrl = null;
-                          _isLiked = null;
-                        });
-                      },
-                      isDownloading: _isDownloading,
-                    ),
                 ],
               ),
             ),
@@ -1397,6 +1568,23 @@ class _GenerationPageState extends State<GenerationPage> {
         },
       ),
     );
+  }
+
+  Future<void> _downloadContent() async {
+    if (_isDownloading) return;
+    setState(() {
+      _isDownloading = true;
+    });
+
+    if (_selectedCategory == 'image' && _generatedImageUrl != null) {
+      await MediaService.downloadImage(context, _generatedImageUrl!);
+    } else if (_selectedCategory == 'video' && _generatedVideoUrl != null) {
+      await MediaService.downloadVideo(context, _generatedVideoUrl!);
+    }
+
+    if (mounted) {
+      setState(() => _isDownloading = false);
+    }
   }
 
   Widget _buildHeader(double screenWidth, double screenHeight, bool isDark) {
@@ -1411,7 +1599,14 @@ class _GenerationPageState extends State<GenerationPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
-                onTap: () => Navigator.maybePop(context),
+                onTap: () async {
+                  final navState = context
+                      .findAncestorStateOfType<MainNavigationState>();
+                  final canPop = await Navigator.maybePop(context);
+                  if (!canPop && mounted && navState != null) {
+                    navState.switchTab(0);
+                  }
+                },
                 child: Container(
                   padding: EdgeInsets.all(screenWidth * 0.02),
                   decoration: BoxDecoration(
@@ -1425,21 +1620,50 @@ class _GenerationPageState extends State<GenerationPage> {
                   ),
                 ),
               ),
-              if (_generatedImageUrl != null || _generatedVideoUrl != null)
-                GestureDetector(
-                  onTap: () => setState(() => _showMenu = !_showMenu),
-                  child: Container(
-                    padding: EdgeInsets.all(screenWidth * 0.02),
-                    decoration: BoxDecoration(
-                      color: AppColors.tileBackgroundColor(isDark),
-                      shape: BoxShape.circle,
+              if ((_generatedImageUrl != null || _generatedVideoUrl != null) &&
+                  _isResultFromGeneration)
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _generateContent,
+                      child: Container(
+                        padding: EdgeInsets.all(screenWidth * 0.02),
+                        decoration: BoxDecoration(
+                          color: AppColors.tileBackgroundColor(isDark),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.refresh,
+                          color: AppColors.textColor(isDark),
+                          size: screenWidth * 0.05,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      Icons.menu,
-                      color: AppColors.textColor(isDark),
-                      size: screenWidth * 0.05,
+                    SizedBox(width: screenWidth * 0.03),
+                    GestureDetector(
+                      onTap: _downloadContent,
+                      child: Container(
+                        padding: EdgeInsets.all(screenWidth * 0.02),
+                        decoration: BoxDecoration(
+                          color: AppColors.tileBackgroundColor(isDark),
+                          shape: BoxShape.circle,
+                        ),
+                        child: _isDownloading
+                            ? SizedBox(
+                                width: screenWidth * 0.05,
+                                height: screenWidth * 0.05,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(
+                                Icons.download,
+                                color: AppColors.textColor(isDark),
+                                size: screenWidth * 0.05,
+                              ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
             ],
           ),
@@ -1461,7 +1685,7 @@ class _GenerationPageState extends State<GenerationPage> {
             const CircularProgressIndicator(),
             SizedBox(height: screenHeight * 0.02),
             Text(
-              '${'generating'.i18n()} $_selectedCategory...',
+              'Generating $_selectedCategory...',
               style: TextStyle(
                 color: AppColors.secondaryTextColor(isDark),
                 fontSize: screenWidth * 0.04,
@@ -1520,17 +1744,6 @@ class _GenerationPageState extends State<GenerationPage> {
                     ),
                   ),
                 ),
-              if (!SubscriptionService().isSubscribed)
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: IgnorePointer(
-                    child: Image.asset(
-                      'assets/images/watermark.png',
-                      width: 100,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -1540,25 +1753,6 @@ class _GenerationPageState extends State<GenerationPage> {
         videoUrl: _generatedVideoUrl!,
         borderRadius: screenWidth * 0.06,
       );
-
-      if (!SubscriptionService().isSubscribed) {
-        resultWidget = Stack(
-          alignment: Alignment.center,
-          children: [
-            resultWidget,
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: IgnorePointer(
-                child: Image.asset(
-                  'assets/images/watermark.png',
-                  width: 100,
-                ),
-              ),
-            ),
-          ],
-        );
-      }
 
       if (_isNsfw) {
         resultWidget = Center(
@@ -1581,17 +1775,6 @@ class _GenerationPageState extends State<GenerationPage> {
                     ),
                   ),
                 ),
-              if (!SubscriptionService().isSubscribed)
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: IgnorePointer(
-                    child: Image.asset(
-                      'assets/images/watermark.png',
-                      width: 100,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1602,7 +1785,7 @@ class _GenerationPageState extends State<GenerationPage> {
     return Column(
       children: [
         Expanded(child: resultWidget),
-        if (_isLiked == null && !_isNsfw) ...[
+        if (_isLiked == null && !_isNsfw && _isResultFromGeneration) ...[
           SizedBox(height: screenHeight * 0.015),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1687,11 +1870,12 @@ class _GenerationPageState extends State<GenerationPage> {
                     : () {
                         FocusManager.instance.primaryFocus?.unfocus();
                         setState(() => _isNsfw = true);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Content flagged as inappropriate.'),
-                            backgroundColor: Colors.red,
-                          ),
+                        showThemedDialog(
+                          context,
+                          title: 'Flagged',
+                          message: 'Content flagged as inappropriate.',
+                          icon: Icons.flag_outlined,
+                          iconColor: Colors.red,
                         );
                       },
                 child: Container(
@@ -1714,41 +1898,7 @@ class _GenerationPageState extends State<GenerationPage> {
             ],
           ),
         ],
-        if (_selectedCategory == 'image' && _generatedImageUrl != null)
-          Padding(
-            padding: EdgeInsets.only(top: screenHeight * 0.02),
-            child: SizedBox(
-              width: screenWidth * 0.6,
-              child: ElevatedButton.icon(
-                onPressed: _isDownloading ? null : _onAnimatePressed,
-                icon: _isDownloading
-                    ? SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.05,
-                        height: MediaQuery.of(context).size.width * 0.05,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.auto_awesome, color: Colors.white),
-                label: Text(
-                  _isDownloading ? 'Preparing...' : 'Animate Image',
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.04,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD66031),
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                  ),
-                ),
-              ),
-            ),
-          ),
+
         SizedBox(height: screenHeight * 0.01),
       ],
     );
@@ -1813,6 +1963,43 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
 
   void _loadImages() {
     final dataService = DataService();
+    final configService = RemoteConfigService();
+
+    if (widget.category == 'image') {
+      final genPageImage = configService.generationPageImage;
+      if (genPageImage.isNotEmpty) {
+        _timer?.cancel();
+        setState(() {
+          _images = [
+            CategoryImage(
+              imageUrl: genPageImage,
+              prompt: '', // Fallback hint will be shown
+              type: widget.category,
+            ),
+          ];
+          _currentIndex = 0;
+        });
+        return;
+      }
+    } else if (widget.category == 'video') {
+      final genPageVideo = configService.generationPageVideo;
+      if (genPageVideo.isNotEmpty) {
+        _timer?.cancel();
+        setState(() {
+          _images = [
+            CategoryImage(
+              imageUrl: '',
+              videoUrl: genPageVideo,
+              videoPrompt: '', // Fallback hint will be shown
+              type: widget.category,
+            ),
+          ];
+          _currentIndex = 0;
+        });
+        return;
+      }
+    }
+
     // Get images for the current category, or trending if not found
     var fetchedImages = dataService.getCategoryImages(widget.category);
     if (fetchedImages.isEmpty) {
@@ -1821,12 +2008,21 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
 
     // Filter out images with invalid URLs or missing prompts
     final validImages = fetchedImages
-        .where(
-          (img) =>
-              img.imageUrl.isNotEmpty &&
-              img.imageUrl.startsWith('http') &&
-              img.prompt.trim().isNotEmpty,
-        )
+        .where((img) {
+          if (widget.category == 'video') {
+            final hasVideo = img.videoUrl != null &&
+                img.videoUrl!.isNotEmpty &&
+                img.videoUrl!.startsWith('http');
+            final hasPrompt = img.videoPrompt.trim().isNotEmpty ||
+                img.prompt.trim().isNotEmpty;
+            return hasVideo && hasPrompt;
+          } else {
+            final hasImage = img.imageUrl.isNotEmpty &&
+                img.imageUrl.startsWith('http');
+            final hasPrompt = img.prompt.trim().isNotEmpty;
+            return hasImage && hasPrompt;
+          }
+        })
         .toList();
 
     // Copy and shuffle images to make it interesting
@@ -1871,7 +2067,7 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
               ),
               SizedBox(height: widget.screenHeight * 0.02),
               Text(
-                '${'enter_prompt_hint'.i18n()} ${widget.category}',
+                'Enter a prompt to generate a ${widget.category}',
                 style: TextStyle(
                   color: AppColors.secondaryTextColor(widget.isDark),
                   fontSize: widget.screenWidth * 0.04,
@@ -1884,9 +2080,22 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
     }
 
     final currentImage = _images[_currentIndex];
+    final String promptToUse = widget.category == 'video'
+        ? (currentImage.videoPrompt.isNotEmpty
+            ? currentImage.videoPrompt
+            : currentImage.prompt)
+        : currentImage.prompt;
+    final String keyString = widget.category == 'video'
+        ? (currentImage.videoUrl ?? currentImage.imageUrl)
+        : currentImage.imageUrl;
+
+    final double maxImageSize =
+        (widget.screenWidth * 0.8 < widget.screenHeight * 0.4)
+        ? widget.screenWidth * 0.8
+        : widget.screenHeight * 0.4;
 
     return GestureDetector(
-      onTap: () => widget.onPromptTap?.call(currentImage.prompt),
+      onTap: () => widget.onPromptTap?.call(promptToUse),
       child: Center(
         child: SingleChildScrollView(
           child: Column(
@@ -1895,40 +2104,53 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
             children: [
               AnimatedSwitcher(
                 duration: const Duration(seconds: 1),
-                child: Container(
-                  key: ValueKey<String>(currentImage.imageUrl),
-                  width: widget.screenWidth * 0.85,
-                  height: widget.screenWidth * 0.85,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      MediaQuery.of(context).size.width * 0.06,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                child: (currentImage.videoUrl != null &&
+                        currentImage.videoUrl!.isNotEmpty)
+                    ? Container(
+                        key: ValueKey<String>(keyString),
+                        width: maxImageSize,
+                        height: maxImageSize,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            MediaQuery.of(context).size.width * 0.06,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: VideoResultView(
+                          videoUrl: currentImage.videoUrl!,
+                          borderRadius: 0,
+                        ),
+                      )
+                    : Container(
+                        key: ValueKey<String>(keyString),
+                        width: maxImageSize,
+                        height: maxImageSize,
+                        decoration: BoxDecoration(
+                          color: widget.isDark
+                              ? const Color(0xFF161616)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(
+                            MediaQuery.of(context).size.width * 0.06,
+                          ),
+                          image: DecorationImage(
+                            image: CachedNetworkImageProvider(currentImage.imageUrl),
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
-                    ],
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(currentImage.imageUrl),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
               ),
               SizedBox(height: widget.screenHeight * 0.03),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 500),
                 child: Padding(
-                  key: ValueKey<String>(currentImage.prompt),
+                  key: ValueKey<String>(promptToUse),
                   padding: EdgeInsets.symmetric(
                     horizontal: widget.screenWidth * 0.1,
                   ),
                   child: Text(
-                    currentImage.prompt.isNotEmpty
-                        ? currentImage.prompt
-                        : '${'enter_prompt_hint'.i18n()} ${widget.category}',
+                    promptToUse.isNotEmpty
+                        ? promptToUse
+                        : 'Enter a prompt to generate a ${widget.category}',
                     textAlign: TextAlign.center,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,

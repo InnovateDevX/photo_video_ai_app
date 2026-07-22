@@ -1,19 +1,25 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:trail_ai_app/Core/app_initializer.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/notification_service.dart';
-import 'package:trail_ai_app/Services/local_storage_service.dart';
-import 'package:trail_ai_app/Services/background_generation_service.dart';
-import 'package:trail_ai_app/Services/data_service.dart';
-import 'package:trail_ai_app/pages/onboarding_page.dart';
-import 'package:trail_ai_app/Widgets/main_navigation.dart';
-import 'package:trail_ai_app/Widgets/main_navigation_with_paywall.dart';
-import 'package:trail_ai_app/Services/subscription_service.dart';
+import 'package:vidzeon/Core/app_initializer.dart';
+import 'package:vidzeon/Core/gradient.dart';
 
+import 'package:vidzeon/Services/notification_service.dart';
+import 'package:vidzeon/Services/local_storage_service.dart';
+import 'package:vidzeon/Services/background_generation_service.dart';
+import 'package:vidzeon/Services/data_service.dart';
+import 'package:vidzeon/firebase_options.dart';
+import 'package:vidzeon/pages/onboarding_page.dart';
+import 'package:vidzeon/Widgets/main_navigation.dart';
+import 'package:vidzeon/Widgets/main_navigation_with_paywall.dart';
+import 'package:vidzeon/Services/subscription_service.dart';
+import 'package:vidzeon/Services/connectivity_service.dart';
+import 'package:vidzeon/Services/paywall_video_cache.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 /// Result of the initialization process.
 class InitializationResult {
@@ -31,30 +37,17 @@ class InitializationResult {
 }
 
 /// Maximum time we'll wait for ALL initialization steps combined.
-/// If anything hangs, we fall back to the home screen so the user is never stuck.
 const Duration _totalInitTimeout = Duration(seconds: 25);
 
-/// Per-step timeouts. Each individual step gets its own budget so a single
-/// hanging service can't block the whole launch.
 const Duration _firebaseTimeout = Duration(seconds: 10);
 const Duration _googleSignInTimeout = Duration(seconds: 8);
-const Duration _adsTimeout = Duration(seconds: 8);
 const Duration _localStorageTimeout = Duration(seconds: 4);
-const Duration _adServiceTimeout = Duration(seconds: 8);
 const Duration _notificationTimeout = Duration(seconds: 6);
 const Duration _userInitTimeout = Duration(seconds: 12);
 const Duration _onboardingCheckTimeout = Duration(seconds: 3);
 const Duration _bgServiceTimeout = Duration(seconds: 6);
 const Duration _dataServiceTimeout = Duration(seconds: 8);
 
-/// A robust splash screen that:
-///   1) Renders the splash UI immediately (so the Android native splash
-///      transitions cleanly to a Flutter splash).
-///   2) Runs all heavy initialization in the background with strict
-///      per-step timeouts.
-///   3) Falls back to the home screen after a hard ceiling, so the app
-///      can NEVER be stuck on this screen indefinitely — even if Firebase,
-///      FCM, the background service, or the network is misbehaving.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -62,26 +55,56 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  String _statusMessage = 'Starting up…';
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  String _statusMessage = 'Getting things ready…';
+
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Kick off initialization on the next frame so the splash paints first.
+
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+
+    _glowAnimation = Tween<double>(begin: 0.2, end: 0.6).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runInitialization();
     });
   }
 
-  /// Runs initialization with a hard ceiling so the splash can NEVER hang.
-  Future<void> _runInitialization() async {
-    final stopwatch = Stopwatch()..start();
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
 
+  Future<void> _runInitialization() async {
+    _updateStatus('Checking connection…');
+
+    bool hasInternet = await _checkInternetConnection();
+    if (!mounted) return;
+
+    if (!hasInternet) {
+      ErrorDialogHelper.showNoInternetRetryDialog(context, () {
+        Navigator.of(context).pop();
+        _runInitialization();
+      });
+      return;
+    }
+
+    ConnectivityService().initialize();
+
+    final stopwatch = Stopwatch()..start();
     final InitializationResult result = await _initializeWithTimeout();
 
-    // Enforce a minimum splash screen display time of 2 seconds
-    // to give background precaching tasks enough time to complete.
     final elapsedMs = stopwatch.elapsedMilliseconds;
     const minSplashDurationMs = 2000;
     if (elapsedMs < minSplashDurationMs) {
@@ -94,15 +117,24 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateToNext(result);
   }
 
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup(
+        'example.com',
+      ).timeout(const Duration(seconds: 5));
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) return true;
+    } catch (_) {
+      return false;
+    }
+    return false;
+  }
+
   Future<InitializationResult> _initializeWithTimeout() async {
-    // Hard ceiling — even if every individual step times out, we still
-    // navigate after this duration.
     return _doInitialize().timeout(
       _totalInitTimeout,
       onTimeout: () {
         debugPrint(
-          '⏱️ [SplashScreen] Hard ceiling reached '
-          '(${_totalInitTimeout.inSeconds}s). Forcing navigation to home.',
+          '⏱️ [SplashScreen] Hard ceiling reached. Forcing navigation.',
         );
         return InitializationResult(
           uid: null,
@@ -117,122 +149,99 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<InitializationResult> _doInitialize() async {
     final errors = <String>[];
 
-    // ── Step 1: Firebase ───────────────────────────────────────────────────
+    // Step 1: Firebase
     try {
-      await Firebase.initializeApp().timeout(_firebaseTimeout);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(_firebaseTimeout);
     } on TimeoutException {
-      _updateStatus('Network slow — skipping Firebase…');
+      _updateStatus('Almost there…');
       errors.add('Firebase init timeout');
-      debugPrint('⚠️ [SplashScreen] Firebase.initializeApp timed out');
     } catch (e) {
       errors.add('Firebase init: $e');
-      debugPrint('❌ [SplashScreen] Firebase.initializeApp failed: $e');
     }
 
-    // ── Step 2: Google Sign-In ─────────────────────────────────────────────
+    // Step 2: Google Sign-In
     try {
       await GoogleSignIn.instance.initialize().timeout(_googleSignInTimeout);
     } on TimeoutException {
       errors.add('GoogleSignIn init timeout');
-      debugPrint('⚠️ [SplashScreen] GoogleSignIn timed out');
     } catch (e) {
       errors.add('GoogleSignIn: $e');
-      debugPrint('❌ [SplashScreen] GoogleSignIn failed: $e');
     }
 
-    // ── Step 3: Mobile Ads ─────────────────────────────────────────────────
-    try {
-      await MobileAds.instance.initialize().timeout(_adsTimeout);
-    } on TimeoutException {
-      errors.add('MobileAds init timeout');
-      debugPrint('⚠️ [SplashScreen] MobileAds timed out');
-    } catch (e) {
-      errors.add('MobileAds: $e');
-      debugPrint('❌ [SplashScreen] MobileAds failed: $e');
-    }
-
-    // ── Step 4: Local Storage (assets cache) ───────────────────────────────
+    // Step 4: Local Storage
     try {
       await LocalStorageService().initialize().timeout(_localStorageTimeout);
     } on TimeoutException {
       errors.add('LocalStorage timeout');
-      debugPrint('⚠️ [SplashScreen] LocalStorage timed out');
     } catch (e) {
       errors.add('LocalStorage: $e');
-      debugPrint('❌ [SplashScreen] LocalStorage failed: $e');
     }
 
-    // ── Step 5: Ad Service (loads rewarded ad) ─────────────────────────────
+    // Step 6: Notification Service
     try {
-      _updateStatus('Preparing ads…');
-      await AdService().initialize().timeout(_adServiceTimeout);
-    } on TimeoutException {
-      errors.add('AdService timeout');
-      debugPrint('⚠️ [SplashScreen] AdService timed out (non-fatal)');
-    } catch (e) {
-      errors.add('AdService: $e');
-      debugPrint('❌ [SplashScreen] AdService failed (non-fatal): $e');
-    }
-
-    // ── Step 6: Notification Service ───────────────────────────────────────
-    try {
-      _updateStatus('Setting up notifications…');
+      _updateStatus('Just a moment…');
       await NotificationService().initialize().timeout(_notificationTimeout);
     } on TimeoutException {
       errors.add('NotificationService timeout');
-      debugPrint('⚠️ [SplashScreen] NotificationService timed out');
     } catch (e) {
       errors.add('NotificationService: $e');
-      debugPrint('❌ [SplashScreen] NotificationService failed: $e');
     }
 
-    // ── Step 7: User initialization (Auth, Firestore, Remote Config) ──────
+    // Step 7: User initialization
     String? uid;
     try {
-      _updateStatus('Signing you in…');
+      _updateStatus('Getting things ready…');
       final AppInitializer initializer = AppInitializer();
       uid = await initializer.initializeUser().timeout(_userInitTimeout);
+
+      unawaited(
+        PaywallVideoCache().preload().catchError((Object e) {
+          debugPrint('⚠️ [SplashScreen] Paywall video preload failed: $e');
+        }),
+      );
+
+      final genPageVideoUrl = RemoteConfigService().generationPageVideo;
+      if (genPageVideoUrl.isNotEmpty) {
+        unawaited(() async {
+          try {
+            await DefaultCacheManager().downloadFile(genPageVideoUrl);
+            debugPrint('🎬 [SplashScreen] Generation video preloaded ✅');
+          } catch (e) {
+            debugPrint('⚠️ [SplashScreen] Generation video preload failed: $e');
+          }
+        }());
+      }
     } on TimeoutException {
       errors.add('User init timeout');
-      debugPrint('⚠️ [SplashScreen] User init timed out');
     } catch (e) {
       errors.add('User init: $e');
-      debugPrint('❌ [SplashScreen] User init failed: $e');
     }
 
-    // ── Step 8: Onboarding check ───────────────────────────────────────────
+    // Step 8: Onboarding check
     bool onboardingDone = false;
     try {
       onboardingDone = await OnboardingPage.hasCompleted().timeout(
         _onboardingCheckTimeout,
       );
     } on TimeoutException {
-      debugPrint(
-        '⚠️ [SplashScreen] Onboarding check timed out — assuming done',
-      );
       onboardingDone = true;
     } catch (e) {
-      debugPrint('❌ [SplashScreen] Onboarding check failed: $e');
       onboardingDone = true;
     }
 
-    // ── Step 9: Pre-load Homepage data (categories, trending) ─────────────
-    // This ensures the Homepage is ready instantly when paywall is dismissed.
+    // Step 9: DataService
     try {
-      _updateStatus('Loading content…');
+      _updateStatus('Finishing up…');
       await DataService().initialize().timeout(_dataServiceTimeout);
     } on TimeoutException {
       errors.add('DataService timeout');
-      debugPrint('⚠️ [SplashScreen] DataService timed out (non-fatal)');
     } catch (e) {
       errors.add('DataService: $e');
-      debugPrint('❌ [SplashScreen] DataService failed (non-fatal): $e');
     }
 
-    // ── Step 10: Background service (fire-and-forget) ─────────────────────
-    // We do NOT await this in the splash — it's a long-running service that
-    // can take several seconds on first launch. Run it in the background so
-    // it can never block the splash.
+    // Step 10: Background service (fire-and-forget)
     unawaited(_initializeBackgroundServiceSafely());
 
     return InitializationResult(
@@ -243,14 +252,11 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  /// Wraps the background-service setup with a timeout + try/catch so even
-  /// if it hangs, it never affects the splash navigation.
   Future<void> _initializeBackgroundServiceSafely() async {
     try {
       await BackgroundGenerationService().initializeBackgroundService().timeout(
         _bgServiceTimeout,
       );
-      // resumePendingGenerations makes HTTP calls — let it run on its own.
       unawaited(
         BackgroundGenerationService().resumePendingGenerations().catchError((
           Object e,
@@ -259,10 +265,7 @@ class _SplashScreenState extends State<SplashScreen> {
         }),
       );
     } on TimeoutException {
-      debugPrint(
-        '⚠️ [SplashScreen] Background service init timed out '
-        '— continuing in background',
-      );
+      debugPrint('⚠️ [SplashScreen] Background service init timed out');
     } catch (e) {
       debugPrint('❌ [SplashScreen] Background service init failed: $e');
     }
@@ -273,31 +276,26 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() => _statusMessage = message);
   }
 
+  bool _hasNavigated = false;
+
   void _navigateToNext(InitializationResult result) {
-    debugPrint(
-      '✅ [SplashScreen] Initialization complete. '
-      'uid=${result.uid}, showOnboarding=${result.showOnboarding}, '
-      'hadErrors=${result.hadErrors}',
-    );
+    if (!mounted || _hasNavigated) return;
+    _hasNavigated = true;
 
     if (result.hadErrors) {
       debugPrint('⚠️ [SplashScreen] Init errors: ${result.errors}');
     }
 
     if (result.showOnboarding) {
-      // First time user: always show onboarding first
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const OnboardingPage()),
       );
       return;
     }
 
-    // Check if the user is a paid user (subscribed)
     final bool isPaid = SubscriptionService().isSubscribed;
 
     if (!isPaid) {
-      // Use the wrapper that shows MainNavigation with Paywall as overlay
-      // This ensures Homepage is fully loaded first, then paywall appears on top
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => const MainNavigationWithPaywall(),
@@ -306,9 +304,6 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    // Always navigate — never leave the user stuck.
-    // The UID is already published to UserSession.instance.uid by
-    // AppInitializer.initializeUser(), so MainNavigation does not need it.
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(builder: (_) => const MainNavigation()),
     );
@@ -316,66 +311,129 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Always use dark theme for the splash screen
-    const Color bgColor = Color(0xFF161616);
-    const Color textColor = Colors.white;
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // App icon / logo. Falls back gracefully if the asset is missing.
-              Image.asset(
-                'assets/images/app_logo.png',
-                width: 120,
-                height: 120,
-                errorBuilder: (_, _, _) => Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF16E14).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(28),
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Center Radial Glow ────────────────────────────────
+          // Center(
+          //   child: AnimatedBuilder(
+          //     animation: _glowAnimation,
+          //     builder: (context, child) {
+          //       return Container(
+          //         width: w * 0.9,
+          //         height: w * 0.9,
+          //         decoration: BoxDecoration(
+          //           shape: BoxShape.circle,
+          //           gradient: RadialGradient(
+          //             colors: [
+          //               const Color(
+          //                 0xFFD66031,
+          //               ).withValues(alpha: _glowAnimation.value),
+          //               Colors.transparent,
+          //             ],
+          //             stops: const [0.1, 0.8],
+          //           ),
+          //         ),
+          //       );
+          //     },
+          //   ),
+          // ),
+
+          // // ── Center content: icon + text ─────────────────────
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // App icon
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(w * 0.065),
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    width: w * 0.27,
+                    height: w * 0.27,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      width: w * 0.27,
+                      height: w * 0.27,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(w * 0.065),
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: w * 0.13,
+                        color: const Color(0xFFF16E14),
+                      ),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.auto_awesome,
-                    size: 64,
-                    color: Color(0xFFF16E14),
+                ),
+
+                SizedBox(height: h * 0.02),
+
+                // App name
+                const Text(
+                  'VidZeon',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Trail AI Studio',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 48),
-              const SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF16E14)),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                _statusMessage,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: textColor.withOpacity(0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+
+          // ── Bottom progress bar + status text ────────────────────────
+          Positioned(
+            left: w * 0.12,
+            right: w * 0.12,
+            bottom: h * 0.08,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Orange tagline
+                Text(
+                  'CREATE. EDIT. INSPIRE.',
+                  style: TextStyle(
+                    color: const Color(0xFFD66031),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2.8,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    minHeight: 4,
+                    backgroundColor: const Color(0xFF2A2A2A),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppGradients.proGradient.colors.last,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  _statusMessage,
+                  style: const TextStyle(
+                    color: Color(0xFF888888),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

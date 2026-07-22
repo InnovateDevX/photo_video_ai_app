@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import '../Core/colors.dart';
 import '../Core/gradient.dart';
@@ -13,7 +14,7 @@ class FeedbackHelper {
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      await FirebaseFirestore.instance.collection('feedback_reports').add({
+      await FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default').collection('feedback_reports').add({
         'type': type,
         'reason': reason ?? '',
         'comments': comments ?? '',

@@ -1,48 +1,48 @@
 {
   "project_info": {
-    "project_number": "878335239927",
-    "project_id": "imagegen-trail",
-    "storage_bucket": "imagegen-trail.firebasestorage.app"
+    "project_number": "160697788254",
+    "project_id": "ai-video-generator-c09ff",
+    "storage_bucket": "ai-video-generator-c09ff.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:878335239927:android:263634b1a789a19e8a95f2",
+        "mobilesdk_app_id": "1:160697788254:android:78fbaae648cf9504a251cf",
         "android_client_info": {
-          "package_name": "com.example.trail_ai_app"
+          "package_name": "com.bravcotech.vidZeon.ai.video.generator"
         }
       },
       "oauth_client": [
         {
-          "client_id": "878335239927-ug4phekhfidvharn0u6rc17ifj48isgh.apps.googleusercontent.com",
+          "client_id": "160697788254-jb3ev11bf2edeeelhoqqjugp32f3pj2t.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.trail_ai_app",
+            "package_name": "com.bravcotech.vidZeon.ai.video.generator",
             "certificate_hash": "f0d0c5d01630486355612a2d499293dc7181ff7d"
           }
         },
         {
-          "client_id": "878335239927-b2v3j0lrqn0rfr94u57dbpho1cccbmeg.apps.googleusercontent.com",
+          "client_id": "160697788254-ppdr1msogf4tabc3e7jb1ej8bpluerpg.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBiEKEi6jbAXiDndhyq9GqrZJ0SvgbC7IQ"
+          "current_key": "AIzaSyDljx5v7lF-Jf_qgDOnbVSXz1UUgAaW3ZY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "878335239927-b2v3j0lrqn0rfr94u57dbpho1cccbmeg.apps.googleusercontent.com",
+              "client_id": "160697788254-ppdr1msogf4tabc3e7jb1ej8bpluerpg.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "878335239927-3hdgefqu8qq3unh431soai5cb9j68b26.apps.googleusercontent.com",
+              "client_id": "160697788254-vu9gj7btmbipl207hii4ltqan8prtir5.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.trailAiApp"
+                "bundle_id": "com.bravcotech.vidZeon.ai.video.generator"
               }
             }
           ]

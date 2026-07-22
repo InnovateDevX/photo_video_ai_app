@@ -1,83 +1,1485 @@
 [
     {
-        "category": "Abstract",
-        "count": 1,
-        "prompts": [
-            "Dynamic abstract tattoo design with swirling vortex patterns and intersecting sharp lines creating tension and energy. Fine line with subtle dotwork shading. Pure black ink. Professional abstract tattoo artwork, isolated on pure white background, high resolution.",
-            "Soft layered abstract forms resembling melting shapes and gentle gradients. Black and gray with smooth transitions. Dreamy and organic aesthetic. Professional abstract tattoo design, isolated on clean white background.",
-            "Bold geometric abstract with broken lines and floating fragments creating modern chaos. Strong blackwork contrast. Professional tattoo artwork, isolated on pure white background."
-        ]
+        "id": "openai/gpt-image-1.5",
+        "name": "GPT Image 1.5",
+        "official": true,
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/openai/gpt-image-1.5/predictions",
+        "credit_used": 15,
+        "icon_url": "https://github.com/openai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "input_images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "quality": "auto",
+                "number_of_images": 1,
+                "output_format": "webp",
+                "background": "auto",
+                "moderation": "auto",
+                "openai_api_key": ""
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "3:2",
+                "2:3"
+            ]
+        }
     },
     {
-        "category": "Animal",
-        "count": 1,
-        "prompts": [
-            "Fierce tiger face in detailed fine line with striped texture and intense eyes. Pure black ink. Professional animal tattoo design, isolated on clean white background.",
-            "Graceful swan with elegant neck curve and feather details in soft sketch style. Professional tattoo artwork, isolated on pure white background.",
-            "Playful otter swimming in minimalist fine line with smooth water flow lines. Professional animal tattoo design, isolated on clean white background."
-        ]
+        "id": "google/nano-banana-2-lite",
+        "name": "Google Nano Banana 2 Lite",
+        "official": true,
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-2-lite/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/nano-banana-pro.png?alt=media&token=c343bbeb-2c4f-472b-8219-0a0c00e7f85a",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "1080p",
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high",
+                "allow_fallback_model": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "1:1",
+                "1:4",
+                "1:8",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:1",
+                "4:3",
+                "4:5",
+                "5:4",
+                "8:1",
+                "9:16",
+                "16:9",
+                "21:9"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p",
+                "2K",
+                "4K"
+            ]
+        }
     },
     {
-        "category": "Fantasy",
-        "count": 1,
-        "prompts": [
-            "Mystical wizard staff with glowing runes and energy swirls in fine line. Professional fantasy tattoo artwork, isolated on pure white background.",
-            "Elegant winged angel silhouette with soft halo and flowing robes. Professional tattoo design, isolated on clean white background.",
-            "Ancient glowing crystal with magical energy veins and floating particles. Professional fantasy tattoo artwork, isolated on pure white background."
-        ]
+        "id": "google/nano-banana-2",
+        "name": "Nano Banana 2",
+        "official": true,
+        "iseditable": true,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-2/predictions",
+        "credit_used": 10,
+        "icon_url": "https://github.com/google.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "input_images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "match_input_image": false,
+                "number_of_images": 1,
+                "output_format": "jpg"
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "1:1",
+                "1:4",
+                "1:8",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:1",
+                "4:3",
+                "4:5",
+                "5:4",
+                "8:1",
+                "9:16",
+                "16:9",
+                "21:9"
+            ],
+            "resolutions": [
+                "1K",
+                "2K",
+                "4K"
+            ]
+        }
     },
     {
-        "category": "Geometric",
-        "count": 1,
-        "prompts": [
-            "Complex interlocking star and pentagram sacred geometry pattern. Fine line with precise intersections. Professional geometric tattoo design, isolated on clean white background.",
-            "Modern minimalist cube and shadow geometric illusion. Clean lines and subtle shading. Professional tattoo artwork, isolated on pure white background.",
-            "Radiating sunburst geometric pattern with sharp rays and central circle. Bold blackwork style. Professional geometric tattoo design, isolated on clean white background."
-        ]
+        "id": "black-forest-labs/flux-2-flex",
+        "name": "FLUX 2 Flex",
+        "official": true,
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-2-flex/predictions",
+        "credit_used": 25,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "ref_images": [
+                    "{{image}}"
+                ],
+                "image": "{{image}}",
+                "guidance_scale": 3.5,
+                "num_inference_steps": 20
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "custom",
+                "1:1",
+                "16:9",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "9:16",
+                "3:4",
+                "4:3"
+            ],
+            "resolutions": [
+                "match_input_image",
+                "0.5 MP",
+                "1 MP",
+                "2 MP",
+                "4 MP"
+            ]
+        }
     },
     {
-        "category": "Lettering",
-        "count": 1,
-        "prompts": [
-            "Elegant cursive 'Strength' with subtle strength symbol integrated. Fine line with flourishes. Professional lettering tattoo, isolated on pure white background.",
-            "Bold serif 'Psalm 23' with small cross accent. Clean and powerful. Professional religious lettering design, isolated on clean white background.",
-            "Flowing handwritten 'Let Go' with light decorative vines. Professional tattoo artwork, isolated on pure white background."
-        ]
+        "id": "prunaai/z-image-turbo",
+        "name": "Z-Image Turbo",
+        "official": false,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/z-image-turbo/predictions",
+        "credit_used": 10,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/z-image-turbo%2Fslice%201.png?alt=media&token=284ffa5f-de71-4f7f-88b5-df863bad6446",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "go_fast": false,
+                "output_format": "jpg",
+                "guidance_scale": 0,
+                "output_quality": 80,
+                "num_inference_steps": 8
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4"
+            ]
+        }
     },
     {
-        "category": "Minimalist",
-        "count": 1,
-        "prompts": [
-            "Single continuous line mountain peak with tiny sun. Ultra-clean. Professional minimalist tattoo, isolated on pure white background.",
-            "Tiny delicate star constellation in simple dots and lines. Professional tattoo design, isolated on clean white background.",
-            "Elegant single leaf with stem in thin fine line. Professional minimalist artwork, isolated on pure white background."
-        ]
+        "id": "openai/gpt-image-2",
+        "name": "GPT Image 2",
+        "official": false,
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/openai/gpt-image-2/predictions",
+        "credit_used": 500,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/gpt-image-2.png?alt=media&token=98586771-f522-41a6-974f-842af913b245",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "input_images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "quality": "auto",
+                "user_id": "",
+                "background": "auto",
+                "moderation": "auto",
+                "output_format": "webp",
+                "openai_api_key": "",
+                "number_of_images": 1,
+                "output_compression": 90
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "3:2",
+                "2:3",
+                "4:3",
+                "3:4",
+                "16:9",
+                "9:16",
+                "auto",
+                "1024x1024",
+                "1536x1024",
+                "1024x1536",
+                "1536x1152",
+                "1152x1536",
+                "2048x2048",
+                "2048x1152",
+                "1152x2048",
+                "3840x2160",
+                "2160x3840"
+            ]
+        }
     },
     {
-        "category": "Nature",
-        "count": 1,
-        "prompts": [
-            "Detailed cherry blossom branch with soft petals in fine line. Professional nature tattoo design, isolated on clean white background.",
-            "Towering pine tree silhouette with layered branches. Professional tattoo artwork, isolated on pure white background.",
-            "Realistic seashell with intricate spiral details. Professional nature tattoo design, isolated on clean white background."
-        ]
+        "id": "google/imagen-3",
+        "name": "Google Imagen 3",
+        "official": true,
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/imagen-3/predictions",
+        "credit_used": 60,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/imagen-3%20(1).png?alt=media&token=09f98adf-2817-4ba0-ab6a-8bd3018bfbad",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high"
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "9:16",
+                "16:9",
+                "3:4",
+                "4:3"
+            ]
+        }
     },
     {
-        "category": "Sketch",
-        "count": 1,
-        "prompts": [
-            "Loose pencil sketch of an old oak tree with textured bark. Professional sketch tattoo, isolated on pure white background.",
-            "Expressive sketch of a howling wolf head with dynamic lines. Professional tattoo artwork, isolated on clean white background.",
-            "Delicate hand-drawn sketch of a blooming peony flower. Professional sketch design, isolated on pure white background."
-        ]
+        "id": "google/nano-banana-pro",
+        "name": "Google Nano Banana Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-pro/predictions",
+        "credit_used": 40,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/nano-banana-pro.png?alt=media&token=c343bbeb-2c4f-472b-8219-0a0c00e7f85a",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "2K",
+                "image_input": [
+                    "{{image}}"
+                ],
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high",
+                "allow_fallback_model": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "1:1",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:3",
+                "4:5",
+                "5:4",
+                "9:16",
+                "16:9",
+                "21:9"
+            ],
+            "resolutions": [
+                "1K",
+                "2K",
+                "4K"
+            ]
+        }
     },
     {
-        "category": "Tribal",
-        "count": 1,
-        "prompts": [
-            "Bold tribal shark with traditional patterns and sharp teeth. Professional tribal tattoo design, isolated on clean white background.",
-            "Symmetrical tribal sun with radiating spikes and inner motifs. Professional tattoo artwork, isolated on pure white background.",
-            "Flowing tribal vine and leaf pattern with strong blackwork. Professional tribal design, isolated on clean white background."
-        ]
+        "id": "prunaai/p-image-edit",
+        "name": "P-Image Edit",
+        "official": true,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-image-edit/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/p-image-edit.png?alt=media&token=fb53fb78-11a6-440e-9708-8aa4bbe6c1f6",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "aspect_ratio": "auto",
+                "seed": 0,
+                "no_op": false,
+                "turbo": true,
+                "images": [],
+                "disable_safety_checker": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3"
+            ]
+        }
+    },
+    {
+        "id": "runwayml/gen4-image",
+        "name": "Runway Gen-4 Image",
+        "official": false,
+        "iseditable": false,
+        "owner": "runwayml",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/runwayml/gen4-image/predictions",
+        "credit_used": 30,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/gen4-image.png?alt=media&token=e03d506c-d28b-488d-86bb-b3df7fa82654",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "resolution": "1080p",
+                "aspect_ratio": "16:9",
+                "reference_tags": [],
+                "reference_images": []
+            }
+        },
+        "options": {
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "1:1",
+                "21:9"
+            ]
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-kontext-pro",
+        "name": "FLUX Kontext Pro",
+        "official": true,
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-pro/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/flux-kontext-pro.png?alt=media&token=09d10e72-fb8d-4b0a-9143-ab8db174e0c2",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "aspect_ratio": "square",
+                "seed": 0,
+                "input_image": "",
+                "output_format": "png",
+                "safety_tolerance": 2,
+                "prompt_upsampling": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "21:9",
+                "9:21",
+                "2:1",
+                "1:2"
+            ]
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-kontext-max",
+        "name": "FLUX Kontext Max",
+        "official": true,
+        "iseditable": true,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-max/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/flux-kontext-max.png?alt=media&token=bb64c651-8a44-448a-994d-5b21ff6d85b7",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "square",
+                "seed": 0,
+                "input_image": "",
+                "output_format": "png",
+                "safety_tolerance": 2,
+                "prompt_upsampling": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "match_input_image",
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "21:9",
+                "9:21",
+                "2:1",
+                "1:2"
+            ]
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-pro",
+        "name": "FLUX Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-pro/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/flux-pro.png?alt=media&token=357a851d-9168-4c94-836c-b63edfdfcf13",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "1:1",
+                "seed": 0,
+                "steps": 25,
+                "width": 0,
+                "height": 0,
+                "guidance": 3,
+                "interval": 2,
+                "image_prompt": "",
+                "output_format": "webp",
+                "output_quality": 80,
+                "safety_tolerance": 2,
+                "prompt_upsampling": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "custom",
+                "1:1",
+                "16:9",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "9:16",
+                "3:4",
+                "4:3"
+            ]
+        }
+    },
+    {
+        "id": "leonardoai/lucid-origin",
+        "name": "Lucid Origin",
+        "official": false,
+        "iseditable": false,
+        "owner": "leonardoai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/leonardoai/lucid-origin/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/lucid-origin.png?alt=media&token=4033918d-7f8c-48b8-bc85-173c266c24c6",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "style": "none",
+                "contrast": "medium",
+                "aspect_ratio": "16:9",
+                "prompt_enhance": true,
+                "generation_mode": "standard"
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "3:4",
+                "4:3",
+                "2:1",
+                "1:2",
+                "3:1",
+                "1:3"
+            ]
+        }
+    },
+    {
+        "id": "ideogram-ai/ideogram-v2",
+        "name": "Ideogram 2.0",
+        "official": true,
+        "iseditable": true,
+        "owner": "ideogram-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2/predictions",
+        "credit_used": 4,
+        "icon_url": "https://github.com/ideogram-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "mask": "",
+                "seed": 0,
+                "image": "",
+                "resolution": "None",
+                "style_type": "None",
+                "aspect_ratio": "1:1",
+                "negative_prompt": "",
+                "magic_prompt_option": "Auto"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "None",
+                "512x1536",
+                "576x1408",
+                "576x1472",
+                "576x1536",
+                "640x1344",
+                "640x1408",
+                "640x1472",
+                "640x1536",
+                "704x1152",
+                "704x1216",
+                "704x1280",
+                "704x1344",
+                "704x1408",
+                "704x1472",
+                "736x1312",
+                "768x1088",
+                "768x1216",
+                "768x1280",
+                "768x1344",
+                "832x960",
+                "832x1024",
+                "832x1088",
+                "832x1152",
+                "832x1216",
+                "832x1248",
+                "864x1152",
+                "896x960",
+                "896x1024",
+                "896x1088",
+                "896x1120",
+                "896x1152",
+                "960x832",
+                "960x896",
+                "960x1024",
+                "960x1088",
+                "1024x832",
+                "1024x896",
+                "1024x960",
+                "1024x1024",
+                "1088x768",
+                "1088x832",
+                "1088x896",
+                "1088x960",
+                "1120x896",
+                "1152x704",
+                "1152x832",
+                "1152x864",
+                "1152x896",
+                "1216x704",
+                "1216x768",
+                "1216x832",
+                "1248x832",
+                "1280x704",
+                "1280x768",
+                "1280x800",
+                "1312x736",
+                "1344x640",
+                "1344x704",
+                "1344x768",
+                "1408x576",
+                "1408x640",
+                "1408x704",
+                "1472x576",
+                "1472x640",
+                "1472x704",
+                "1536x512",
+                "1536x576",
+                "1536x640"
+            ],
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:10",
+                "10:16",
+                "3:1",
+                "1:3"
+            ]
+        }
+    },
+    {
+        "id": "ideogram-ai/ideogram-v2a",
+        "name": "Ideogram 2.0 Alpha",
+        "official": true,
+        "iseditable": true,
+        "owner": "ideogram-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2a/predictions",
+        "credit_used": 5,
+        "icon_url": "https://github.com/ideogram-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "seed": 0,
+                "resolution": "None",
+                "style_type": "None",
+                "aspect_ratio": "1:1",
+                "magic_prompt_option": "Auto"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "None",
+                "512x1536",
+                "576x1408",
+                "576x1472",
+                "576x1536",
+                "640x1344",
+                "640x1408",
+                "640x1472",
+                "640x1536",
+                "704x1152",
+                "704x1216",
+                "704x1280",
+                "704x1344",
+                "704x1408",
+                "704x1472",
+                "736x1312",
+                "768x1088",
+                "768x1216",
+                "768x1280",
+                "768x1344",
+                "832x960",
+                "832x1024",
+                "832x1088",
+                "832x1152",
+                "832x1216",
+                "832x1248",
+                "864x1152",
+                "896x960",
+                "896x1024",
+                "896x1088",
+                "896x1120",
+                "896x1152",
+                "960x832",
+                "960x896",
+                "960x1024",
+                "960x1088",
+                "1024x832",
+                "1024x896",
+                "1024x960",
+                "1024x1024",
+                "1088x768",
+                "1088x832",
+                "1088x896",
+                "1088x960",
+                "1120x896",
+                "1152x704",
+                "1152x832",
+                "1152x864",
+                "1152x896",
+                "1216x704",
+                "1216x768",
+                "1216x832",
+                "1248x832",
+                "1280x704",
+                "1280x768",
+                "1280x800",
+                "1312x736",
+                "1344x640",
+                "1344x704",
+                "1344x768",
+                "1408x576",
+                "1408x640",
+                "1408x704",
+                "1472x576",
+                "1472x640",
+                "1472x704",
+                "1536x512",
+                "1536x576",
+                "1536x640"
+            ],
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:10",
+                "10:16",
+                "3:1",
+                "1:3"
+            ]
+        }
+    },
+    {
+        "id": "ideogram-ai/ideogram-v2-turbo",
+        "name": "Ideogram 2.0 Turbo",
+        "official": true,
+        "iseditable": true,
+        "owner": "ideogram-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/ideogram-ai/ideogram-v2-turbo/predictions",
+        "credit_used": 3,
+        "icon_url": "https://github.com/ideogram-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "mask": "",
+                "seed": 0,
+                "image": "",
+                "resolution": "None",
+                "style_type": "None",
+                "aspect_ratio": "1:1",
+                "negative_prompt": "",
+                "magic_prompt_option": "Auto"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "None",
+                "512x1536",
+                "576x1408",
+                "576x1472",
+                "576x1536",
+                "640x1344",
+                "640x1408",
+                "640x1472",
+                "640x1536",
+                "704x1152",
+                "704x1216",
+                "704x1280",
+                "704x1344",
+                "704x1408",
+                "704x1472",
+                "736x1312",
+                "768x1088",
+                "768x1216",
+                "768x1280",
+                "768x1344",
+                "832x960",
+                "832x1024",
+                "832x1088",
+                "832x1152",
+                "832x1216",
+                "832x1248",
+                "864x1152",
+                "896x960",
+                "896x1024",
+                "896x1088",
+                "896x1120",
+                "896x1152",
+                "960x832",
+                "960x896",
+                "960x1024",
+                "960x1088",
+                "1024x832",
+                "1024x896",
+                "1024x960",
+                "1024x1024",
+                "1088x768",
+                "1088x832",
+                "1088x896",
+                "1088x960",
+                "1120x896",
+                "1152x704",
+                "1152x832",
+                "1152x864",
+                "1152x896",
+                "1216x704",
+                "1216x768",
+                "1216x832",
+                "1248x832",
+                "1280x704",
+                "1280x768",
+                "1280x800",
+                "1312x736",
+                "1344x640",
+                "1344x704",
+                "1344x768",
+                "1408x576",
+                "1408x640",
+                "1408x704",
+                "1472x576",
+                "1472x640",
+                "1472x704",
+                "1536x512",
+                "1536x576",
+                "1536x640"
+            ],
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:10",
+                "10:16",
+                "3:1",
+                "1:3"
+            ]
+        }
+    },
+    {
+        "id": "prunaai/p-image-lora",
+        "name": "P-Image LoRA",
+        "official": true,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-image-lora/predictions",
+        "credit_used": 10,
+        "icon_url": "https://github.com/prunaai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "lora_model": "{{lora_model}}",
+                "seed": 0,
+                "width": 0,
+                "height": 0,
+                "lora_scale": 0.5,
+                "aspect_ratio": "16:9",
+                "hf_api_token": "",
+                "lora_weights": "",
+                "prompt_upsampling": false,
+                "disable_safety_checker": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "custom"
+            ]
+        }
+    },
+    {
+        "id": "comfyui/any-comfyui-workflow",
+        "name": "Any ComfyUI Workflow",
+        "official": false,
+        "iseditable": false,
+        "owner": "comfyui",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/comfyui/any-comfyui-workflow/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/any-comfyui-workflow.png?alt=media&token=295e60d0-35d3-4da6-86bf-f511295af7f0",
+        "request_body": {
+            "input": {
+                "file": "{{file}}",
+                "input_file": "",
+                "output_format": "webp",
+                "workflow_json": "",
+                "output_quality": 95,
+                "randomise_seeds": true,
+                "force_reset_cache": false,
+                "return_temp_files": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "tencent/hunyuan-image-3",
+        "name": "Hunyuan Image 3.0",
+        "official": true,
+        "iseditable": false,
+        "owner": "tencent",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/tencent/hunyuan-image-3/predictions",
+        "credit_used": 25,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hunyuan-image-3.png?alt=media&token=6b036bea-9cf5-4f4d-a54f-eedea95306bd",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "go_fast": true,
+                "aspect_ratio": "1:1",
+                "output_format": "webp",
+                "output_quality": 95,
+                "disable_safety_checker": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "21:9",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "3:4",
+                "4:3",
+                "9:16",
+                "9:21"
+            ]
+        }
+    },
+    {
+        "id": "prunaai/wan-2.2-image",
+        "name": "Wan 2.2 Image",
+        "official": true,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/wan-2.2-image/predictions",
+        "credit_used": 15,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/wan-2.2-image.png?alt=media&token=5dd2c5c3-5222-4df2-9358-b805bd8a8d4a",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "juiced": false,
+                "megapixels": 2,
+                "aspect_ratio": "16:9",
+                "output_format": "jpg",
+                "output_quality": 80,
+                "lora_scale_transformer": 1,
+                "lora_scale_transformer_2": 1,
+                "lora_weights_transformer": "",
+                "lora_weights_transformer_2": ""
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "9:16",
+                "4:3",
+                "3:4",
+                "21:9"
+            ]
+        }
+    },
+    {
+        "id": "prunaai/hidream-l1-full",
+        "name": "HiDream L1 Full",
+        "official": false,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/hidream-l1-full/predictions",
+        "credit_used": 20,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hidream-l1-full.png?alt=media&token=0c7c5ea7-ec59-4bf2-990f-cdcd5e354ef5",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "seed": -1,
+                "model_type": "full",
+                "resolution": "1024 × 1024 (Square)",
+                "speed_mode": "Lightly Juiced 🍊 (more consistent)",
+                "output_format": "webp",
+                "output_quality": 100
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1024 × 1024 (Square)",
+                "768 × 1360 (Portrait)",
+                "1360 × 768 (Landscape)",
+                "880 × 1168 (Portrait)",
+                "1168 × 880 (Landscape)",
+                "1248 × 832 (Landscape)",
+                "832 × 1248 (Portrait)"
+            ]
+        }
+    },
+    {
+        "id": "prunaai/hidream-l1-dev",
+        "name": "HiDream L1 Dev",
+        "official": false,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/hidream-l1-dev/predictions",
+        "credit_used": 10,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hidream-l1-dev.png?alt=media&token=d0e3a9f7-b89b-4f14-baea-159f9c389197",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "seed": -1,
+                "model_type": "dev",
+                "resolution": "1024 × 1024 (Square)",
+                "speed_mode": "Lightly Juiced 🍊 (more consistent)",
+                "output_format": "webp",
+                "output_quality": 100
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1024 × 1024 (Square)",
+                "768 × 1360 (Portrait)",
+                "1360 × 768 (Landscape)",
+                "880 × 1168 (Portrait)",
+                "1168 × 880 (Landscape)",
+                "1248 × 832 (Landscape)",
+                "832 × 1248 (Portrait)"
+            ]
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-dev",
+        "name": "FLUX Dev",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions",
+        "credit_used": 10,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "seed": 0,
+                "image": "",
+                "go_fast": true,
+                "guidance": 3.5,
+                "megapixels": "1",
+                "num_outputs": 1,
+                "aspect_ratio": "1:1",
+                "output_format": "webp",
+                "output_quality": 80,
+                "prompt_strength": 0.8,
+                "num_inference_steps": 28,
+                "disable_safety_checker": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "21:9",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "3:4",
+                "4:3",
+                "9:16",
+                "9:21"
+            ]
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-1.1-pro-ultra",
+        "name": "FLUX 1.1 Pro Ultra",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro-ultra/predictions",
+        "credit_used": 6,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "raw": false,
+                "seed": 0,
+                "image_prompt": "",
+                "output_format": "jpg",
+                "safety_tolerance": 2,
+                "image_prompt_strength": 0.1
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "21:9",
+                "16:9",
+                "3:2",
+                "4:3",
+                "5:4",
+                "1:1",
+                "4:5",
+                "3:4",
+                "2:3",
+                "9:16",
+                "9:21"
+            ]
+        }
+    },
+    {
+        "id": "black-forest-labs/flux-schnell",
+        "name": "FLUX 1.1 Schnell",
+        "official": true,
+        "iseditable": false,
+        "owner": "black-forest-labs",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+        "credit_used": 5,
+        "icon_url": "https://github.com/black-forest-labs.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "seed": 0,
+                "go_fast": true,
+                "megapixels": "1",
+                "num_outputs": 1,
+                "aspect_ratio": "1:1",
+                "output_format": "webp",
+                "output_quality": 80,
+                "num_inference_steps": 4,
+                "disable_safety_checker": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "21:9",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "3:4",
+                "4:3",
+                "9:16",
+                "9:21"
+            ]
+        }
+    },
+    {
+        "id": "wan-video/wan-2.7-image",
+        "name": "Wan 2.7 Image",
+        "official": true,
+        "iseditable": true,
+        "owner": "wan-video",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-image/predictions",
+        "credit_used": 4,
+        "icon_url": "https://github.com/wan-video.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "images": [
+                    "{{image}}"
+                ],
+                "size": "2K",
+                "seed": 0,
+                "num_outputs": 1,
+                "thinking_mode": true,
+                "image_set_mode": false
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1080p",
+                "2K",
+                "4K"
+            ]
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4",
+        "name": "Recraft V4",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4/predictions",
+        "credit_used": 40,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "1024x1024",
+                "aspect_ratio": "Not set"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1024x1024",
+                "1365x1024",
+                "1024x1365",
+                "1536x1024",
+                "1024x1536"
+            ],
+            "aspect_ratios": [
+                "Not set",
+                "1:1",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:9",
+                "9:16",
+                "1:2",
+                "2:1",
+                "14:10",
+                "10:14",
+                "4:5",
+                "5:4",
+                "6:10"
+            ]
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4-pro",
+        "name": "Recraft V4 Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4-pro/predictions",
+        "credit_used": 250,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "2048x2048",
+                "aspect_ratio": "Not set"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1024x1024",
+                "1365x1024",
+                "1024x1365",
+                "1536x1024",
+                "1024x1536"
+            ],
+            "aspect_ratios": [
+                "Not set",
+                "1:1",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:9",
+                "9:16",
+                "1:2",
+                "2:1",
+                "4:5",
+                "5:4",
+                "6:10",
+                "14:10",
+                "10:14"
+            ]
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4-svg",
+        "name": "Recraft V4 SVG",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4-svg/predictions",
+        "credit_used": 80,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "1024x1024",
+                "aspect_ratio": "Not set"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1024x1024",
+                "1365x1024",
+                "1024x1365",
+                "1536x1024",
+                "1024x1536"
+            ],
+            "aspect_ratios": [
+                "Not set",
+                "1:1",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:9",
+                "9:16",
+                "1:2",
+                "2:1",
+                "14:10",
+                "10:14",
+                "4:5",
+                "5:4",
+                "6:10"
+            ]
+        }
+    },
+    {
+        "id": "recraft-ai/recraft-v4-pro-svg",
+        "name": "Recraft V4 Pro SVG",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4-pro-svg/predictions",
+        "credit_used": 300,
+        "icon_url": "https://github.com/recraft-ai.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "size": "2048x2048",
+                "aspect_ratio": "Not set"
+            }
+        },
+        "options": {
+            "resolutions": [
+                "1024x1024",
+                "1365x1024",
+                "1024x1365",
+                "1536x1024",
+                "1024x1536"
+            ],
+            "aspect_ratios": [
+                "Not set",
+                "1:1",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:9",
+                "9:16",
+                "1:2",
+                "2:1",
+                "4:5",
+                "5:4",
+                "6:10",
+                "14:10",
+                "10:14"
+            ]
+        }
+    },
+    {
+        "id": "minimax/image-01",
+        "name": "MiniMax Image-01",
+        "official": false,
+        "iseditable": true,
+        "owner": "minimax",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/minimax/image-01/predictions",
+        "credit_used": 5,
+        "icon_url": "https://github.com/minimax.png",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "1:1",
+                "number_of_images": 1,
+                "prompt_optimizer": true,
+                "subject_reference": ""
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "1:1",
+                "16:9",
+                "4:3",
+                "3:2",
+                "2:3",
+                "3:4",
+                "9:16",
+                "21:9"
+            ]
+        }
     }
 ]

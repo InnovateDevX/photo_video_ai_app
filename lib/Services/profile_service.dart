@@ -1,11 +1,12 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
 
 class ProfileService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'default');
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   /// Checks if a username is available.

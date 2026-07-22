@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
-import 'package:trail_ai_app/Services/profile_service.dart';
-import 'package:trail_ai_app/Services/auth_service.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Services/profile_service.dart';
+import 'package:vidzeon/Services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? initialProfile;

@@ -1,0 +1,1060 @@
+[
+    {
+        "id": "bytedance/seedance-1-lite",
+        "name": "Seedance 1 Lite",
+        "owner": "bytedance",
+        "credit_used": 10,
+        "first_frame_enabled": true,
+        "last_frame_enabled": true,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedance-1-lite/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "fps": 24,
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "camera_fixed": false,
+                "image": "{{image}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "bytedance/seedance-2.0",
+        "name": "Seedance 2.0",
+        "owner": "bytedance",
+        "credit_used": 1000,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "generate_audio": true,
+                "reference_images": [
+                    "{{image}}"
+                ]
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "bytedance/seedance-2.0-fast",
+        "name": "Seedance 2.0 Fast",
+        "owner": "bytedance",
+        "credit_used": 800,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0-fast/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "generate_audio": true,
+                "reference_images": [
+                    "{{image}}"
+                ]
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "bytedance/seedance-2.0-mini",
+        "name": "Seedance 2.0 Mini",
+        "owner": "bytedance",
+        "credit_used": 300,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
+        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0-mini/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "generate_audio": true,
+                "reference_images": [
+                    "{{image}}"
+                ]
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "bytedance/omni-human",
+        "name": "OmniHuman",
+        "owner": "bytedance",
+        "credit_used": 500,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/bytedance/omni-human.png",
+        "url": "https://api.replicate.com/v1/models/bytedance/omni-human/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "audio": "{{audio}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "540p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "3:4",
+                "4:3",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "bytedance/omni-human-1.5",
+        "name": "OmniHuman 1.5",
+        "owner": "bytedance",
+        "credit_used": 600,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/bytedance/omni-human-1.5.png",
+        "url": "https://api.replicate.com/v1/models/bytedance/omni-human-1.5/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "audio": "{{audio}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10",
+                "15"
+            ],
+            "resolutions": [
+                "540p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "3:4",
+                "4:3",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "bytedance/dreamactor-m2.0",
+        "name": "DreamActor M2.0",
+        "owner": "bytedance",
+        "credit_used": 200,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/bytedance/dreamactor-m2.0.png",
+        "url": "https://api.replicate.com/v1/models/bytedance/dreamactor-m2.0/predictions",
+        "request_body": {
+            "input": {
+                "source": "{{image}}",
+                "driving": "{{video}}",
+                "relative_motion": false
+            }
+        },
+        "options": {
+            "durations": [],
+            "resolutions": [],
+            "aspect_ratios": []
+        }
+    },
+    {
+        "id": "google/veo-3.1",
+        "name": "Google Veo 3.1",
+        "owner": "google",
+        "credit_used": 200,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1.png",
+        "url": "https://api.replicate.com/v1/models/google/veo-3.1/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "4",
+                "6",
+                "8"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16"
+            ]
+        }
+    },
+    {
+        "id": "google/veo-3.1-fast",
+        "name": "Google Veo 3.1 Fast",
+        "owner": "google",
+        "credit_used": 100,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1-fast.png",
+        "url": "https://api.replicate.com/v1/models/google/veo-3.1-fast/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "4",
+                "6",
+                "8"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16"
+            ]
+        }
+    },
+    {
+        "id": "google/veo-3.1-lite",
+        "name": "Google Veo 3.1 Lite",
+        "owner": "google",
+        "credit_used": 80,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1-lite.png",
+        "url": "https://api.replicate.com/v1/models/google/veo-3.1-lite/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "4",
+                "6",
+                "8"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16"
+            ]
+        }
+    },
+    {
+        "id": "kwaivgi/kling-v2.5-turbo-pro",
+        "name": "Kling v2.5 Turbo Pro",
+        "owner": "kwaivgi",
+        "credit_used": 150,
+        "first_frame_enabled": true,
+        "last_frame_enabled": true,
+        "icon_url": "https://api.replicate.com/assets/icon/kwaivgi/kling-v2.5-turbo-pro.png",
+        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v2.5-turbo-pro/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "start_image": "{{image}}",
+                "end_image": "{{image}}",
+                "cfg_scale": 5
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "klingai/kling-v2-master",
+        "name": "Kling v2 Standard",
+        "owner": "klingai",
+        "credit_used": 200,
+        "first_frame_enabled": true,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v2-master.png",
+        "url": "https://api.replicate.com/v1/models/klingai/kling-v2-master/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "start_image": "{{image}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "kwaivgi/kling-v3-video",
+        "name": "Kling Video 3.0",
+        "owner": "kwaivgi",
+        "credit_used": 220,
+        "first_frame_enabled": true,
+        "last_frame_enabled": true,
+        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-video.png",
+        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v3-video/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "mode": "{{mode}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "start_image": "{{image}}",
+                "end_image": "{{image}}",
+                "generate_audio": false,
+                "negative_prompt": ""
+            }
+        },
+        "options": {
+            "durations": [
+                "3",
+                "6",
+                "10",
+                "15"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "kwaivgi/kling-v3-omni-video",
+        "name": "Kling Video 3.0 Omni",
+        "owner": "kwaivgi",
+        "credit_used": 300,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-omni-video.png",
+        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v3-omni-video/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "mode": "{{mode}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "reference_video": "{{video}}",
+                "video_reference_type": "{{video_reference_type}}",
+                "generate_audio": false,
+                "keep_original_sound": false,
+                "negative_prompt": ""
+            }
+        },
+        "options": {
+            "durations": [
+                "3",
+                "6",
+                "10",
+                "15"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "prunaai/p-video",
+        "name": "P-Video",
+        "owner": "prunaai",
+        "credit_used": 80,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/prunaai/p-video.png",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-video/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "draft_mode": true
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "xai/grok-imagine-video",
+        "name": "Grok Imagine Video",
+        "owner": "xai",
+        "credit_used": 120,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/xai/grok-imagine-video.png",
+        "url": "https://api.replicate.com/v1/models/xai/grok-imagine-video/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "{{resolution}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10",
+                "15"
+            ],
+            "resolutions": [
+                "480p",
+                "720p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "minimax/video-01",
+        "name": "MiniMax Video-01",
+        "owner": "minimax",
+        "credit_used": 150,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/minimax/video-01.png",
+        "url": "https://api.replicate.com/v1/models/minimax/video-01/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "prompt_optimizer": true
+            }
+        },
+        "options": {
+            "durations": [
+                "6"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": []
+        }
+    },
+    {
+        "id": "minimax/hailuo-2.3",
+        "name": "MiniMax Hailuo 2.3",
+        "owner": "minimax",
+        "credit_used": 150,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/minimax/hailuo-2.3.png",
+        "url": "https://api.replicate.com/v1/models/minimax/hailuo-2.3/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "prompt_optimizer": true
+            }
+        },
+        "options": {
+            "durations": [
+                "6",
+                "10"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": []
+        }
+    },
+    {
+        "id": "minimax/hailuo-2.3-fast",
+        "name": "MiniMax Hailuo 2.3 Fast",
+        "owner": "minimax",
+        "credit_used": 90,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/minimax/hailuo-2.3-fast.png",
+        "url": "https://api.replicate.com/v1/models/minimax/hailuo-2.3-fast/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "image": "{{image}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "prompt_optimizer": false
+            }
+        },
+        "options": {
+            "durations": [
+                "6",
+                "10"
+            ],
+            "resolutions": [
+                "768p",
+                "1080p"
+            ],
+            "aspect_ratios": []
+        }
+    },
+    {
+        "id": "wavespeedai/wan-2.1-i2v-480p",
+        "name": "Wan Image-to-Video",
+        "owner": "wavespeedai",
+        "credit_used": 120,
+        "first_frame_enabled": true,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.1-i2v-480p.png",
+        "url": "https://api.replicate.com/v1/models/wavespeedai/wan-2.1-i2v-480p/predictions",
+        "request_body": {
+            "input": {
+                "image": "{{image}}",
+                "prompt": "{{prompt}}",
+                "max_area": "480*832",
+                "fast_mode": "Balanced",
+                "sample_shift": 8,
+                "sample_steps": 30,
+                "frames_per_second": 16,
+                "sample_guide_scale": 5
+            }
+        },
+        "options": {
+            "durations": [],
+            "resolutions": [],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "wavespeedai/wan-2.5-t2v",
+        "name": "Wan 2.5 T2V",
+        "owner": "wavespeedai",
+        "credit_used": 130,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-t2v.png",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-t2v/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "audio": "{{audio}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "wavespeedai/wan-2.5-t2v-fast",
+        "name": "Wan 2.5 T2V Fast",
+        "owner": "wavespeedai",
+        "credit_used": 80,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-t2v-fast.png",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-t2v-fast/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "wavespeedai/wan-2.5-i2v",
+        "name": "Wan 2.5 I2V",
+        "owner": "wavespeedai",
+        "credit_used": 130,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-i2v.png",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-i2v/predictions",
+        "request_body": {
+            "input": {
+                "image": "{{image}}",
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "wavespeedai/wan-2.5-i2v-fast",
+        "name": "Wan 2.5 I2V Fast",
+        "owner": "wavespeedai",
+        "credit_used": 80,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-i2v-fast.png",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-i2v-fast/predictions",
+        "request_body": {
+            "input": {
+                "image": "{{image}}",
+                "prompt": "{{prompt}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [
+                "480p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "wan-video/wan-2.7-t2v",
+        "name": "Wan 2.7 T2V",
+        "owner": "wan-video",
+        "credit_used": 200,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.7-t2v.png",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-t2v/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "negative_prompt": "{{negative_prompt}}",
+                "audio": "{{audio}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "duration": "{{duration}}",
+                "enable_prompt_expansion": true,
+                "seed": null
+            }
+        },
+        "options": {
+            "durations": [
+                "2",
+                "5",
+                "8",
+                "10",
+                "15"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "wan-video/wan-2.7-r2v",
+        "name": "Wan 2.7 Reference-to-Video",
+        "owner": "wan-video",
+        "credit_used": 250,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.7-r2v.png",
+        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-r2v/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "reference_images": [
+                    "{{image}}"
+                ],
+                "reference_videos": [
+                    "{{video}}"
+                ],
+                "negative_prompt": "{{negative_prompt}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "duration": "{{duration}}",
+                "shot_type": "{{shot_type}}",
+                "seed": null
+            }
+        },
+        "options": {
+            "durations": [
+                "2",
+                "5",
+                "8",
+                "10"
+            ],
+            "resolutions": [
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4"
+            ]
+        }
+    },
+    {
+        "id": "klingai/kling-v3-master",
+        "name": "Kling v3 Master (Gen-3 Vision API)",
+        "owner": "klingai",
+        "credit_used": 280,
+        "first_frame_enabled": false,
+        "last_frame_enabled": false,
+        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-master.png",
+        "url": "https://api.replicate.com/v1/models/klingai/kling-v3-master/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "start_image": "{{image}}",
+                "duration": "{{duration}}",
+                "aspect_ratio": "{{aspect_ratio}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "runwayml/gen4-turbo",
+        "name": "RunwayML Gen4 Turbo (Video)",
+        "owner": "runwayml",
+        "credit_used": 250,
+        "first_frame_enabled": true,
+        "last_frame_enabled": true,
+        "icon_url": "https://api.replicate.com/assets/icon/runwayml/gen4-turbo.png",
+        "url": "https://api.replicate.com/v1/models/runwayml/gen4-turbo/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "ratio": "{{aspect_ratio}}",
+                "duration": "{{duration}}",
+                "image_as_end_frame": false,
+                "prompt_image": "{{image}}"
+            }
+        },
+        "options": {
+            "durations": [
+                "5",
+                "10"
+            ],
+            "resolutions": [],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "vidu/q3-pro",
+        "name": "Vidu Q3 Pro",
+        "owner": "vidu",
+        "credit_used": 180,
+        "first_frame_enabled": true,
+        "last_frame_enabled": true,
+        "icon_url": "https://api.replicate.com/assets/icon/vidu/q3-pro.png",
+        "url": "https://api.replicate.com/v1/models/vidu/q3-pro/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "start_image": "{{image}}",
+                "end_image": "{{image}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "audio": true,
+                "seed": null
+            }
+        },
+        "options": {
+            "durations": [
+                "1",
+                "5",
+                "10",
+                "16"
+            ],
+            "resolutions": [
+                "540p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "3:4",
+                "4:3",
+                "1:1"
+            ]
+        }
+    },
+    {
+        "id": "vidu/q3-turbo",
+        "name": "Vidu Q3 Turbo",
+        "owner": "vidu",
+        "credit_used": 120,
+        "first_frame_enabled": true,
+        "last_frame_enabled": true,
+        "icon_url": "https://api.replicate.com/assets/icon/vidu/q3-turbo.png",
+        "url": "https://api.replicate.com/v1/models/vidu/q3-turbo/predictions",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "start_image": "{{image}}",
+                "end_image": "{{image}}",
+                "duration": "{{duration}}",
+                "resolution": "{{resolution}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "audio": true,
+                "seed": null
+            }
+        },
+        "options": {
+            "durations": [
+                "1",
+                "5",
+                "10",
+                "16"
+            ],
+            "resolutions": [
+                "540p",
+                "720p",
+                "1080p"
+            ],
+            "aspect_ratios": [
+                "16:9",
+                "9:16",
+                "3:4",
+                "4:3",
+                "1:1"
+            ]
+        }
+    }
+]

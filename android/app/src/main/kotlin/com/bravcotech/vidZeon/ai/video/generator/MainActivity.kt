@@ -1,4 +1,4 @@
-package com.example.trail_ai_app
+package com.bravcotech.vidZeon.ai.video.generator
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

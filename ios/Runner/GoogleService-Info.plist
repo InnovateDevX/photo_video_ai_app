@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>878335239927-3hdgefqu8qq3unh431soai5cb9j68b26.apps.googleusercontent.com</string>
+	<string>160697788254-vu9gj7btmbipl207hii4ltqan8prtir5.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.878335239927-3hdgefqu8qq3unh431soai5cb9j68b26</string>
+	<string>com.googleusercontent.apps.160697788254-vu9gj7btmbipl207hii4ltqan8prtir5</string>
 	<key>API_KEY</key>
-	<string>AIzaSyBgNsj58I5lTHshyIPDxIGbwhqN_ZJjM7A</string>
+	<string>AIzaSyALf01h3-xYh1ZF7OgjZkO8fjXzpKzEQRA</string>
 	<key>GCM_SENDER_ID</key>
-	<string>878335239927</string>
+	<string>160697788254</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.trailAiApp</string>
+	<string>com.bravcotech.vidZeon.ai.video.generator</string>
 	<key>PROJECT_ID</key>
-	<string>imagegen-trail</string>
+	<string>ai-video-generator-c09ff</string>
 	<key>STORAGE_BUCKET</key>
-	<string>imagegen-trail.firebasestorage.app</string>
+	<string>ai-video-generator-c09ff.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:878335239927:ios:dc1cda6f874a5a038a95f2</string>
+	<string>1:160697788254:ios:a3b13ae4b2bdd2fea251cf</string>
 </dict>
 </plist>

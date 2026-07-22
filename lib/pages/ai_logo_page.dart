@@ -1,18 +1,20 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:vidzeon/Services/media_service.dart';
+import 'package:vidzeon/Services/asset_service.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/generation_gate.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/strings.dart'; // non-translatable
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/generation_gate.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
 
-import 'package:trail_ai_app/pages/upscale_page.dart';
+import 'package:vidzeon/pages/upscale_page.dart';
+import 'package:vidzeon/Widgets/ai_suggestion_box.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -29,13 +31,12 @@ class _AiLogoPageState extends State<AiLogoPage>
   String _selectedStyle = 'Business';
 
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
   final CreditService _creditService = CreditService();
 
   _PageState _pageState = _PageState.selection;
   final List<String> _generatedLogos = [];
   int _selectedLogoIndex = 0;
-  final bool _isDownloading = false;
+  bool _isDownloading = false;
   bool _isNsfw = false;
   bool _isCancelled = false;
 
@@ -124,7 +125,6 @@ class _AiLogoPageState extends State<AiLogoPage>
 
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: model.creditUsed,
     );
@@ -144,9 +144,13 @@ class _AiLogoPageState extends State<AiLogoPage>
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(
+        showThemedDialog(
           context,
-        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
+          title: 'Success',
+          message: 'Credits deducted',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+        );
       }
 
       if (mounted) {
@@ -189,6 +193,19 @@ class _AiLogoPageState extends State<AiLogoPage>
         }
       }
     }
+  }
+
+  Future<void> _downloadLogo() async {
+    if (_generatedLogos.isEmpty || _isDownloading) return;
+    setState(() => _isDownloading = true);
+    final file = await MediaService.downloadImage(
+      context,
+      _generatedLogos[_selectedLogoIndex],
+    );
+    if (file != null) {
+      await AssetService().saveUserAsset(file, 'image');
+    }
+    if (mounted) setState(() => _isDownloading = false);
   }
 
   Widget _buildTopBar({
@@ -397,11 +414,12 @@ class _AiLogoPageState extends State<AiLogoPage>
               SizedBox(height: MediaQuery.of(context).size.height * 0.015),
               _buildTopBar(
                 isDark: isDark,
-                title: 'logo_maker_title'.i18n(),
+                title: 'AI Logo Maker',
                 subtitle: switch (_pageState) {
-                  _PageState.loading => 'enhancing_logo'.i18n(),
-                  _PageState.result => 'check_the_result'.i18n(),
-                  _PageState.selection => 'logo_maker_desc'.i18n(),
+                  _PageState.loading =>
+                    'Enhancing your image.\nThis may take a few seconds..',
+                  _PageState.result => 'check_the_result',
+                  _PageState.selection => 'I turn this text into a\nlogo',
                 },
                 onBack: switch (_pageState) {
                   _PageState.loading => () {
@@ -439,7 +457,7 @@ class _AiLogoPageState extends State<AiLogoPage>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'processing_title'.i18n(),
+            'Processing ...',
             style: TextStyle(
               fontSize: sw * 0.05,
               fontWeight: FontWeight.bold,
@@ -484,7 +502,7 @@ class _AiLogoPageState extends State<AiLogoPage>
             child: Column(
               children: [
                 Text(
-                  'creating_logo'.i18n(),
+                  'Create your logo..',
                   style: TextStyle(
                     fontSize: sw * 0.04,
                     fontWeight: FontWeight.bold,
@@ -503,7 +521,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 ),
                 SizedBox(height: sh * 0.01),
                 Text(
-                  'enhancing_logo'.i18n(),
+                  'Enhancing your image.\nThis may take a few seconds..',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: sw * 0.03,
@@ -536,7 +554,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 ),
               ),
               child: Text(
-                'cancel'.i18n(),
+                'Cancel',
                 style: TextStyle(color: AppColors.textColor(isDark)),
               ),
             ),
@@ -580,7 +598,7 @@ class _AiLogoPageState extends State<AiLogoPage>
             ),
             SizedBox(height: sh * 0.03),
             Text(
-              'logo_style'.i18n(),
+              'Style:',
               style: TextStyle(
                 fontSize: sw * 0.04,
                 fontWeight: FontWeight.bold,
@@ -591,69 +609,13 @@ class _AiLogoPageState extends State<AiLogoPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _styleChip('business_logo'.i18n(), 'Business', isDark),
-                _styleChip('gaming_logo'.i18n(), 'Gaming', isDark),
-                _styleChip('minimal_logo'.i18n(), 'Minimal', isDark),
+                _styleChip('Business Logo', 'Business', isDark),
+                _styleChip('Gaming Logo', 'Gaming', isDark),
+                _styleChip('Minimal', 'Minimal', isDark),
               ],
             ),
             SizedBox(height: sh * 0.03),
-            Container(
-              padding: EdgeInsets.all(sw * 0.04),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white : Colors.black,
-                borderRadius: BorderRadius.circular(sw * 0.06),
-                border: Border.all(
-                  color: isDark ? Colors.white10 : Colors.grey[300]!,
-                ),
-                boxShadow: isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: Colors.orange,
-                        size: sw * 0.05,
-                      ),
-                      SizedBox(width: sw * 0.02),
-                      Text(
-                        'ai_suggestion'.i18n(),
-                        style: TextStyle(
-                          fontSize: sw * 0.04,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.black : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: sh * 0.015),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(sw * 0.03),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(sw * 0.025),
-                    ),
-                    child: Text(
-                      'logo_suggestion'.i18n(),
-                      style: TextStyle(
-                        fontSize: sw * 0.032,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            AiSuggestionBox(text: AppStrings.logoSuggestion, isDark: isDark),
 
             SizedBox(height: sh * 0.15),
 
@@ -672,8 +634,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Generate ⚡ ${(_replicateService.logoModel?.creditUsed ?? 0)}'
-                            .i18n(),
+                        'Generate',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -814,7 +775,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 child: _actionButton(
                   context,
                   Icons.auto_fix_high,
-                  'enhance'.i18n(),
+                  'Enhance',
                   isDark,
                   _isNsfw
                       ? () {}
@@ -844,7 +805,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 child: _actionButton(
                   context,
                   Icons.edit,
-                  're_edit'.i18n(),
+                  'Re-Edit',
                   isDark,
                   () => setState(() => _pageState = _PageState.selection),
                 ),
@@ -854,7 +815,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 child: _actionButton(
                   context,
                   Icons.refresh,
-                  'try_again'.i18n(),
+                  'Try again',
                   isDark,
                   () => _generateLogo(),
                 ),
@@ -864,11 +825,11 @@ class _AiLogoPageState extends State<AiLogoPage>
 
           SizedBox(height: sh * 0.03),
           GestureDetector(
-            onTap: _isNsfw ? null : () {}, // Implement real download later
+            onTap: (_isNsfw || _isDownloading) ? null : _downloadLogo,
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: sh * 0.02),
-              decoration: _isNsfw
+              decoration: (_isNsfw || _isDownloading)
                   ? BoxDecoration(
                       color: Colors.grey,
                       borderRadius: BorderRadius.circular(sw * 0.08),
@@ -879,19 +840,21 @@ class _AiLogoPageState extends State<AiLogoPage>
                       ),
                     ),
               child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.file_download_outlined,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: sw * 0.02),
-                    Text(
-                      'download'.i18n(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                child: _isDownloading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.file_download_outlined,
+                            color: Colors.white,
+                          ),
+                          SizedBox(width: sw * 0.02),
+                          const Text(
+                            'Download',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
@@ -919,7 +882,7 @@ class _AiLogoPageState extends State<AiLogoPage>
                 Icon(Icons.share_outlined, color: AppColors.textColor(isDark)),
                 SizedBox(width: sw * 0.02),
                 Text(
-                  'share'.i18n(),
+                  'Share',
                   style: TextStyle(
                     color: AppColors.textColor(isDark),
                     fontWeight: FontWeight.bold,

@@ -1,21 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
-import 'package:trail_ai_app/Core/strings.dart'; // non-translatable
-import 'package:localization/localization.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
-import 'package:trail_ai_app/Helpers/image_picker_helper.dart';
-import 'package:trail_ai_app/Services/replicate_service.dart';
-import 'package:trail_ai_app/Services/ad_service.dart';
-import 'package:trail_ai_app/Services/credit_service.dart';
-import 'package:trail_ai_app/Services/generation_gate.dart';
-import 'package:trail_ai_app/Services/media_service.dart';
-import 'package:trail_ai_app/pages/ai_loading_screen.dart';
-import 'package:trail_ai_app/pages/ai_result_screen.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Helpers/error_dialog_helper.dart';
+import 'package:vidzeon/Widgets/themed_dialog.dart';
+import 'package:vidzeon/Core/colors.dart';
+import 'package:vidzeon/Core/strings.dart'; // non-translatable
+import 'package:vidzeon/Core/gradient.dart';
+import 'package:vidzeon/Helpers/image_picker_helper.dart';
+import 'package:vidzeon/Services/replicate_service.dart';
+import 'package:vidzeon/Services/credit_service.dart';
+import 'package:vidzeon/Services/generation_gate.dart';
+import 'package:vidzeon/Services/media_service.dart';
+import 'package:vidzeon/pages/ai_loading_screen.dart';
+import 'package:vidzeon/pages/ai_result_screen.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Helpers/error_dialog_helper.dart';
 
-import 'package:trail_ai_app/Widgets/cancel_dialog.dart';
+import 'package:vidzeon/Widgets/cancel_dialog.dart';
+import 'package:vidzeon/Widgets/ai_suggestion_box.dart';
 
 enum _PageState { selection, loading, result }
 
@@ -34,7 +34,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
   bool _isLoadingInitial = false;
 
   final ReplicateService _replicateService = ReplicateService();
-  final AdService _adService = AdService();
+
   final CreditService _creditService = CreditService();
 
   _PageState _pageState = _PageState.selection;
@@ -103,7 +103,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
     if (_selectedImage == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('choose_image'.i18n())));
+      ).showSnackBar(SnackBar(content: Text('Choose image')));
       return;
     }
 
@@ -113,7 +113,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
     if (model == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('no_model_selected'.i18n())));
+      ).showSnackBar(SnackBar(content: Text('No model selected or available')));
       return;
     }
 
@@ -122,7 +122,6 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
 
     final canProceed = await GenerationGate.check(
       context: context,
-      adService: _adService,
       creditService: _creditService,
       creditCost: model.creditUsed,
     );
@@ -144,9 +143,13 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
 
       await _creditService.deductCredits(model.creditUsed);
       if (mounted) {
-        ScaffoldMessenger.of(
+        showThemedDialog(
           context,
-        ).showSnackBar(SnackBar(content: Text('credit_deducted'.i18n())));
+          title: 'Success',
+          message: 'Credits deducted',
+          icon: Icons.check_circle_outline,
+          iconColor: Colors.green,
+        );
       }
 
       if (mounted) {
@@ -172,9 +175,9 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
             messageKey: e.messageKey,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${'error'.i18n()}${e.toString()}')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error${e.toString()}')));
         }
       }
     }
@@ -300,15 +303,14 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
         body: SafeArea(
           child: Column(
             children: [
-
               _buildTopBar(
                 isDark: isDark,
-                title: 'background_ai_title'.i18n(),
+                title: 'Background AI',
                 subtitle: switch (_pageState) {
-                  _PageState.loading => 'generating_background'.i18n(),
-                  _PageState.result => 'background_ai_result_title'.i18n(),
+                  _PageState.loading => 'Processing Photo',
+                  _PageState.result => 'Check the Result',
                   _PageState.selection =>
-                    "blur_background".i18n(), // Or key 'blur_background'
+                    'Blur Background', // Or key 'blur_background'
                 },
                 onBack: switch (_pageState) {
                   _PageState.loading => _showCancelWarningDialog,
@@ -323,12 +325,10 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
                   _PageState.loading => AILoadingScreen(
                     selectedImage: _selectedImage,
                     progressAnimation: _progressAnimation,
-                    aiTips: AppStrings.outfitAiTips
-                        .map((e) => e.i18n())
-                        .toList(),
-                    processingTitle: 'processing_title'.i18n(),
-                    applyingText: 'generating_background'.i18n(),
-                    waitText: 'take_few_seconds'.i18n(),
+                    aiTips: AppStrings.outfitAiTips,
+                    processingTitle: 'Processing ...',
+                    applyingText: 'Processing Photo',
+                    waitText: 'This may take a few seconds..',
                     onCancel: _showCancelWarningDialog,
                   ),
                   _PageState.result => const SizedBox.shrink(),
@@ -415,7 +415,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
                               Text(
                                 _isLoadingInitial
                                     ? "Downloading sticker..."
-                                    : 'tap_to_select_gallery'.i18n(),
+                                    : 'Tap to select from gallery',
                                 style: TextStyle(
                                   fontSize: w * 0.035,
                                   color: isDark
@@ -438,7 +438,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
                                       ),
                                     ),
                                     child: Text(
-                                      'choose_image'.i18n(),
+                                      'Choose image',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -477,54 +477,9 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
             SizedBox(height: h * 0.03),
 
             // --- AI Suggestion Card ---
-            Container(
-              padding: EdgeInsets.all(w * 0.04),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[900] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(w * 0.05),
-                border: Border.all(
-                  color: isDark ? Colors.white10 : Colors.grey[300]!,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: Colors.brown,
-                        size: w * 0.05,
-                      ),
-                      SizedBox(width: w * 0.02),
-                      Text(
-                        'ai_suggestion'.i18n(),
-                        style: TextStyle(
-                          fontSize: w * 0.04,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textColor(isDark),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: h * 0.015),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(w * 0.04),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[800] : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(w * 0.025),
-                    ),
-                    child: Text(
-                      'background_ai_suggestion'.i18n(),
-                      style: TextStyle(
-                        fontSize: w * 0.032,
-                        color: AppColors.secondaryTextColor(isDark),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            AiSuggestionBox(
+              text: AppStrings.backgroundAiSuggestion,
+              isDark: isDark,
             ),
 
             SizedBox(height: h * 0.03),
@@ -535,16 +490,12 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildStyleOption(
-                      'blur_background'.i18n(),
-                      'Blur',
-                      isDark,
-                    ),
+                    child: _buildStyleOption('Blur Background', 'Blur', isDark),
                   ),
                   SizedBox(width: w * 0.04),
                   Expanded(
                     child: _buildStyleOption(
-                      'remove_background'.i18n(),
+                      'Remove Background',
                       'Remove',
                       isDark,
                     ),
@@ -568,7 +519,7 @@ class _AiBackgroundPageState extends State<AiBackgroundPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Generate ⚡ ${(_selectedStyle == 'Blur' ? _replicateService.blurBgModel : _replicateService.removeBgModel)?.creditUsed ?? 0}',
+                        'Generate',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

@@ -1,11 +1,11 @@
 import 'dart:io';
-import 'package:trail_ai_app/Services/remote_config_service.dart';
+import 'package:vidzeon/Services/remote_config_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:trail_ai_app/Services/base64_image_encoder.dart';
-import 'package:trail_ai_app/Services/content_safety_service.dart';
-import 'package:trail_ai_app/Services/cancellation_manager.dart';
+import 'package:vidzeon/Services/base64_image_encoder.dart';
+import 'package:vidzeon/Services/content_safety_service.dart';
+import 'package:vidzeon/Services/cancellation_manager.dart';
 
 /// Options supported by a specific AI model
 class ModelOptions {
@@ -45,6 +45,46 @@ class ModelOptions {
   }
 }
 
+/// Dynamic credit cost scaling rules based on options selected
+class CreditCostRules {
+  final Map<String, double> durationMultipliers;
+  final Map<String, double> resolutionMultipliers;
+
+  const CreditCostRules({
+    this.durationMultipliers = const {},
+    this.resolutionMultipliers = const {},
+  });
+
+  factory CreditCostRules.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const CreditCostRules();
+
+    final durationMap = <String, double>{};
+    if (json['duration_multipliers'] is Map) {
+      (json['duration_multipliers'] as Map).forEach((k, v) {
+        durationMap[k.toString()] = (v as num).toDouble();
+      });
+    }
+
+    final resolutionMap = <String, double>{};
+    if (json['resolution_multipliers'] is Map) {
+      (json['resolution_multipliers'] as Map).forEach((k, v) {
+        resolutionMap[k.toString()] = (v as num).toDouble();
+      });
+    }
+
+    return CreditCostRules(
+      durationMultipliers: durationMap,
+      resolutionMultipliers: resolutionMap,
+    );
+  }
+
+  double durationMultiplier(String duration) =>
+      durationMultipliers[duration] ?? 1.0;
+
+  double resolutionMultiplier(String resolution) =>
+      resolutionMultipliers[resolution] ?? 1.0;
+}
+
 /// Configuration for a specific AI model
 class AIModelConfig {
   final String id;
@@ -57,6 +97,7 @@ class AIModelConfig {
   final bool firstFrameEnabled;
   final bool lastFrameEnabled;
   final ModelOptions options;
+  final CreditCostRules creditCostRules;
 
   AIModelConfig({
     required this.id,
@@ -69,6 +110,7 @@ class AIModelConfig {
     this.firstFrameEnabled = false,
     this.lastFrameEnabled = false,
     this.options = const ModelOptions(),
+    this.creditCostRules = const CreditCostRules(),
   });
 
   factory AIModelConfig.fromJson(Map<String, dynamic> json) {
@@ -83,7 +125,16 @@ class AIModelConfig {
       firstFrameEnabled: (json['first_frame_enabled'] as bool?) ?? false,
       lastFrameEnabled: (json['last_frame_enabled'] as bool?) ?? false,
       options: ModelOptions.fromJson(json['options'] as Map<String, dynamic>?),
+      creditCostRules: CreditCostRules.fromJson(
+        json['credit_cost_rules'] as Map<String, dynamic>?,
+      ),
     );
+  }
+
+  int computeCreditCost({String? duration, String? resolution}) {
+    final dMult = creditCostRules.durationMultiplier(duration ?? '');
+    final rMult = creditCostRules.resolutionMultiplier(resolution ?? '');
+    return (creditUsed * dMult * rMult).ceil();
   }
 
   Map<String, dynamic> createRequestBody(Map<String, dynamic> variables) {
@@ -136,6 +187,34 @@ class AIModelConfig {
     return templateStr.contains('{{width}}') &&
         templateStr.contains('{{height}}');
   }
+
+  /// How many reference images this model accepts.
+  ///
+  /// Derived by inspecting the request body template:
+  /// - Returns 0 for non-editable models (no image placeholder).
+  /// - Returns the count of `{{image}}` occurrences inside JSON array fields
+  ///   for multi-image models (e.g. `"input_images": ["{{image}}", "{{image}}"]`).
+  /// - Returns 1 for all other editable models (single-slot or `"{{image}}"`
+  ///   appearing once inside an array like `["{{image}}"]`).
+  int get noOfUploadable {
+    if (!iseditable) return 0;
+    final templateStr = jsonEncode(requestBodyTemplate);
+    if (!templateStr.contains('{{image}}')) return 1; // editable but no placeholder — treat as 1
+
+  // Count occurrences of {{image}} in the template string.
+    // Each occurrence = one accepted image slot.
+    final count = '{{image}}'.allMatches(templateStr).length;
+    if (count > 1) return count;
+
+    // If there is only one {{image}} but it's inside an array, it supports multiple.
+    if (templateStr.contains('["{{image}}"]') ||
+        templateStr.contains('["{{image_url}}"]')) {
+      return 4; // Arbitrary high number for array-based image inputs
+    }
+    return 1;
+  }
+
+  bool get supportsMultipleImages => noOfUploadable > 1;
 }
 
 class ReplicateService {
@@ -213,21 +292,25 @@ class ReplicateService {
         '🔑 [ReplicateService] Auth token length: ${_authToken.length}',
       );
 
-      final imageModelsJson = config.imageModelsJson;
-      final videoModelsJson = config.videoModelsJson;
-      final clothModelJson = config.clothModelJson;
-      final upscaleModelJson = config.upscaleModelJson;
-      final restoreModelJson = config.restoreModelJson;
-      final headshotModelJson = config.headshotModelJson;
-      final stickerImageModelJson = config.stickerImageModelJson;
-      final stickerTextModelJson = config.stickerTextModelJson;
-      final removeBgModelJson = config.removeBgModelJson;
-      final blurBgModelJson = config.blurBgModelJson;
-      final backgroundModelJson = config.backgroundModelJson;
-      final collageModelJson = config.collageModelJson;
-      final logoModelJson = config.logoModelJson;
-      final filterModelJson = config.filterModelJson;
-      final retouchModelJson = config.retouchModelJson;
+      // Pull every model config via the cache-aware async getters so we
+      // benefit from the SharedPreferences fallback when Firebase hasn't
+      // published a value yet (e.g. brand-new install before first
+      // successful fetch, or throttled offline launches).
+      final imageModelsJson = await config.imageModelsJsonAsync;
+      final videoModelsJson = await config.videoModelsJsonAsync;
+      final clothModelJson = await config.clothModelJsonAsync;
+      final upscaleModelJson = await config.upscaleModelJsonAsync;
+      final restoreModelJson = await config.restoreModelJsonAsync;
+      final headshotModelJson = await config.headshotModelJsonAsync;
+      final stickerImageModelJson = await config.stickerImageModelJsonAsync;
+      final stickerTextModelJson = await config.stickerTextModelJsonAsync;
+      final removeBgModelJson = await config.removeBgModelJsonAsync;
+      final blurBgModelJson = await config.blurBgModelJsonAsync;
+      final backgroundModelJson = await config.backgroundModelJsonAsync;
+      final collageModelJson = await config.collageModelJsonAsync;
+      final logoModelJson = await config.logoModelJsonAsync;
+      final filterModelJson = await config.filterModelJsonAsync;
+      final retouchModelJson = await config.retouchModelJsonAsync;
 
       debugPrint(
         '📦 [ReplicateService] replicate_image_models raw (first 200 chars): '
@@ -396,9 +479,24 @@ class ReplicateService {
 
     final variables = <String, dynamic>{'prompt': prompt, 'PROMPT': prompt};
     if (aspectRatio != null) {
-      variables['aspect_ratio'] = aspectRatio;
+      // ── Validate aspect_ratio against model's allowed options ──
+      // This protects against 422 errors when the model's remote-config
+      // options differ from what the UI assumed.
+      String effectiveAspectRatio = aspectRatio;
+      if (modelConfig.options.hasAspectRatios &&
+          !modelConfig.options.aspectRatios.contains(aspectRatio)) {
+        final fallback = modelConfig.options.aspectRatios.first;
+        debugPrint(
+          '⚠️ [ReplicateService] aspect_ratio "$aspectRatio" not supported '
+          'by "${modelConfig.name}". Allowed: '
+          '${modelConfig.options.aspectRatios.join(", ")}. '
+          'Falling back to "$fallback".',
+        );
+        effectiveAspectRatio = fallback;
+      }
+      variables['aspect_ratio'] = effectiveAspectRatio;
       if (modelConfig.supportsDimensions && (width == null || height == null)) {
-        switch (aspectRatio) {
+        switch (effectiveAspectRatio) {
           case '1:1':
             width = 1024;
             height = 1024;
@@ -429,6 +527,16 @@ class ReplicateService {
             break;
         }
       }
+    }
+    // If model has NO aspect ratios defined, ensure we don't carry a
+    // leftover aspect_ratio key into the request body.
+    if (!modelConfig.options.hasAspectRatios &&
+        variables.containsKey('aspect_ratio')) {
+      debugPrint(
+        '⚠️ [ReplicateService] Model "${modelConfig.name}" has no '
+        'supported aspect_ratios; dropping aspect_ratio from request.',
+      );
+      variables.remove('aspect_ratio');
     }
     if (width != null) variables['width'] = width;
     if (height != null) variables['height'] = height;
@@ -528,6 +636,50 @@ class ReplicateService {
       return jsonDecode(result) as Map<String, dynamic>;
     }
 
+    /// Expands JSON arrays that contain [placeholder] with multiple images.
+    ///
+    /// For example, if the body JSON has `"input_images": ["{{image}}"]` and
+    /// [imagesJsonArray] is `["img1","img2"]`, the result will be
+    /// `"input_images": ["img1","img2"]`.
+    ///
+    /// This also handles the case where the array element has a data URI prefix
+    /// like `"data:image/jpeg;base64,{{image}}"`, since the encoded images
+    /// already contain the correct data URI prefix — we replace the whole array.
+    Map<String, dynamic> expandImageArrayInBody(
+      Map<String, dynamic> body,
+      String placeholder,
+      String imagesJsonArray, // e.g. '["data:img1","data:img2"]'
+    ) {
+      final jsonStr = jsonEncode(body);
+      final ph = '{{$placeholder}}';
+
+      // If the placeholder doesn't exist in the serialized body, return unchanged
+      if (!jsonStr.contains(ph)) return body;
+
+      // Pattern: match any JSON array literal [...] that contains the placeholder.
+      // This handles both simple ["{{image}}"] and ["data:...;base64,{{image}}"].
+      final escapedPh = RegExp.escape(ph);
+      // Match opening bracket, then any non-bracket chars (lazy), then the placeholder,
+      // then any non-bracket chars (lazy), then closing bracket.
+      final pattern = RegExp(
+        r'\['
+                r'[^\[\]]*?' +
+            escapedPh +
+            r'[^\[\]]*?' +
+            r'\]',
+      );
+
+      final result = jsonStr.replaceAllMapped(pattern, (match) {
+        debugPrint(
+          '🔄 [ReplicateService] Expanding array containing "$ph" '
+          'with $imagesJsonArray',
+        );
+        return imagesJsonArray;
+      });
+
+      return jsonDecode(result) as Map<String, dynamic>;
+    }
+
     // ── Base64 Encoding for single reference image ──────────────────────────
     if (referenceImage != null) {
       debugPrint('🖼 [ReplicateService] Encoding reference image to base64...');
@@ -568,13 +720,28 @@ class ReplicateService {
           rawBase64s.add(encoded);
         }
 
-        // Inject the images list (use jsonEncode for valid JSON array syntax)
         final imagesJson = jsonEncode(encodedImagesWithPrefix);
-        finalBody = injectBase64IntoBody(finalBody, 'images', imagesJson);
-        finalBody = injectBase64IntoBody(finalBody, 'image_urls', imagesJson);
 
+        // ── Step 1: Expand arrays containing image placeholders ──
+        // This handles templates like "input_images": ["{{image}}"] or
+        // "reference_images": ["{{image}}"] where we want to inject ALL
+        // images into the array, not just the first one.
+        for (final ph in [
+          'image',
+          'images',
+          'image_url',
+          'image_urls',
+          'input_image',
+          'reference_image',
+          'ref_image',
+        ]) {
+          finalBody = expandImageArrayInBody(finalBody, ph, imagesJson);
+        }
+
+        // ── Step 2: Handle single-value placeholders (first image) ──
+        // After arrays are expanded, remaining {{image}} placeholders are
+        // standalone string values like "image": "{{image}}".
         if (encodedImagesWithPrefix.isNotEmpty) {
-          // First image → primary image placeholders
           final firstEncoded = encodedImagesWithPrefix.first;
           for (final ph in [
             'image',

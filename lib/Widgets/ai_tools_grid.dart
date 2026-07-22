@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../Core/colors.dart';
 import '../Services/remote_config_service.dart';
 import '../pages/generation_page.dart';
-import '../pages/ai_tool_demo_page.dart';
+import 'package:vidzeon/pages/ai_tool_demo_page.dart';
+import '../pages/image_editor_page.dart';
+import '../Helpers/image_picker_helper.dart';
 
 class AiTool {
   final String id;
@@ -103,8 +105,18 @@ class AiToolsGrid extends StatelessWidget {
         }
 
         return GestureDetector(
-          onTap: () {
-            if (tool.route != null && AiToolDemoPage.hasDemo(tool)) {
+          onTap: () async {
+            if (tool.id == 're_edit') {
+              final file = await ImagePickerHelper.pickAndCropImage(context);
+              if (file != null && context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImageEditorPage(imageFile: file),
+                  ),
+                );
+              }
+            } else if (tool.route != null && AiToolDemoPage.hasDemo(tool)) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -118,6 +130,7 @@ class AiToolsGrid extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => GenerationPage(
+                    showCategoryToggle: false,
                     initialCategory: tool.initialCategory ?? 'image',
                     autoTriggerImagePicker: tool.autoTriggerImagePicker,
                   ),

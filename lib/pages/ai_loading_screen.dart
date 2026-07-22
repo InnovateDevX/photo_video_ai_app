@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/colors.dart';
+import 'package:vidzeon/Core/colors.dart';
 // non-translatable
-import 'package:localization/localization.dart';
-
 class AILoadingScreen extends StatelessWidget {
   final File? selectedImage;
   final Animation<double> progressAnimation;
@@ -167,7 +165,7 @@ class AILoadingScreen extends StatelessWidget {
                     const Text('💡', style: TextStyle(fontSize: 16)),
                     SizedBox(width: sw * 0.02),
                     Text(
-                      'ai_tips_title'.i18n(),
+                      'AI Tips:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: sw * 0.038,
@@ -226,7 +224,7 @@ class AILoadingScreen extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'cancel'.i18n(),
+                  'Cancel',
                   style: TextStyle(
                     fontSize: sw * 0.042,
                     fontWeight: FontWeight.w500,

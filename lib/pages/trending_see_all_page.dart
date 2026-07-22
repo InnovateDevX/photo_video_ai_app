@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:trail_ai_app/Models/category_image.dart';
-import 'package:trail_ai_app/pages/category_preview_page.dart';
-import 'package:trail_ai_app/Services/data_service.dart';
-import 'package:trail_ai_app/pages/generation_page.dart';
+import 'package:vidzeon/Widgets/firebase_image.dart';
+import 'package:vidzeon/Models/category_image.dart';
+import 'package:vidzeon/pages/category_preview_page.dart';
+import 'package:vidzeon/Services/data_service.dart';
+import 'package:vidzeon/pages/generation_page.dart';
+import 'package:vidzeon/Widgets/pro_pill.dart';
 import '../Core/colors.dart';
-import 'settings_page.dart';
+
 // NOTE: ReelVideoPlayer is intentionally NOT used in this file anymore —
 // the "See All" grid now shows only static thumbnails. Videos play only
 // inside the full-screen CategoryPreviewPage.
@@ -124,30 +125,11 @@ class _TrendingSeeAllPageState extends State<TrendingSeeAllPage> {
                       ),
                     ),
                   ),
-                  Material(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.grey[200],
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.hardEdge,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsPage(),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.all(sw * 0.03),
-                        child: Icon(
-                          Icons.settings_outlined,
-                          size: sw * 0.05,
-                          color: AppColors.textColor(isDark),
-                        ),
-                      ),
-                    ),
+                  // Pro pill — opens paywall for non-subscribers, or shows a
+                  // static "PRO" badge for subscribers.
+                  Padding(
+                    padding: EdgeInsets.all(sw * 0.012),
+                    child: ProPill(w: sw, h: sh, isDark: isDark),
                   ),
                 ],
               ),
@@ -253,12 +235,9 @@ class _TrendingSeeAllCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final item = items[index];
     final sw = MediaQuery.of(context).size.width;
-    final sh = MediaQuery.of(context).size.height;
 
     String? imageUrl;
     String? videoUrl;
-    String? prompt;
-    String? modelId;
     String? type;
     String? reelId;
     String? categoryName;
@@ -266,8 +245,6 @@ class _TrendingSeeAllCard extends StatelessWidget {
     if (item is Reference) {
       // FutureBuilder will handle the URL fetch
     } else if (item is CategoryImage) {
-      prompt = item.prompt;
-      modelId = item.modelUsed;
       reelId = item.reelId;
       type = item.type;
       categoryName = item.categoryName;
@@ -338,20 +315,10 @@ class _TrendingSeeAllCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(sw * 0.05),
                 child: (imageUrl != null && imageUrl.isNotEmpty)
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrl,
+                    ? FirebaseImage(
+                        url: imageUrl,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Shimmer.fromColors(
-                          baseColor: isDark
-                              ? Colors.grey[850]!
-                              : Colors.grey[300]!,
-                          highlightColor: isDark
-                              ? Colors.grey[700]!
-                              : Colors.grey[100]!,
-                          child: Container(color: Colors.white),
-                        ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error_outline),
+                        isDark: isDark,
                       )
                     : Container(
                         color: isDark ? Colors.grey[850] : Colors.grey[300],
@@ -359,41 +326,6 @@ class _TrendingSeeAllCard extends StatelessWidget {
                           child: Icon(Icons.broken_image, color: Colors.grey),
                         ),
                       ),
-              ),
-            ),
-
-            // Bottom text with Gradient overlay
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: sh * 0.1,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(sw * 0.05),
-                    bottomRight: Radius.circular(sw * 0.05),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.8),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-                padding: EdgeInsets.all(sw * 0.03),
-                alignment: Alignment.bottomLeft,
-                child: Text(
-                  'GENERATE UNLIMITED\nVIDEOS WITH',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: sw * 0.025,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
-                  ),
-                ),
               ),
             ),
           ],

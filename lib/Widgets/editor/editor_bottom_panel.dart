@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
-import 'package:trail_ai_app/Core/gradient.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
+import 'package:vidzeon/Core/gradient.dart';
 
 /// Swipeable bottom panel for the image editor
 /// Contains controls for the active tool

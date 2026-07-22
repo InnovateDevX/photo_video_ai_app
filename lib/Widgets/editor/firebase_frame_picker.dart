@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trail_ai_app/Core/editor_constants.dart';
-import 'package:trail_ai_app/Services/firebase_frame_service.dart';
+import 'package:vidzeon/Core/editor_constants.dart';
+import 'package:vidzeon/Services/firebase_frame_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class FirebaseFramePicker extends StatefulWidget {
