@@ -599,8 +599,6 @@ class GenerationPageState extends State<GenerationPage> {
 
     if (!mounted) return;
 
-
-
     // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
       _isCancelled = false;
@@ -789,8 +787,6 @@ class GenerationPageState extends State<GenerationPage> {
     });
 
     if (!mounted) return;
-
-
 
     // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
@@ -1251,17 +1247,17 @@ class GenerationPageState extends State<GenerationPage> {
                       ),
                     ],
                   ),
-                if (_showFullScreenPreview)
-                  _buildFullScreenPreviewOverlay(
-                    screenWidth,
-                    screenHeight,
-                    isDark,
-                  ),
-              ],
+                  if (_showFullScreenPreview)
+                    _buildFullScreenPreviewOverlay(
+                      screenWidth,
+                      screenHeight,
+                      isDark,
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
       ),
     );
   }
@@ -1284,7 +1280,8 @@ class GenerationPageState extends State<GenerationPage> {
   }
 
   Widget _buildHeader(double screenWidth, double screenHeight, bool isDark) {
-    final hasResult = (_generatedImageUrl != null && _generatedImageUrl!.isNotEmpty) ||
+    final hasResult =
+        (_generatedImageUrl != null && _generatedImageUrl!.isNotEmpty) ||
         (_generatedVideoUrl != null && _generatedVideoUrl!.isNotEmpty);
 
     return Padding(
@@ -1307,7 +1304,9 @@ class GenerationPageState extends State<GenerationPage> {
             child: Container(
               padding: EdgeInsets.all(screenWidth * 0.02),
               decoration: BoxDecoration(
-                color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                color: AppColors.tileBackgroundColor(
+                  isDark,
+                ).withValues(alpha: 0.8),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -1330,7 +1329,9 @@ class GenerationPageState extends State<GenerationPage> {
                   child: Container(
                     padding: EdgeInsets.all(screenWidth * 0.02),
                     decoration: BoxDecoration(
-                      color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                      color: AppColors.tileBackgroundColor(
+                        isDark,
+                      ).withValues(alpha: 0.8),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1348,7 +1349,9 @@ class GenerationPageState extends State<GenerationPage> {
                   child: Container(
                     padding: EdgeInsets.all(screenWidth * 0.02),
                     decoration: BoxDecoration(
-                      color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                      color: AppColors.tileBackgroundColor(
+                        isDark,
+                      ).withValues(alpha: 0.8),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -1364,7 +1367,9 @@ class GenerationPageState extends State<GenerationPage> {
                   child: Container(
                     padding: EdgeInsets.all(screenWidth * 0.02),
                     decoration: BoxDecoration(
-                      color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                      color: AppColors.tileBackgroundColor(
+                        isDark,
+                      ).withValues(alpha: 0.8),
                       shape: BoxShape.circle,
                     ),
                     child: _isDownloading
@@ -1426,6 +1431,39 @@ class GenerationPageState extends State<GenerationPage> {
     double screenHeight,
     bool isDark,
   ) {
+    if (_showFullScreenPreview) {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161616) : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(screenWidth * 0.06),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _selectedCategory == 'image'
+                    ? Icons.image_outlined
+                    : Icons.videocam_outlined,
+                color: isDark ? Colors.white30 : Colors.black,
+                size: screenWidth * 0.12,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Previewing full screen...',
+                style: TextStyle(
+                  color: isDark ? Colors.white30 : Colors.black,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     Widget resultWidget;
     if (_selectedCategory == 'image' &&
         _generatedImageUrl != null &&
@@ -1474,6 +1512,7 @@ class GenerationPageState extends State<GenerationPage> {
       resultWidget = VideoResultView(
         videoUrl: _generatedVideoUrl!,
         borderRadius: screenWidth * 0.06,
+        play: !_showFullScreenPreview,
         onTap: () {
           FocusScope.of(context).unfocus();
           setState(() {
@@ -1665,8 +1704,9 @@ class GenerationPageState extends State<GenerationPage> {
     double screenHeight,
     bool isDark,
   ) {
-    final mediaUrl =
-        _selectedCategory == 'image' ? _generatedImageUrl : _generatedVideoUrl;
+    final mediaUrl = _selectedCategory == 'image'
+        ? _generatedImageUrl
+        : _generatedVideoUrl;
     if (mediaUrl == null || mediaUrl.isEmpty) return const SizedBox.shrink();
 
     return Positioned.fill(
@@ -1692,7 +1732,9 @@ class GenerationPageState extends State<GenerationPage> {
                             imageUrl: mediaUrl,
                             fit: BoxFit.contain,
                             placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(color: Colors.white),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
                             ),
                             errorWidget: (context, url, error) => const Icon(
                               Icons.error_outline,

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../Services/remote_config_service.dart';
+import '../Core/theme_notifier.dart';
 import '../Core/user_session.dart';
 import '../Services/device_service.dart';
 import '../Services/auth_service.dart';
@@ -46,6 +47,12 @@ class AppInitializer {
     // ── Step 0: Initialize Remote Config ──────────────────────────────────
     // Do this first so other services can use it immediately.
     await RemoteConfigService().initialize();
+
+    // Apply the Remote Config `dark_theme` default to ThemeNotifier before
+    // any UI is shown. This only changes the theme for users who haven't
+    // yet stored an explicit preference — existing user choices win.
+    await themeNotifier.applyRemoteConfigDefault();
+
     await ReelService().initialize();
     await SubscriptionService().initialize();
 
@@ -73,9 +80,7 @@ class AppInitializer {
 
       if (deviceData != null) {
         // ── RETURN / REINSTALL ──────────────────────────────────────────────
-        debugPrint(
-          '♻️  [AppInitializer] Returning device → uid=$authUid',
-        );
+        debugPrint('♻️  [AppInitializer] Returning device → uid=$authUid');
 
         await _userRepository.createUserIfMissing(authUid);
 
@@ -93,9 +98,7 @@ class AppInitializer {
         }
 
         uid = authUid;
-        debugPrint(
-          '✅ [AppInitializer] Restoration complete. uid=$uid',
-        );
+        debugPrint('✅ [AppInitializer] Restoration complete. uid=$uid');
       } else {
         // ── NEW DEVICE: create everything atomically ───────────────────────
         debugPrint('🆕 [AppInitializer] New device → uid=$authUid');
@@ -106,16 +109,11 @@ class AppInitializer {
           deviceId: deviceId,
           uid: authUid,
         );
-        await _userRepository.createUserIfMissing(
-          authUid,
-          batch: batch,
-        );
+        await _userRepository.createUserIfMissing(authUid, batch: batch);
         await batch.commit();
 
         uid = authUid;
-        debugPrint(
-          '✅ [AppInitializer] New user created. uid=$uid',
-        );
+        debugPrint('✅ [AppInitializer] New user created. uid=$uid');
       }
 
       // ── Step 4: Publish session for the whole app ─────────────────────────

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:vidzeon/Core/colors.dart';
 import 'package:vidzeon/Core/routes.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:vidzeon/Core/theme_notifier.dart';
@@ -34,10 +35,7 @@ void main() {
     AdjustEnvironment.sandbox,
   );
   Adjust.initSdk(config);
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.top],
-  );
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -141,6 +139,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return ValueListenableBuilder<bool>(
       valueListenable: themeNotifier,
       builder: (context, isDark, child) {
+        // Set system UI overlay style to match app background for seamless edge-to-edge
         SystemChrome.setSystemUIOverlayStyle(
           SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
@@ -171,7 +170,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ),
           // ──────────────────────────────────────────────────────────────────
           builder: (context, child) {
-            return GlobalNotificationOverlay(child: child!);
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: isDark
+                    ? Brightness.light
+                    : Brightness.dark,
+                systemNavigationBarColor: Colors.transparent,
+                systemNavigationBarDividerColor: Colors.transparent,
+                systemNavigationBarIconBrightness: isDark
+                    ? Brightness.light
+                    : Brightness.dark,
+                systemNavigationBarContrastEnforced: false,
+              ),
+              child: GlobalNotificationOverlay(child: child!),
+            );
           },
           // Always start at the splash screen. The splash screen performs
           // all initialization in the background and navigates to either

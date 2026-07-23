@@ -126,17 +126,29 @@ class ReelItemWidget extends StatefulWidget {
 
 class _ReelItemWidgetState extends State<ReelItemWidget> {
   void _useTemplate(BuildContext context) {
+    final reel = widget.reel;
+
+    // Determine whether this is a two-stage (image-edit → video) template
+    final bool useTwoStage =
+        reel.imageEdit &&
+        reel.imagePrompt.isNotEmpty &&
+        reel.videoPrompt.isNotEmpty;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GenerationPage(
           showCategoryToggle: false,
-          initialPrompt: widget.reel.videoPrompt,
-          initialCategory: widget.reel.imageEdit ? 'image' : widget.reel.type,
-          initialIsEditable: widget.reel.isEditable,
-          imageEditMode: widget.reel.imageEdit,
-          imagePrompt: widget.reel.imagePrompt,
-          videoPrompt: widget.reel.videoPrompt,
+          // Always 'video' for reels — they are all video templates
+          initialCategory: 'video',
+          initialPrompt: useTwoStage ? reel.videoPrompt : reel.videoPrompt,
+          initialIsEditable: reel.isEditable,
+          imageEditMode: useTwoStage,
+          imagePrompt: reel.imagePrompt,
+          videoPrompt: reel.videoPrompt,
+          // Pass the video URL so GenerationPage shows the template video
+          // preview (the same VideoResultView used by CategoryPreviewPage).
+          initialImageUrl: reel.videoUrl.isNotEmpty ? reel.videoUrl : null,
         ),
       ),
     );
@@ -175,9 +187,9 @@ class _ReelItemWidgetState extends State<ReelItemWidget> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Only load video player for the active page — prevents resource fight
+        // Only load video player for the active page when it is the top-most visible route — prevents resource fight
         // Disable play/pause gesture to allow PageView swipe gestures to work properly
-        if (widget.isActive)
+        if (widget.isActive && (ModalRoute.of(context)?.isCurrent ?? true))
           ReelVideoPlayer(
             videoUrl: reel.videoUrl,
             seamlessLoop: true,

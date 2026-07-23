@@ -202,9 +202,6 @@ class _AiLogoPageState extends State<AiLogoPage>
       context,
       _generatedLogos[_selectedLogoIndex],
     );
-    if (file != null) {
-      await AssetService().saveUserAsset(file, 'image');
-    }
     if (mounted) setState(() => _isDownloading = false);
   }
 
@@ -855,10 +852,10 @@ class _AiLogoPageState extends State<AiLogoPage>
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),

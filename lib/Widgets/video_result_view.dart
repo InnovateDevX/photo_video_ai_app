@@ -7,12 +7,14 @@ class VideoResultView extends StatefulWidget {
   final String videoUrl;
   final double borderRadius;
   final VoidCallback? onTap;
+  final bool play;
 
   const VideoResultView({
     super.key,
     required this.videoUrl,
     this.borderRadius = 20.0,
     this.onTap,
+    this.play = true,
   });
 
   @override
@@ -22,6 +24,7 @@ class VideoResultView extends StatefulWidget {
 class _VideoResultViewState extends State<VideoResultView> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -34,6 +37,12 @@ class _VideoResultViewState extends State<VideoResultView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoUrl != widget.videoUrl) {
       _initializePlayer();
+    } else if (oldWidget.play != widget.play) {
+      if (widget.play) {
+        _controller?.play();
+      } else {
+        _controller?.pause();
+      }
     }
   }
 
@@ -45,6 +54,7 @@ class _VideoResultViewState extends State<VideoResultView> {
       final oldController = _controller!;
       setState(() {
         _isInitialized = false;
+        _hasError = false;
         _controller = null;
       });
       await oldController.dispose();
@@ -53,59 +63,70 @@ class _VideoResultViewState extends State<VideoResultView> {
     if (!mounted) return;
 
     VideoPlayerController? controller;
-    if (url.startsWith('http')) {
-      File? cachedFile;
-      try {
-        final fileInfo = await DefaultCacheManager().getFileFromCache(url);
-        if (fileInfo != null && fileInfo.file.existsSync() && fileInfo.file.lengthSync() > 1024) {
-          debugPrint("📦 [VideoResultView] Playing from CACHE: $url");
-          cachedFile = fileInfo.file;
-        } else if (fileInfo != null) {
-          debugPrint("⚠️ [VideoResultView] Corrupted cache file detected (<1KB), removing...");
-          await DefaultCacheManager().removeFile(url);
-        }
-      } catch (e) {
-        debugPrint('Cache manager check failed: $e');
-      }
-
-      if (cachedFile != null) {
+    try {
+      if (url.startsWith('http')) {
+        File? cachedFile;
         try {
-          controller = VideoPlayerController.file(cachedFile);
-          await controller.initialize().timeout(const Duration(seconds: 4));
-          if (controller.value.hasError) {
-            throw Exception("Cache player has error");
+          final fileInfo = await DefaultCacheManager().getFileFromCache(url);
+          if (fileInfo != null &&
+              fileInfo.file.existsSync() &&
+              fileInfo.file.lengthSync() > 1024) {
+            debugPrint("📦 [VideoResultView] Playing from CACHE: $url");
+            cachedFile = fileInfo.file;
+          } else if (fileInfo != null) {
+            debugPrint(
+              "⚠️ [VideoResultView] Corrupted cache file detected (<1KB), removing...",
+            );
+            await DefaultCacheManager().removeFile(url);
           }
         } catch (e) {
-          debugPrint("⚠️ [VideoResultView] Cache init failed: $e, falling back to network...");
-          await DefaultCacheManager().removeFile(url);
-          controller?.dispose();
-          controller = null;
+          debugPrint('Cache manager check failed: $e');
         }
+
+        if (cachedFile != null) {
+          try {
+            controller = VideoPlayerController.file(cachedFile);
+            await controller.initialize().timeout(const Duration(seconds: 4));
+            if (controller.value.hasError) {
+              throw Exception("Cache player has error");
+            }
+          } catch (e) {
+            debugPrint(
+              "⚠️ [VideoResultView] Cache init failed: $e, falling back to network...",
+            );
+            await DefaultCacheManager().removeFile(url);
+            controller?.dispose();
+            controller = null;
+          }
+        }
+
+        if (controller == null) {
+          debugPrint(
+            "🌐 [VideoResultView] Playing from network & caching in background: $url",
+          );
+          DefaultCacheManager().downloadFile(url).then((_) {}).catchError((e) {
+            debugPrint(
+              "❌ [VideoResultView] Background cache download failed: $e",
+            );
+          });
+          controller = VideoPlayerController.networkUrl(Uri.parse(url));
+          await controller.initialize().timeout(const Duration(seconds: 15));
+        }
+      } else {
+        controller = VideoPlayerController.file(File(url));
+        await controller.initialize();
       }
 
-      if (controller == null) {
-        debugPrint(
-          "🌐 [VideoResultView] Playing from network & caching in background: $url",
-        );
-        DefaultCacheManager().downloadFile(url).then((_) {}).catchError((e) {
-          debugPrint("❌ [VideoResultView] Background cache download failed: $e");
-        });
-        controller = VideoPlayerController.networkUrl(Uri.parse(url));
-        await controller.initialize().timeout(const Duration(seconds: 25));
-      }
-    } else {
-      controller = VideoPlayerController.file(File(url));
-      await controller.initialize();
-    }
-
-    try {
       if (mounted && url == widget.videoUrl) {
         setState(() {
           _controller = controller;
           _isInitialized = true;
+          _hasError = false;
         });
         controller.setLooping(true);
-        controller.play();
+        if (widget.play) {
+          controller.play();
+        }
 
         // Listen to playback position for the UI updates (play/pause toggle, progress)
         controller.addListener(() {
@@ -116,9 +137,13 @@ class _VideoResultViewState extends State<VideoResultView> {
       }
     } catch (e) {
       debugPrint('❌ [VideoResultView] Initialization failed: $e');
+      if (controller != null) {
+        await controller.dispose();
+      }
       if (mounted) {
         setState(() {
           _isInitialized = false;
+          _hasError = true;
         });
       }
     }
@@ -138,6 +163,35 @@ class _VideoResultViewState extends State<VideoResultView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white54,
+              size: 48,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Failed to load video preview',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: const Icon(Icons.refresh, color: Colors.orange),
+              label: const Text(
+                'Retry',
+                style: TextStyle(color: Colors.orange),
+              ),
+              onPressed: _initializePlayer,
+            ),
+          ],
+        ),
+      );
+    }
+
     if (!_isInitialized || _controller == null) {
       return Center(
         child: CircularProgressIndicator(

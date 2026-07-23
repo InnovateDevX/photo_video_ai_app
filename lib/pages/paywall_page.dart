@@ -35,6 +35,12 @@ class _PaywallPageState extends State<PaywallPage> {
   // Weekly is selected by default (shows "Start Free Trial")
   bool _isMonthlySelected = false;
   bool _isFreeTrialEnabled = true;
+  // Start as `false` so the "Try Trail" toggle is hidden until we have
+  // confirmed that Google Play actually returned a trial offer for the user.
+  // Users who previously purchased (or whose account is not eligible for a
+  // trial) will not receive the trial offer from Google, so the toggle must
+  // stay hidden for them.
+  bool _isEligibleForTrial = false;
   bool _isLoading = false;
   bool _isLoadingProducts = true;
 
@@ -50,6 +56,7 @@ class _PaywallPageState extends State<PaywallPage> {
   @override
   void initState() {
     super.initState();
+
     _loadProducts();
 
     _attachVideoController();
@@ -111,7 +118,45 @@ class _PaywallPageState extends State<PaywallPage> {
         _monthlyProduct = service.products[_config.proMonthly];
         _isLoadingProducts = false;
       });
+
+      // Determine trial eligibility AFTER products are loaded so we can
+      // verify that Google Play actually returned a trial offer for the user.
+      // The "Try Trail" toggle is only shown when BOTH conditions are true:
+      //   1. The user has no past purchases of weekly/monthly (eligible per
+      //      Google Play Billing history), AND
+      //   2. At least one of the selected offers has a trial phase — i.e. the
+      //      selected offer for weekly OR monthly has 2+ pricing phases
+      //      (trial + recurring). If Google returns no trial offer (which is
+      //      what happens for users who previously purchased), the toggle
+      //      stays hidden and the CTA reads "Get Pro Access".
+      final pastPurchaseEligible = await service.isEligibleForTrial();
+      final hasOffer = _hasTrialOffer();
+      if (mounted) {
+        setState(() {
+          _isEligibleForTrial = pastPurchaseEligible && hasOffer;
+          if (!_isEligibleForTrial) {
+            _isFreeTrialEnabled = false;
+          }
+        });
+      }
     }
+  }
+
+  /// Returns true if Google Play actually returned a trial offer for the
+  /// weekly or monthly product. A trial offer is identified by the selected
+  /// offer having 2+ pricing phases (trial + recurring). When Google Play
+  /// decides not to surface the trial (e.g. for users who previously
+  /// purchased), the selected offer will only have 1 pricing phase and this
+  /// returns false.
+  bool _hasTrialOffer() {
+    final service = SubscriptionService();
+    final weeklyOffer = service.selectedOffers[_config.proWeekly];
+    final monthlyOffer = service.selectedOffers[_config.proMonthly];
+    final weeklyHasTrial =
+        weeklyOffer != null && weeklyOffer.pricingPhases.length >= 2;
+    final monthlyHasTrial =
+        monthlyOffer != null && monthlyOffer.pricingPhases.length >= 2;
+    return weeklyHasTrial || monthlyHasTrial;
   }
 
   /// Returns the display price from the selected offer's pricing phases.
@@ -223,8 +268,13 @@ class _PaywallPageState extends State<PaywallPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // ── Hero Video / Image ──────────────────────────
+                    // When the trial toggle is not available we expand the
+                    // hero to fill the space the toggle would have
+                    // occupied, so the layout looks balanced and the
+                    // feature checkmarks below naturally drop into the
+                    // freed-up area.
                     SizedBox(
-                      height: h * 0.40,
+                      height: _isEligibleForTrial ? h * 0.40 : h * 0.50,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -282,58 +332,65 @@ class _PaywallPageState extends State<PaywallPage> {
                     ),
 
                     // ── Free Trial Toggle ────────────────────────────────
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: w * 0.05),
-                      child: Container(
-                        margin: EdgeInsets.only(top: h * 0.02),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: w * 0.04,
-                          vertical: h * 0.015,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C1E),
-                          borderRadius: BorderRadius.circular(w * 0.04),
-                          border: Border.all(color: Colors.white12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.card_giftcard,
-                              color: AppGradients.proGradient.colors.last,
-                              size: w * 0.075,
-                            ),
-                            SizedBox(width: w * 0.035),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Try Trial',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: w * 0.04,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                    // When the user is not eligible for a trial (e.g. they
+                    // previously purchased, so Google Play does not return a
+                    // trial offer), the toggle is omitted entirely from the
+                    // layout. The hero above already expands to fill the
+                    // freed space, so the checkmarks sit directly above the
+                    // plan cards with no blank gap.
+                    if (_isEligibleForTrial)
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: w * 0.05),
+                        child: Container(
+                          margin: EdgeInsets.only(top: h * 0.02),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: w * 0.04,
+                            vertical: h * 0.015,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1C1C1E),
+                            borderRadius: BorderRadius.circular(w * 0.04),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.card_giftcard,
+                                color: AppGradients.proGradient.colors.last,
+                                size: w * 0.075,
                               ),
-                            ),
-                            CupertinoSwitch(
-                              value: _isFreeTrialEnabled,
-                              onChanged: (val) {
-                                setState(() {
-                                  _isFreeTrialEnabled = val;
-                                });
-                              },
-                              activeTrackColor:
-                                  AppGradients.proGradient.colors.last,
-                            ),
-                          ],
+                              SizedBox(width: w * 0.035),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Try Trail',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: w * 0.04,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              CupertinoSwitch(
+                                value: _isFreeTrialEnabled,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _isFreeTrialEnabled = val;
+                                  });
+                                },
+                                activeTrackColor:
+                                    AppGradients.proGradient.colors.last,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
 
-                    SizedBox(height: h * 0.02),
+                    if (_isEligibleForTrial) SizedBox(height: h * 0.02),
 
                     // ── Plan cards + CTA ─────────────────────────────────
                     Padding(

@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:vidzeon/Core/app_initializer.dart';
+import 'package:vidzeon/Core/colors.dart';
 import 'package:vidzeon/Core/gradient.dart';
 
 import 'package:vidzeon/Services/notification_service.dart';
@@ -158,9 +161,15 @@ class _SplashScreenState extends State<SplashScreen>
 
       // Reduce Firebase Storage retry timeouts so failed loads fail fast
       // instead of hanging the screen for minutes on flaky networks.
-      FirebaseStorage.instance.setMaxDownloadRetryTime(const Duration(seconds: 10));
-      FirebaseStorage.instance.setMaxUploadRetryTime(const Duration(seconds: 10));
-      FirebaseStorage.instance.setMaxOperationRetryTime(const Duration(seconds: 10));
+      FirebaseStorage.instance.setMaxDownloadRetryTime(
+        const Duration(seconds: 10),
+      );
+      FirebaseStorage.instance.setMaxUploadRetryTime(
+        const Duration(seconds: 10),
+      );
+      FirebaseStorage.instance.setMaxOperationRetryTime(
+        const Duration(seconds: 10),
+      );
     } on TimeoutException {
       _updateStatus('Almost there…');
       errors.add('Firebase init timeout');
@@ -266,7 +275,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-
   void _updateStatus(String message) {
     if (!mounted) return;
     setState(() => _statusMessage = message);
@@ -309,127 +317,118 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // ── Center Radial Glow ────────────────────────────────
-          // Center(
-          //   child: AnimatedBuilder(
-          //     animation: _glowAnimation,
-          //     builder: (context, child) {
-          //       return Container(
-          //         width: w * 0.9,
-          //         height: w * 0.9,
-          //         decoration: BoxDecoration(
-          //           shape: BoxShape.circle,
-          //           gradient: RadialGradient(
-          //             colors: [
-          //               const Color(
-          //                 0xFFD66031,
-          //               ).withValues(alpha: _glowAnimation.value),
-          //               Colors.transparent,
-          //             ],
-          //             stops: const [0.1, 0.8],
-          //           ),
-          //         ),
-          //       );
-          //     },
-          //   ),
-          // ),
-
-          // // ── Center content: icon + text ─────────────────────
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // App icon
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(w * 0.065),
-                  child: Image.asset(
-                    'assets/images/app_logo.png',
-                    width: w * 0.27,
-                    height: w * 0.27,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      width: w * 0.27,
-                      height: w * 0.27,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A1A1A),
-                        borderRadius: BorderRadius.circular(w * 0.065),
-                      ),
-                      child: Icon(
-                        Icons.auto_awesome,
-                        size: w * 0.13,
-                        color: const Color(0xFFF16E14),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        extendBodyBehindAppBar: true,
+        body: Container(
+          color: Colors.black,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Center content: icon + text ─────────────────────
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // App icon
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(w * 0.065),
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        width: w * 0.27,
+                        height: w * 0.27,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          width: w * 0.27,
+                          height: w * 0.27,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A1A),
+                            borderRadius: BorderRadius.circular(w * 0.065),
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome,
+                            size: w * 0.13,
+                            color: const Color(0xFFF16E14),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
 
-                SizedBox(height: h * 0.02),
+                    SizedBox(height: h * 0.02),
 
-                // App name
-                const Text(
-                  'VidZeon',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Bottom progress bar + status text ────────────────────────
-          Positioned(
-            left: w * 0.12,
-            right: w * 0.12,
-            bottom: h * 0.08,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Orange tagline
-                Text(
-                  'CREATE. EDIT. INSPIRE.',
-                  style: TextStyle(
-                    color: const Color(0xFFD66031),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.8,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    minHeight: 4,
-                    backgroundColor: const Color(0xFF2A2A2A),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppGradients.proGradient.colors.last,
+                    // App name
+                    const Text(
+                      'VidZeon',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  _statusMessage,
-                  style: const TextStyle(
-                    color: Color(0xFF888888),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.2,
-                  ),
-                  textAlign: TextAlign.center,
+              ),
+
+              // ── Bottom progress bar + status text ────────────────────────
+              Positioned(
+                left: w * 0.12,
+                right: w * 0.12,
+                bottom: h * 0.08,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Orange tagline
+                    Text(
+                      'CREATE. EDIT. INSPIRE.',
+                      style: TextStyle(
+                        color: const Color(0xFFD66031),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 2.8,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        minHeight: 4,
+                        backgroundColor: const Color(0xFF2A2A2A),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppGradients.proGradient.colors.last,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      _statusMessage,
+                      style: const TextStyle(
+                        color: Color(0xFF888888),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.2,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -163,13 +163,15 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context, assets, child) {
         if (assets.isEmpty) {
           return SizedBox(
-            height: h * 0.6, // Centers the content vertically in the available viewport
+            height:
+                h *
+                0.6, // Centers the content vertically in the available viewport
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'No Video Yet',
+                    'No Generations Yet',
                     style: TextStyle(
                       color: AppColors.textColor(isDark),
                       fontSize: w * 0.05,
@@ -183,7 +185,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Text(
                       "Discover AI's innovative, first-time art creation!",
                       style: TextStyle(
-                        color: AppColors.textColor(isDark).withValues(alpha: 0.6),
+                        color: AppColors.textColor(
+                          isDark,
+                        ).withValues(alpha: 0.6),
                         fontSize: w * 0.038,
                       ),
                       textAlign: TextAlign.center,
@@ -195,10 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       if (Navigator.canPop(context)) {
                         Navigator.pop(context);
                       } else {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          AppRoutes.home,
-                        );
+                        Navigator.pushReplacementNamed(context, AppRoutes.home);
                       }
                     },
                     child: Container(
@@ -286,7 +287,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               context: innerContext,
                               builder: (ctx) => AlertDialog(
                                 title: const Text('Delete Media'),
-                                content: const Text('Are you sure you want to delete this? It cannot be recovered.'),
+                                content: const Text(
+                                  'Are you sure you want to delete this? It cannot be recovered.',
+                                ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
@@ -294,7 +297,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                    child: const Text(
+                                      'Delete',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -303,9 +309,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             if (confirm == true) {
                               await LocalStorageService().deleteAsset(asset.id);
                               if (innerContext.mounted) {
-                                Navigator.pop(innerContext); // Close result screen
+                                Navigator.pop(
+                                  innerContext,
+                                ); // Close result screen
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Removed successfully')),
+                                  const SnackBar(
+                                    content: Text('Removed successfully'),
+                                  ),
                                 );
                               }
                             }

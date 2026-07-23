@@ -365,18 +365,18 @@ class _SettingsPageState extends State<SettingsPage> {
                         size: w * 0.055,
                         color: AppColors.iconColor(darkTheme),
                       ),
-                      label: 'Delete Account',
+                      label: 'Delete Data',
                       onTap: () {
                         ErrorDialogHelper.showConfirmationDialog(
                           context,
-                          title: 'Delete Account',
+                          title: 'Delete Data',
                           message:
-                              'Are you sure you want to delete your account? This action cannot be undone.',
+                              'Are you sure you want to delete your Data? This action cannot be undone.',
                           confirmText: 'Delete',
                           onConfirm: () async {
                             ErrorDialogHelper.showLoadingDialog(
                               context,
-                              message: 'Deleting account...',
+                              message: 'Deleting Data...',
                             );
                             await AuthService().deleteAccount();
                             if (context.mounted) {
@@ -505,7 +505,9 @@ class _CreditsCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.creditsCardBackground(isDark),
                   borderRadius: BorderRadius.circular(w * 0.04),
-                  border: Border.all(color: AppColors.creditsCardBorder(isDark)),
+                  border: Border.all(
+                    color: AppColors.creditsCardBorder(isDark),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -513,7 +515,9 @@ class _CreditsCard extends StatelessWidget {
                     Container(
                       width: w * 0.08,
                       height: w * 0.08,
-                      decoration: const ProGradientDecoration(shape: BoxShape.circle),
+                      decoration: const ProGradientDecoration(
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     SizedBox(width: w * 0.03),
                     Expanded(
@@ -559,7 +563,8 @@ class _CreditsCard extends StatelessWidget {
                                   size: w * 0.045,
                                 ),
                                 SizedBox(
-                                  width: MediaQuery.of(context).size.width * 0.01,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.01,
                                 ),
                                 Text(
                                   '$credits',
@@ -587,7 +592,8 @@ class _CreditsCard extends StatelessWidget {
                               child: Text(
                                 'Pro',
                                 style: TextStyle(
-                                  color: Colors.white, // Pro gradient text is fine as white
+                                  color: Colors
+                                      .white, // Pro gradient text is fine as white
                                   fontWeight: FontWeight.bold,
                                   fontSize: w * 0.032,
                                 ),

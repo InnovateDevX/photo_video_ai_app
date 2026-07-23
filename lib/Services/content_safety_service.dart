@@ -305,7 +305,7 @@ class ContentSafetyService {
           '🛡️ [ContentSafetyService] SafeSearchAnnotation: adult=$adult, racy=$racy, violence=$violence',
         );
 
-        final unsafeValues = ['LIKELY', 'VERY_LIKELY'];
+        final unsafeValues = ['VERY_LIKELY'];
 
         if (unsafeValues.contains(adult) ||
             unsafeValues.contains(racy) ||

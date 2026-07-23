@@ -8,12 +8,15 @@ import 'package:vidzeon/pages/ai_result_screen.dart';
 import 'package:vidzeon/repositories/user_repository.dart';
 import 'package:vidzeon/Core/user_session.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:vidzeon/firebase_options.dart';
 
 /// Top-level background message handler for FCM.
 /// Must be outside of any class.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   debugPrint("📩 [FCM] Handling background message: ${message.messageId}");
 }
 

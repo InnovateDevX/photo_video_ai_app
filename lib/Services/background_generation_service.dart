@@ -373,7 +373,7 @@ class BackgroundGenerationService {
     }
     final tempDir = await getTemporaryDirectory();
     final file = File(
-      '\${tempDir.path}/bg_stage1_\${DateTime.now().millisecondsSinceEpoch}.jpg',
+      '${tempDir.path}/bg_stage1_${DateTime.now().millisecondsSinceEpoch}.jpg',
     );
     await file.writeAsBytes(response.bodyBytes);
     return file;
@@ -388,14 +388,14 @@ class BackgroundGenerationService {
       final appDir = await getApplicationDocumentsDirectory();
       String ext = category == 'video' ? 'mp4' : 'png';
       final fileName =
-          'generation_\${DateTime.now().millisecondsSinceEpoch}.$ext';
-      final file = File('\${appDir.path}/$fileName');
+          'generation_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final file = File('${appDir.path}/$fileName');
 
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         await file.writeAsBytes(response.bodyBytes);
       } else {
-        throw Exception('Failed to download image: \${response.statusCode}');
+        throw Exception('Failed to download image: ${response.statusCode}');
       }
 
       final asset = GeneratedAsset(

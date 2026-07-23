@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -48,6 +49,9 @@ class SubscriptionService {
   /// Stored as [ProductDetails] (the cross-platform type).
   final Map<String, ProductDetails> _products = {};
   Map<String, ProductDetails> get products => _products;
+
+  /// A list of all raw product details (including all base plans/offers) returned by Google Play.
+  List<ProductDetails> _rawStoreProducts = [];
 
   /// The selected offer (base plan + offer) for each product ID.
   /// Uses the Android-specific wrapper type for full access to offer details.
@@ -140,6 +144,41 @@ class SubscriptionService {
     }
   }
 
+  /// Checks if the user is eligible for a free trial by querying past purchases on Google Play.
+  /// If they have any past purchase of the weekly or monthly products, they are NOT eligible.
+  Future<bool> isEligibleForTrial() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final InAppPurchaseAndroidPlatformAddition androidAddition = InAppPurchase
+          .instance
+          .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+
+      final QueryPurchaseDetailsResponse response = await androidAddition
+          .queryPastPurchases();
+      if (response.error == null) {
+        for (final purchase in response.pastPurchases) {
+          // If they have purchased either weekly or monthly before, they aren't eligible for a trial
+          if (purchase.productID == weeklyProductId ||
+              purchase.productID == monthlyProductId) {
+            debugPrint(
+              '🛒 [SubscriptionService] User is NOT eligible for trial (found past purchase of ${purchase.productID})',
+            );
+            return false;
+          }
+        }
+      }
+      debugPrint(
+        '🛒 [SubscriptionService] User is eligible for trial (no past purchases found)',
+      );
+      return true;
+    } catch (e) {
+      debugPrint(
+        '⚠️ [SubscriptionService] Error checking trial eligibility: $e',
+      );
+      return true; // Default to true if the check fails so we don't lock users out
+    }
+  }
+
   // ── Load Products ────────────────────────────────────────────────────────────
 
   /// Fetches product details (prices in local currency) from Google Play.
@@ -167,6 +206,7 @@ class SubscriptionService {
 
       _products.clear();
       _selectedOffers.clear();
+      _rawStoreProducts = List.from(response.productDetails);
 
       for (final product in response.productDetails) {
         _products[product.id] = product;
@@ -392,10 +432,18 @@ class SubscriptionService {
         '${selectedOffer != null ? ' (offerToken: ${selectedOffer.offerIdToken})' : ' (no offer token)'}',
       );
 
-      // Use GooglePlayPurchaseParam to pass the offerToken (Android-specific)
+      ProductDetails purchaseProduct = product;
+      if (Platform.isAndroid && selectedOffer != null) {
+        final matchingProduct = _rawStoreProducts.firstWhere(
+          (p) => p is GooglePlayProductDetails && p.offerToken == selectedOffer.offerIdToken,
+          orElse: () => product,
+        );
+        purchaseProduct = matchingProduct;
+      }
+
+      // Use GooglePlayPurchaseParam (Android-specific)
       final GooglePlayPurchaseParam purchaseParam = GooglePlayPurchaseParam(
-        productDetails: product,
-        offerToken: selectedOffer?.offerIdToken,
+        productDetails: purchaseProduct,
       );
 
       // Use buyNonConsumable for subscriptions

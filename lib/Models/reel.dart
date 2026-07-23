@@ -36,11 +36,21 @@ class Reel {
     this.savedCount = 0,
   });
 
-  /// Returns the best available preview URL:
-  /// – For images, the video/image URL itself works fine.
-  /// – For videos, prefers [thumbnailUrl] when available; falls back to [videoUrl].
-  String get previewUrl =>
-      thumbnailUrl?.isNotEmpty == true ? thumbnailUrl! : videoUrl;
+  String get previewUrl {
+    if (thumbnailUrl?.isNotEmpty == true) {
+      return thumbnailUrl!;
+    }
+    // Do not return video URLs as image previews to prevent image decoding errors.
+    final lowerVideoUrl = videoUrl.toLowerCase();
+    if (lowerVideoUrl.contains('.mp4') ||
+        lowerVideoUrl.contains('.mov') ||
+        lowerVideoUrl.contains('.avi') ||
+        lowerVideoUrl.contains('.webm') ||
+        lowerVideoUrl.contains('.mkv')) {
+      return '';
+    }
+    return videoUrl;
+  }
 
   factory Reel.fromFirestore(String id, Map<String, dynamic> data) {
     return Reel(

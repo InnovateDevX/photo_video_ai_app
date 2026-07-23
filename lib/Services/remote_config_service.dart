@@ -101,6 +101,7 @@ class RemoteConfigService {
         'nsfw_image_unsafe_values': '["VERY_LIKELY"]',
         'share_app_url': '',
         'show_ads': true,
+        'dark_theme': true,
         'watermark_url': '',
         'paywall_video_url': '',
         'generation_page_image': '',
@@ -319,6 +320,13 @@ class RemoteConfigService {
   String get googleCloudApiKey => getString('google_cloud_api_key');
 
   bool get showAds => getBool('show_ads');
+
+  /// Returns the default theme configured remotely (true = dark, false = light).
+  /// Only used as the initial default for new installs / fresh state.
+  /// Once the user explicitly toggles the theme, their preference wins and
+  /// this value is ignored on subsequent launches.
+  bool get isDarkThemeDefault => getBool('dark_theme');
+
   String get paywallVideoUrl => getString('paywall_video_url');
   String get generationPageImage => getString('generation_page_image');
   String get generationPageVideo => getString('generation_page_video');

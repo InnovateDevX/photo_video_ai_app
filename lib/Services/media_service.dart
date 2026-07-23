@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,28 @@ import '../Models/generated_asset.dart';
 import '../Widgets/themed_dialog.dart';
 
 class MediaService {
+  /// Requests storage/photos permission and returns true if granted
+  static Future<bool> _requestGalleryPermission() async {
+    // Check and request for Android 13+ (API 33+)
+    if (await Permission.photos.isGranted) {
+      return true;
+    }
+
+    // Request photos permission (Android 13+)
+    final photosStatus = await Permission.photos.request();
+    if (photosStatus.isGranted) {
+      return true;
+    }
+
+    // For older Android versions, check storage permission
+    if (await Permission.storage.isGranted) {
+      return true;
+    }
+
+    final storageStatus = await Permission.storage.request();
+    return storageStatus.isGranted;
+  }
+
   /// Downloads an image from a URL and saves it to the "VidZeon" gallery album.
   /// Returns the local File if successful.
   static Future<File?> downloadImage(
@@ -42,6 +65,24 @@ class MediaService {
       } else {
         // Already a local path
         filePath = imageUrl;
+      }
+
+      // Request permission before saving to gallery
+      final hasPermission = await _requestGalleryPermission();
+
+      if (!hasPermission) {
+        if (context.mounted) {
+          showThemedDialog(
+            context,
+            title: 'Permission Required',
+            message:
+                'Please allow gallery access to save images. Go to Settings > Apps > VidZeon > Permissions.',
+            icon: Icons.photo_library_outlined,
+            iconColor: Colors.orange,
+          );
+        }
+        // Still return the file so it can be saved to profile
+        return File(filePath);
       }
 
       final success = await GallerySaver.saveImage(
@@ -100,6 +141,24 @@ class MediaService {
         }
       } else {
         filePath = videoUrl;
+      }
+
+      // Request permission before saving to gallery
+      final hasPermission = await _requestGalleryPermission();
+
+      if (!hasPermission) {
+        if (context.mounted) {
+          showThemedDialog(
+            context,
+            title: 'Permission Required',
+            message:
+                'Please allow gallery access to save videos. Go to Settings > Apps > VidZeon > Permissions.',
+            icon: Icons.photo_library_outlined,
+            iconColor: Colors.orange,
+          );
+        }
+        // Still return the file so it can be saved to profile
+        return File(filePath);
       }
 
       final success = await GallerySaver.saveVideo(

@@ -159,7 +159,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(
-      duration: const Duration(seconds: 1),
+      duration: const Duration(milliseconds: 50),
     );
     _initVideo(kVideoThemes[_selectedVideoIndex].videoAsset);
     _startVideoCycleTimer();
@@ -269,7 +269,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             if (!mounted) return;
             if (_currentPage == 2 && !_hasPlayedConfetti) {
               _hasPlayedConfetti = true;
-              _confettiController.play();
+              Future.delayed(const Duration(milliseconds: 200), () {
+                if (mounted) {
+                  _confettiController.play();
+                }
+              });
             }
           });
     } else {
@@ -283,10 +287,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       _startPageTimer(5); // 5 seconds on Rate App
     } else if (index == 2) {
       _startPageTimer(5); // 5 seconds on Trial
-      if (!_hasPlayedConfetti) {
-        _hasPlayedConfetti = true;
-        _confettiController.play();
-      }
     }
   }
 
@@ -335,25 +335,57 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics:
-                    const NeverScrollableScrollPhysics(), // Force using timers
-                onPageChanged: _onPageChanged,
-                children: [
-                  _buildVideoThemePage(w, h),
-                  _buildRateAppPage(w, h),
-                  _buildTrialPage(w, h),
-                ],
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics:
+                        const NeverScrollableScrollPhysics(), // Force using timers
+                    onPageChanged: _onPageChanged,
+                    children: [
+                      _buildVideoThemePage(w, h),
+                      _buildRateAppPage(w, h),
+                      _buildTrialPage(w, h),
+                    ],
+                  ),
+                ),
+                _buildBottomControls(w, h),
+              ],
+            ),
+          ),
+
+          // Fullscreen Confetti celebration overlay (Center explosion only)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Align(
+                alignment: Alignment.center,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  emissionFrequency: 0.01, // Single instant burst
+                  numberOfParticles:
+                      80, // Increased count since it is a single central explosion
+                  maxBlastForce: 50,
+                  minBlastForce: 20,
+                  gravity: 0.15,
+                  shouldLoop: false,
+                  colors: const [
+                    Color(0xFFFF9800),
+                    Color(0xFFFFB74D),
+                    Color(0xFFE91E63),
+                    Color(0xFF2196F3),
+                    Color(0xFF4CAF50),
+                    Color(0xFF9C27B0),
+                  ],
+                ),
               ),
             ),
-            _buildBottomControls(w, h),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -390,13 +422,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 children: [
                   Text(
                     buttonText,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: w * 0.08,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 20),
+                  SizedBox(width: w * 0.03),
+                  Icon(Icons.arrow_forward, size: w * 0.045),
                 ],
               ),
             ),
@@ -596,76 +628,36 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildTrialPage(double w, double h) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Page content on bottom
-        Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.celebration_rounded,
-                  color: Color(0xFFFFCC80),
-                  size: 80,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  "Your 7 day trial\nhas started",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: w * 0.07,
-                    fontWeight: FontWeight.w900,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Enjoy full access to all premium features.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white60, fontSize: w * 0.04),
-                ),
-              ],
+    return Center(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.celebration_rounded,
+              color: Color(0xFFFFCC80),
+              size: 80,
             ),
-          ),
-        ),
-
-        // Confetti on top with full screen fill
-        Positioned.fill(
-          child: SizedBox.expand(
-            child: Align(
-              alignment: Alignment.center,
-              child: ConfettiWidget(
-                confettiController: _confettiController,
-                blastDirectionality: BlastDirectionality.explosive,
-                shouldLoop: false,
-                emissionFrequency: 0.1,
-                numberOfParticles: 40,
-                maxBlastForce: 25,
-                minBlastForce: 10,
-                gravity: 0.2,
-                colors: const [
-                  Color(0xFFFFCC80), // soft gold
-                  Color(0xFFFF9800), // orange
-                  Color(0xFFFFB74D), // warm amber
-                  Color(0xFFFFFFFF), // white
-                  Color(0xFFFF6D00), // deep orange
-                  Color(0xFFFFE082), // light gold
-                ],
-                createParticlePath: (size) {
-                  final path = Path();
-                  path.addOval(
-                    Rect.fromCircle(center: Offset.zero, radius: 10),
-                  );
-                  return path;
-                },
+            const SizedBox(height: 24),
+            Text(
+              "Your 7 day trial\nhas started",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: w * 0.07,
+                fontWeight: FontWeight.w900,
+                height: 1.2,
               ),
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              "Enjoy full access to all premium features.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white60, fontSize: w * 0.04),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

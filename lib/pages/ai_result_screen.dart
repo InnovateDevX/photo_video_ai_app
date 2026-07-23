@@ -8,7 +8,6 @@ import 'package:vidzeon/Services/media_service.dart';
 import 'package:vidzeon/pages/upscale_page.dart';
 import 'package:video_player/video_player.dart';
 import 'package:vidzeon/Services/review_service.dart';
-import 'package:vidzeon/Services/asset_service.dart';
 import '../Helpers/feedback_helper.dart';
 import '../Widgets/themed_dialog.dart';
 import 'package:vidzeon/Services/local_storage_service.dart';
@@ -87,14 +86,17 @@ class _AIResultScreenState extends State<AIResultScreen> {
     try {
       final isVideo = widget.resultImageUrl.toLowerCase().endsWith('.mp4');
       final category = isVideo ? 'video' : 'image';
-      
+
       // Download the file via cache manager
-      final file = await DefaultCacheManager().getSingleFile(widget.resultImageUrl);
-      
+      final file = await DefaultCacheManager().getSingleFile(
+        widget.resultImageUrl,
+      );
+
       // Copy the file from cache to a permanent location in app documents
       final appDir = await getApplicationDocumentsDirectory();
       final extension = isVideo ? 'mp4' : 'jpg';
-      final fileName = 'auto_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final fileName =
+          'auto_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final savedFile = await file.copy('${appDir.path}/$fileName');
 
       final asset = GeneratedAsset(
@@ -104,7 +106,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
         prompt: 'Generated Media', // Generic prompt
         createdAt: DateTime.now(),
       );
-      
+
       await LocalStorageService().saveAsset(asset);
       debugPrint('✅ [AIResultScreen] Auto-saved asset to Profile data.');
     } catch (e) {
@@ -182,11 +184,6 @@ class _AIResultScreenState extends State<AIResultScreen> {
         widget.resultImageUrl,
         isLocal: !widget.resultImageUrl.startsWith('http'),
       );
-    }
-
-    // Persist to cloud if user is logged in
-    if (file != null) {
-      await AssetService().saveUserAsset(file, isVideo ? 'video' : 'image');
     }
 
     if (mounted) setState(() => _isDownloading = false);
@@ -429,7 +426,8 @@ class _AIResultScreenState extends State<AIResultScreen> {
                         fit: widget.fit,
                         placeholder: (context, url) =>
                             _buildPlaceholder(isDark),
-                        errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.grey),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.broken_image, color: Colors.grey),
                       )
                     : Image.file(File(widget.resultImageUrl), fit: widget.fit),
               ),

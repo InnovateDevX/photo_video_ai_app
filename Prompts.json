@@ -1,1434 +1,750 @@
 [
     {
-        "id": "bytedance/seedance-1-lite",
-        "name": "Seedance 1 Lite",
-        "owner": "bytedance",
-        "credit_used": 10,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-1-lite/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "fps": 24,
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "camera_fixed": false,
-                "image": "{{image}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FBrazil_supporter_dancing_with_flag_202606231518.mp4?alt=media&token=857b7f4a-2693-48c6-bb5e-c07e16d4ab60",
+        "videoPrompt": "Create a short cinematic stadium animation of a Brazil supporter. The person dances with joyful samba-inspired movement while lifting a large Brazil flag above their head. The crowd pulses with festive energy, flags ripple strongly, and yellow-green colors glow under bright stadium lights. Add natural body swaying, quick celebratory gestures, and a candid crowd-shot feel like it was filmed on a phone. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Brazil supporter and come alive in a short stadium video. You dance joyfully while waving a large Brazil flag above your head. Wearing a vibrant yellow-and-green crop top with a tiny Brazil flag painted on your cheek. The crowd pulses with samba energy, drums beating in the background as supporters celebrate around you. Bright festive atmosphere, natural dancing motion, fluttering flag, candid phone-camera capture from inside the crowd. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 4407,
+        "savedCount": 194,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "bytedance/seedance-2.0",
-        "name": "Seedance 2.0",
-        "owner": "bytedance",
-        "credit_used": 1000,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "generate_audio": true,
-                "reference_images": [
-                    "{{image}}"
-                ]
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FCreate_a_short_cinematic_stadium_202606231524.mp4?alt=media&token=f0c46f46-4904-479f-817c-be3406c9d5bc",
+        "videoPrompt": "Create a short cinematic stadium animation of an Argentina supporter. The person waves a giant Argentina flag while lightly bouncing to chant rhythms, with subtle shoulder sways and expressive crowd energy around them. Sky-blue and white confetti drifts through the air, scarves wave behind them, and the flag fabric flutters naturally in the wind. Handheld phone-camera feel, realistic stadium lighting, emotional football atmosphere, lively but natural motion. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an Argentina supporter and come alive in a short stadium video. You proudly wave a giant Argentina flag while singing with thousands of fans. Wearing a sky-blue-and-white striped supporter crop top, a tiny Argentina flag painted on your cheek. Confetti drifts through the air as you bounce to the rhythm of football chants. The crowd behind you moves as one in a sea of blue and white. Authentic stadium atmosphere, emotional World Cup passion, handheld phone-camera feel, soft natural movement and fluttering fabric. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 5057,
+        "savedCount": 331,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "bytedance/seedance-2.0-fast",
-        "name": "Seedance 2.0 Fast",
-        "owner": "bytedance",
-        "credit_used": 800,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0-fast/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "generate_audio": true,
-                "reference_images": [
-                    "{{image}}"
-                ]
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2Fgrok-video-d5dbf20a-7a4e-4583-a8a9-dba55a68fd79.mp4?alt=media&token=a5810a5e-774d-43c4-88e7-e0882f48585d",
+        "videoPrompt": "Create a short cinematic stadium animation of a France supporter. The person raises the French flag like a cape, then gently sways while chanting with the crowd. Add soft blue smoke in the background, rhythmic clapping fans, and a polished European stadium atmosphere. The flag should flutter realistically, and the camera should feel like a handheld clip captured in the stands. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a France supporter and come alive in a short stadium video. You hold the French flag over your shoulders like a cape while singing victory chants. Wearing a stylish blue supporter crop top with tricolor accents and a tiny French flag painted on your cheek. Blue smoke flares softly illuminate the crowd while fans clap rhythmically around you. Elegant European football atmosphere, realistic handheld recording, subtle movement and stadium energy. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 2721,
+        "savedCount": 241,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "bytedance/seedance-2.0-mini",
-        "name": "Seedance 2.0 Mini",
-        "owner": "bytedance",
-        "credit_used": 300,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0-mini/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "generate_audio": true,
-                "reference_images": [
-                    "{{image}}"
-                ]
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FEngland_supporter_waving_flag_ce%E2%80%A6_202606231421.mp4?alt=media&token=ecff6717-f62e-46d9-acd6-c6e5465aca4b",
+        "videoPrompt": "Create a short cinematic stadium animation of an England supporter. The person waves a St. George’s Cross flag overhead while chanting and lightly pumping a fist in celebration. Surround the scene with scarf-waving fans, intense football crowd reactions, and a classic English stadium atmosphere. Add natural flag movement, small shoulder bounces, and realistic phone-camera framing. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an England supporter and come alive in a short stadium video. You raise a St. George's Cross flag high while chanting with passionate supporters. Wearing a white crop top with red accents and a tiny England flag painted on your cheek. The crowd erupts in synchronized football chants and scarf-waving traditions. Authentic British football atmosphere, lively crowd reactions, natural phone-camera footage, realistic movement. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 4779,
+        "savedCount": 902,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "bytedance/omni-human",
-        "name": "OmniHuman",
-        "owner": "bytedance",
-        "credit_used": 500,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/bytedance/omni-human.png",
-        "url": "https://api.replicate.com/v1/models/bytedance/omni-human/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "image": "{{image}}",
-                "audio": "{{audio}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "540p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "3:4",
-                "4:3",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "540p": 1.1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FGermany_supporter_waving_flag_202606231610.mp4?alt=media&token=1625f0af-e7b4-4bfe-b7e3-aa6d995e47e4",
+        "videoPrompt": "Create a short cinematic stadium animation of a Germany supporter. The person stands confidently while waving a black, red, and gold flag with strong, steady movements. Fans behind them chant in unison, scarves rise and fall together, and the stadium has a powerful organized-energy feel. Add realistic fabric flutter, subtle celebratory motions, and handheld crowd-video realism. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Germany supporter and come alive in a short stadium video. You wave a massive black-red-and-gold flag while celebrating with disciplined, energetic supporters. Wearing a sleek supporter crop top featuring Germany's national colors and a tiny German flag painted on your cheek. Fans raise coordinated scarves and chant in unison around you. Premium stadium atmosphere, strong football tradition, realistic handheld crowd footage. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 7838,
+        "savedCount": 1498,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "bytedance/omni-human-1.5",
-        "name": "OmniHuman 1.5",
-        "owner": "bytedance",
-        "credit_used": 600,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/bytedance/omni-human-1.5.png",
-        "url": "https://api.replicate.com/v1/models/bytedance/omni-human-1.5/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "image": "{{image}}",
-                "audio": "{{audio}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "540p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "3:4",
-                "4:3",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "15": 3,
-                "5s": 1,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "540p": 1.1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FSpain_supporter_celebrating_with%E2%80%A6_202606231530.mp4?alt=media&token=6f50ea33-8568-4e10-a6bf-bb9afe4306d3",
+        "videoPrompt": "Create a short cinematic stadium animation of a Spain supporter. The person spins or lifts the Spanish flag with lively festive motion while smiling and celebrating with the crowd. Warm stadium lights glow across red and yellow colors, fans cheer in the background, and the atmosphere feels passionate and energetic. Use soft natural swaying, fluttering fabric, and a candid mobile-video style. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Spain supporter and come alive in a short stadium video. You celebrate passionately while spinning a Spanish flag above your head. Wearing a bold red-and-yellow crop top and a tiny Spain flag painted on your cheek. Warm evening stadium lights glow across cheering fans waving scarves and flags. Mediterranean football culture, vibrant crowd energy, natural movement and candid smartphone recording. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 3062,
+        "savedCount": 526,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "bytedance/dreamactor-m2.0",
-        "name": "DreamActor M2.0",
-        "owner": "bytedance",
-        "credit_used": 200,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/bytedance/dreamactor-m2.0.png",
-        "url": "https://api.replicate.com/v1/models/bytedance/dreamactor-m2.0/predictions",
-        "request_body": {
-            "input": {
-                "source": "{{image}}",
-                "driving": "{{video}}",
-                "relative_motion": false
-            }
-        },
-        "options": {
-            "durations": [],
-            "resolutions": [],
-            "aspect_ratios": []
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {},
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FPortugal_supporter_waving_flag_202606231536.mp4?alt=media&token=4faa58d5-12ec-4464-bec3-636bb3906851",
+        "videoPrompt": "Create a short cinematic stadium animation of a Portugal supporter. The person holds the Portugal flag high while singing along with the crowd and making small celebratory gestures. Add emotional supporter energy, waving scarves, and a proud stadium atmosphere with red and green tones. The camera should feel handheld and close, with natural movement and realistic flag flutter. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Portugal supporter and come alive in a short stadium video. You proudly hold the Portuguese flag while joining a chorus of supporters singing together. Wearing a green-and-red crop top and a tiny Portugal flag painted on your cheek. The atmosphere feels emotional and celebratory, with fans raising scarves and phones in the air. Authentic Portuguese football passion, realistic crowd movement and handheld video feel. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 4520,
+        "savedCount": 929,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "google/veo-3.1",
-        "name": "Google Veo 3.1",
-        "owner": "google",
-        "credit_used": 200,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1.png",
-        "url": "https://api.replicate.com/v1/models/google/veo-3.1/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "4",
-                "6",
-                "8"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "4": 0.8,
-                "6": 1.2,
-                "8": 1.6,
-                "4s": 0.8,
-                "6s": 1.2,
-                "8s": 1.6
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FNetherlands_supporter_waving_Dut%E2%80%A6_202606231540.mp4?alt=media&token=74532537-331c-45e8-8935-8a9dc43d30a8",
+        "videoPrompt": "Create a short cinematic stadium animation of a Netherlands supporter. The person stands in a sea of orange and waves a Dutch flag with upbeat, energetic motion. Add orange confetti, jumping supporters, and a festive stadium atmosphere that feels loud and alive. Include natural swaying, flag flutter, and a spontaneous phone-recorded crowd-shot look. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Netherlands supporter and come alive in a short stadium video. You stand among a sea of bright orange supporters, waving a Dutch flag enthusiastically. Wearing an eye-catching orange crop top and a tiny Netherlands flag painted on your cheek. Orange confetti fills the air while fans jump and celebrate around you. Iconic Dutch fan culture, festive atmosphere, natural phone-camera footage with lively crowd motion. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 2081,
+        "savedCount": 509,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "google/veo-3.1-fast",
-        "name": "Google Veo 3.1 Fast",
-        "owner": "google",
-        "credit_used": 100,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1-fast.png",
-        "url": "https://api.replicate.com/v1/models/google/veo-3.1-fast/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "4",
-                "6",
-                "8"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "4": 0.8,
-                "6": 1.2,
-                "8": 1.6,
-                "4s": 0.8,
-                "6s": 1.2,
-                "8s": 1.6
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FUS_supporter_waves_American_flag_202606221605.mp4?alt=media&token=3b8c88fa-1a02-4baf-b864-e716bf938b99",
+        "videoPrompt": "Create a short cinematic stadium animation of an Italy supporter. The person raises the Italian flag and celebrates with elegant, expressive movements while the crowd sings behind them. Add a cinematic blue-and-tricolor stadium glow, fluttering scarves, and emotional football pride. Use subtle natural body motion and a realistic handheld fan-video feel. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an Italy supporter and come alive in a short stadium video. You wave the Italian tricolor while celebrating with expressive supporters. Wearing a stylish blue supporter crop top inspired by the Azzurri and a tiny Italy flag painted on your cheek. Fans sing passionately while stadium lights create a cinematic glow. Elegant football culture, emotional crowd atmosphere, realistic handheld recording. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "likesCount": 6885,
+        "savedCount": 721,
+        "category": "world_cup_supporters"
     },
     {
-        "id": "google/veo-3.1-lite",
-        "name": "Google Veo 3.1 Lite",
-        "owner": "google",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1-lite.png",
-        "url": "https://api.replicate.com/v1/models/google/veo-3.1-lite/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "4",
-                "6",
-                "8"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "4": 0.8,
-                "6": 1.2,
-                "8": 1.6,
-                "4s": 0.8,
-                "6s": 1.2,
-                "8s": 1.6
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Ads%2FNYC_arrival%2FProduct_crashes_onto_taxi_202605141624_converted.mp4?alt=media&token=8cf46a8b-44a7-4565-999b-f848ef9b0218",
+        "videoPrompt": ">Animate the uploaded product image into a cinematic Hollywood-style VFX advertisement. The product becomes very large — larger than a car but still realistic in scale — and crashes down onto a moving yellow New York taxi in the middle of a busy Manhattan-style street. The impact cracks the asphalt beneath the taxi, sending debris, dust, smoke, shattered concrete, and flying particles into the air. Dramatic low-angle tracking shots capture the collision with intense cinematic energy. Realistic physics, dynamic camera movement, volumetric lighting, golden hour sunset atmosphere, motion blur, depth of field, ultra-detailed textures, photorealistic reflections and shadows, smooth slow-motion impact shots, high-end Hollywood action movie aesthetic, realistic urban environment, epic scale, 4K cinematic quality. The product remains perfectly detailed and recognizable throughout the scene.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Ads",
+        "likesCount": 3639,
+        "savedCount": 1120
     },
     {
-        "id": "kwaivgi/kling-v2.5-turbo-pro",
-        "name": "Kling v2.5 Turbo Pro",
-        "owner": "kwaivgi",
-        "credit_used": 150,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/kwaivgi/kling-v2.5-turbo-pro.png",
-        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v2.5-turbo-pro/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "start_image": "{{image}}",
-                "end_image": "{{image}}",
-                "cfg_scale": 5
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Ads%2FGraffiti%2FArtist_spraying_fried_chicken_mural_202605141702_converted.mp4?alt=media&token=d33a7db2-6f8d-461d-a199-a3a45587a4aa",
+        "videoPrompt": "Animate the street art scene, starting with the close-up of the mural of a crispy fried chicken burger. Show the artist in a hoodie spraying the last bit of spray paint on the mural, adding vibrant colors and finishing the artwork. As the artist moves around the mural, animate him stepping back and admiring his work. Slowly zoom out to reveal the entire mural, with graffiti tags and splattered paint. The artist then walks away from the scene, leaving behind scattered spray cans. The video should have smooth transitions with an urban, artistic vibe.",
+        "imagePrompt": "Transform the given product image into a street art style, showing it as a giant version of the product spray-painted on a brick wall. The scene should have a vibrant, urban graffiti aesthetic with bright colors and artistic graffiti tags around it. Include a person spray-painting the product on the wall, wearing casual street clothes and a hoodie, with a cool, creative vibe in the background.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Ads",
+        "likesCount": 5704,
+        "savedCount": 1595
     },
     {
-        "id": "klingai/kling-v2-master",
-        "name": "Kling v2 Standard",
-        "owner": "klingai",
-        "credit_used": 200,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v2-master.png",
-        "url": "https://api.replicate.com/v1/models/klingai/kling-v2-master/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "start_image": "{{image}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Ads%2FFood_Bursts%2FFood_beverage_flying_orbiting_bu…_202605141722_converted.mp4?alt=media&token=e7285757-452b-4228-b257-6be5a42074a5",
+        "videoPrompt": "Create a high-end 360° product video where the food or beverage flies up into the air and orbits, bursting and spinning in a dynamic, visually striking manner. The food or beverage should shoot upward, with dramatic bursts of ingredients, splashes, or particles (like whipped cream, powders, or fruits) floating and spinning in mid-air as the camera performs a smooth, elegant 360° orbit around the scene.\n\nThe video should capture the ingredients in their most dynamic and visually stunning state, with slow-motion effects to emphasize the movement, splashes, and floating particles. Use a dramatic, dark studio background with soft spotlighting that highlights the product as the hero, creating a luxurious, premium vibe. Integrate subtle smoke or mist for added depth, and ensure lighting is high-contrast, with crisp highlights on the textures, bursts, and any floating ingredients or particles in the air. The movement should feel elegant yet powerful, conveying a sense of sophistication and high-end luxury in the food or beverage.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Ads",
+        "likesCount": 7269,
+        "savedCount": 931
     },
     {
-        "id": "kwaivgi/kling-v3-video",
-        "name": "Kling Video 3.0",
-        "owner": "kwaivgi",
-        "credit_used": 220,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-video.png",
-        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v3-video/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "mode": "{{mode}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "start_image": "{{image}}",
-                "end_image": "{{image}}",
-                "generate_audio": false,
-                "negative_prompt": ""
-            }
-        },
-        "options": {
-            "durations": [
-                "3",
-                "6",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "3": 0.6,
-                "6": 1.2,
-                "10": 2,
-                "15": 3,
-                "3s": 0.6,
-                "6s": 1.2,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Ads%2FExploded_View%2FHailuo_Video_Create a hyper-realistic video_513372817859215364 (2)_converted.mp4?alt=media&token=6d8c16b7-6c51-4622-b594-8e991d30cc62",
+        "videoPrompt": "Create a hyper-realistic video where the exploded view of the product assembles back into its complete form. Each component, whether gears, materials, or parts, should move seamlessly and precisely falls  into place.  The lighting should remain soft and premium, highlighting the textures and edges of the materials, while casting subtle shadows to create depth. The final assembly should be balanced and visually captivating, showcasing the high-end quality of the product.",
+        "imagePrompt": "Create a hyper-realistic exploded view of the product, with each component—whether it’s gears, materials, or parts—floating gently in space. The individual components should be perfectly aligned and shown in intricate detail. The image should have a clean, minimal background to keep the focus entirely on the product’s craftsmanship and design. The lighting should highlight the textures, edges, and materials of the product, with soft shadows to add depth and dimension. The composition should feel balanced and visually satisfying, emphasizing the high-end, luxurious quality of the product.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Ads",
+        "likesCount": 6588,
+        "savedCount": 618
     },
     {
-        "id": "kwaivgi/kling-v3-omni-video",
-        "name": "Kling Video 3.0 Omni",
-        "owner": "kwaivgi",
-        "credit_used": 300,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-omni-video.png",
-        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v3-omni-video/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "mode": "{{mode}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "reference_images": [
-                    "{{image}}"
-                ],
-                "reference_video": "{{video}}",
-                "video_reference_type": "{{video_reference_type}}",
-                "generate_audio": false,
-                "keep_original_sound": false,
-                "negative_prompt": ""
-            }
-        },
-        "options": {
-            "durations": [
-                "3",
-                "6",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "3": 0.6,
-                "6": 1.2,
-                "10": 2,
-                "15": 3,
-                "3s": 0.6,
-                "6s": 1.2,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Transformations_%2FLarge_Monster%2FMonster_mecha_with_human_face_202605211727_converted.mp4?alt=media&token=1d1bda2b-6e6a-471f-82ed-787be3f0ac84",
+        "videoPrompt": "Generate a 6-second photorealistic video using the uploaded reference image as the base for the monster/mecha. Keep the silhouette, proportions, and design details of the input image, but reveal the human face of the input character inside the monster’s helmet or head, clearly visible while the mecha moves. Add curved golden horns, glowing molten-orange chest core, battle-worn white-and-gold armor, and massive spiked mechanical rings orbiting like dark energy wings. Place the monster over a sprawling neon-drenched cyberpunk megacity at dusk, skyscrapers glowing with holographic ads, flying vehicles weaving between buildings.\n\nDynamic camera: Low-angle hero shot rising along the legs and torso, revealing glowing eyes, horned silhouette, and human face inside helmet. At 3s, the mecha powers up — bright orange energy pulses, sparks and steam from joints, rings spin faster with electric arcs. At 5s, it takes a massive step, sending shockwaves and dust clouds through the city while fighter drones swarm around it.\n\nStyle: Ultra-detailed 8K, cinematic color grading with teal-orange cyberpunk palette, volumetric god rays, photorealistic metallic textures, subtle film grain, anamorphic lens, IMAX-quality hyper-realistic motion, epic scale, dramatic lighting. Masterpiece, best quality, cinematic 6-second video",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Transformations_",
+        "likesCount": 8538,
+        "savedCount": 624
     },
     {
-        "id": "prunaai/p-video",
-        "name": "P-Video",
-        "owner": "prunaai",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/prunaai/p-video.png",
-        "url": "https://api.replicate.com/v1/models/prunaai/p-video/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "draft_mode": true
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Transformations_%2FRobot_Fighting%2FHuman_fighting_AI_robot_202605211634_converted.mp4?alt=media&token=b09116f4-e82e-40e0-bc62-1228a75766ca",
+        "videoPrompt": "A human fighter battling a powerful humanoid AI robot in a high-tech facility, metal impacts sending sparks flying, powerful punches causing shockwaves, dynamic camera angles, slow motion finishing moves, intense lighting flashes, cinematic VFX, blockbuster sci-fi fight scene, ultra realistic, 4K",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Transformations_",
+        "likesCount": 3006,
+        "savedCount": 1700
     },
     {
-        "id": "xai/grok-imagine-video",
-        "name": "Grok Imagine Video",
-        "owner": "xai",
-        "credit_used": 120,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/xai/grok-imagine-video.png",
-        "url": "https://api.replicate.com/v1/models/xai/grok-imagine-video/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "resolution": "{{resolution}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "480p",
-                "720p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "15": 3,
-                "5s": 1,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Transformations_%2FDesert_Trooper%2Fanimate_this_one_202605211812_converted.mp4?alt=media&token=5f3dd115-eef2-4b76-93e2-0402dbb840af",
+        "videoPrompt": "animate  this one",
+        "imagePrompt": "Generate a photorealistic image using the uploaded reference face as the character’s face inside the insect-like metal mask. The character is a desert scavenger/bounty hunter standing in a sun-drenched, sandy marketplace. They wear a weathered insect-like metal mask with large dark circular eyes and small horn-like protrusions, integrated with communication headsets, but the human face from the input image is clearly visible within the mask. Outfit includes heavily layered sand-colored post-apocalyptic tactical gear, tattered brown scarf, ribbed sleeves, utility belts with pouches, and metallic gauntlets. The character is dual-wielding futuristic blasters.\n\nBackground: A bustling desert village with blurred outland structures and other figures, under harsh bright sunlight. Warm ochre, dusty browns, and desaturated earth tones dominate.\n\nStyle: High-detail 35mm film photograph, shallow depth of field, sharp focus on central figure, natural golden hour lighting, hyper-realistic 8K, grit and dust textures, Star Wars aesthetic, cinematic. --ar 2:3",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Transformations_",
+        "likesCount": 3512,
+        "savedCount": 686
     },
     {
-        "id": "minimax/video-01",
-        "name": "MiniMax Video-01",
-        "owner": "minimax",
-        "credit_used": 150,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/minimax/video-01.png",
-        "url": "https://api.replicate.com/v1/models/minimax/video-01/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "prompt_optimizer": true
-            }
-        },
-        "options": {
-            "durations": [
-                "6"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": []
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "6": 1.2,
-                "6s": 1.2
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Transformations_%2FA_Cyberpunk_Vanguard%2FFlow_202605221807_converted.mp4?alt=media&token=b0dfa9b2-ba9f-43d6-bf11-f4c95de01820",
+        "videoPrompt": "Use the uploaded image as the main character. Create a 6-second cinematic photorealistic video, ultra-detailed 8K resolution, cyberpunk sci-fi Transformers aesthetic.\n\nScene: The character from the uploaded image begins in the foreground, standing in a foggy, neon-lit mega-city industrial hangar. Dynamic transformation sequence: her tactical bodysuit and body slowly morph into a colossal winged Transformer mech. Pieces of armor, gears, and mechanical wings emerge from her body with hydraulic precision. Bright orange energy lines pulse across her form as her anatomy seamlessly transitions into dark metallic gray and obsidian armor, with glowing orange-red eyes and intricate orange accent lights.\n\nCamera: Starts with a low-angle hero shot of the character, then slowly orbits around her while pulling back and tilting upward to reveal the full scale of the newly formed giant Transformer.\n\nEnvironment: Thick volumetric fog and atmospheric haze swirl around them, subtle rain particles, distant neon signs and flying drones in the background. Dramatic rim lighting and god rays cut through the mist. Cyberpunk color grading with deep blacks and vibrant orange-cyan highlights.\n\nStyle: Photorealistic, filmic, Arri Alexa 65 + anamorphic lens look, subtle film grain, perfect anatomy and mechanical details, epic and immersive, 24fps, ultra-realistic motion, masterpiece quality. Transformation should feel smooth, powerful, and visually cinematic.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Transformations_",
+        "likesCount": 8431,
+        "savedCount": 417
     },
     {
-        "id": "minimax/hailuo-2.3",
-        "name": "MiniMax Hailuo 2.3",
-        "owner": "minimax",
-        "credit_used": 150,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/minimax/hailuo-2.3.png",
-        "url": "https://api.replicate.com/v1/models/minimax/hailuo-2.3/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "prompt_optimizer": true
-            }
-        },
-        "options": {
-            "durations": [
-                "6",
-                "10"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": []
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "6": 1.2,
-                "10": 2,
-                "6s": 1.2,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FVFX Transformations_%2FInnocence_to_Nightmare%2FCharacter_transforms_into_monste…_202605221826_converted.mp4?alt=media&token=18e09578-16b4-4142-a34f-d54cab172cba",
+        "videoPrompt": "Use the uploaded image as the main character. Create a cinematic, ultra-realistic sci-fi sequence in a neon futuristic city street at night during heavy rain.\nScene begins: The character stands alone, wearing casual modern clothes, looking frightened and confused. Glowing energy slowly spreads through their veins, street lights flicker violently, wind blows their hair and clothes. Cinematic camera slowly pushes toward their face, showing realistic rain particles and emotional expressions. Hollywood-level lighting and atmosphere.\nTransformation: Massive glowing energy erupts from their body as they rapidly morph into a gigantic towering monster over 100 feet tall—elegant yet terrifying—with glowing eyes, cracked energy patterns across their skin, colossal hands, smoke, sparks, and debris exploding everywhere. Cars flip, nearby buildings shake with realistic destruction physics, volumetric smoke and cinematic camera shake.\nAction sequence: Giant military robots and armored combat mechs arrive from sky and streets, carrying glowing weapons. The monster fights them with massive punches, explosions, missiles, laser beams, flying debris, realistic metal destruction, dynamic camera angles, dramatic slow-motion impacts, and fast-paced blockbuster choreography.\nFinal shot: Wide cinematic view of the giant monster standing victorious in the destroyed neon city, surrounded by burning robot wreckage, heavy rain pouring down, smoke rising, glowing eyes staring into the camera, emotionally intense atmosphere. Ultra-realistic CGI, IMAX-style cinematography, seamless transitions, realistic motion blur, high-contrast lighting, 8K masterpiece visuals, dark sci-fi cinematic aesthetic, epic and immersive",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "VFX Transformations_",
+        "likesCount": 5990,
+        "savedCount": 1635
     },
     {
-        "id": "minimax/hailuo-2.3-fast",
-        "name": "MiniMax Hailuo 2.3 Fast",
-        "owner": "minimax",
-        "credit_used": 90,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/minimax/hailuo-2.3-fast.png",
-        "url": "https://api.replicate.com/v1/models/minimax/hailuo-2.3-fast/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "prompt_optimizer": false
-            }
-        },
-        "options": {
-            "durations": [
-                "6",
-                "10"
-            ],
-            "resolutions": [
-                "768p",
-                "1080p"
-            ],
-            "aspect_ratios": []
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "6": 1.2,
-                "10": 2,
-                "6s": 1.2,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "768p": 1,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FIn-Hand_Product_Shots%2FHand_holding_product_rotating_202605211214_converted.mp4?alt=media&token=f6793855-916c-455e-a094-c3a944fc1197",
+        "videoPrompt": "Animate the uploaded product image: the product held naturally in a person’s hand, slight camera shake, soft daylight reflections, casual home environment, realistic shadows and textures, subtle handheld smartphone motion, vertical 9:16, photorealistic style.",
+        "imagePrompt": "Place the uploaded product in a realistic human hand, visible in the frame. Include a model’s partially visible face showing natural curiosity or excitement, soft daylight reflections on the product, subtle shadows, shallow depth-of-field background with gentle blur, vertical 9:16, cinematic UGC social media style.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 3000,
+        "savedCount": 1353
     },
     {
-        "id": "wavespeedai/wan-2.1-i2v-480p",
-        "name": "Wan Image-to-Video",
-        "owner": "wavespeedai",
-        "credit_used": 120,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.1-i2v-480p.png",
-        "url": "https://api.replicate.com/v1/models/wavespeedai/wan-2.1-i2v-480p/predictions",
-        "request_body": {
-            "input": {
-                "image": "{{image}}",
-                "prompt": "{{prompt}}",
-                "max_area": "480*832",
-                "fast_mode": "Balanced",
-                "sample_shift": 8,
-                "sample_steps": 30,
-                "frames_per_second": 16,
-                "sample_guide_scale": 5
-            }
-        },
-        "options": {
-            "durations": [],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {},
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FUnboxing_Moment%2FModel_unboxing_product_from_box_202605211232_converted.mp4?alt=media&token=3c970df8-09aa-4797-83fc-8f6cd6f7230d",
+        "videoPrompt": "Realistic unboxing motion with model’s hands and partially visible excited face, product slowly pulled from the box, tissue paper shifts naturally, subtle motion blur, warm indoor lighting flicker, slight handheld camera movement, shallow focus, vertical 9:16 TikTok/Instagram UGC style.",
+        "imagePrompt": "Use the uploaded product in a realistic unboxing scene. Include human hands and a model’s face expressing excitement and engagement with the product, tissue paper moving naturally, warm indoor lighting, shallow depth-of-field, cozy creator-style environment, vertical 9:16, authentic social media UGC vibe.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 3368,
+        "savedCount": 1661
     },
     {
-        "id": "wavespeedai/wan-2.5-t2v",
-        "name": "Wan 2.5 T2V",
-        "owner": "wavespeedai",
-        "credit_used": 130,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-t2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-t2v/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "audio": "{{audio}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FProduct_Review_On_table%2FProduct_on_desk_with_hands_202605211242_converted.mp4?alt=media&token=72ca1d2c-8972-45f2-8a95-a44f84c7191f",
+        "videoPrompt": "Slow cinematic push-in toward the product on the desk, model’s hands and visible face interacting subtly, soft lighting, realistic reflections, gentle background blur movement, focus breathing effect, vertical 9:16, casual social media creator content feel.",
+        "imagePrompt": "Place the uploaded product on a desk with a model’s hands nearby. Include the model’s face in-frame showing curiosity or focus, soft cinematic lighting, realistic reflections, shallow depth-of-field background, vertical 9:16, authentic lifestyle UGC style.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 2485,
+        "savedCount": 1473
     },
     {
-        "id": "wavespeedai/wan-2.5-t2v-fast",
-        "name": "Wan 2.5 T2V Fast",
-        "owner": "wavespeedai",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-t2v-fast.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-t2v-fast/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FCoffee_table%2Fvideo_202605211253_converted.mp4?alt=media&token=da3393c9-e62b-43f9-b7f5-cda22abe7d04",
+        "videoPrompt": "Smooth handheld camera movement circling around the product and model, face partially visible, subtle hand gestures, warm sunlight moving across scene, soft cinematic motion blur, vertical 9:16, authentic social media vibe.",
+        "imagePrompt": "Uploaded product on a coffee table, model casually interacting with it. Include visible face with relaxed, natural expression, warm sunlight and subtle curtain motion, realistic shadows and reflections, shallow focus, vertical 9:16, influencer-style UGC aesthetic.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 8047,
+        "savedCount": 1208
     },
     {
-        "id": "wavespeedai/wan-2.5-i2v",
-        "name": "Wan 2.5 I2V",
-        "owner": "wavespeedai",
-        "credit_used": 130,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-i2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-i2v/predictions",
-        "request_body": {
-            "input": {
-                "image": "{{image}}",
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FPicnic%2FModel_at_picnic_joyful_expression_202605211424_converted.mp4?alt=media&token=49c14888-efee-4ef1-9632-423f49dc427e",
+        "videoPrompt": "Smooth handheld motion circling around model at picnic, product highlighted in hand, face showing joyful expression, sunlight flickering through leaves, shallow focus with subtle background movement, vertical 9:16, casual UGC style.",
+        "imagePrompt": "Model sitting on a picnic blanket outdoors, holding the uploaded product up for the camera, smiling naturally, sunlight filtering through trees, shallow depth-of-field, product clearly visible, vertical 9:16, lifestyle UGC aesthetic",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 2465,
+        "savedCount": 884
     },
     {
-        "id": "wavespeedai/wan-2.5-i2v-fast",
-        "name": "Wan 2.5 I2V Fast",
-        "owner": "wavespeedai",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-i2v-fast.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-i2v-fast/predictions",
-        "request_body": {
-            "input": {
-                "image": "{{image}}",
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FCoffee_table_Model%2FModel_interacting_with_product_202605211435_converted.mp4?alt=media&token=6a9c45d0-b3bc-4df8-a767-f2ae8a10f060",
+        "videoPrompt": "Camera slowly pans around model at coffee shop, face visible interacting with product, hands naturally holding it, reflections from sunlight on product, shallow focus breathing, vertical 9:16, cinematic UGC social media vibe",
+        "imagePrompt": "Model sitting at a coffee shop table, holding the uploaded product for camera, face visible with casual smile, warm light streaming from windows, shallow depth-of-field, background softly blurred, vertical 9:16, authentic influencer-style UGC aesthetic.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 4541,
+        "savedCount": 620
     },
     {
-        "id": "wan-video/wan-2.7-t2v",
-        "name": "Wan 2.7 T2V",
-        "owner": "wan-video",
-        "credit_used": 200,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.7-t2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-t2v/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "negative_prompt": "{{negative_prompt}}",
-                "audio": "{{audio}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "duration": "{{duration}}",
-                "enable_prompt_expansion": true,
-                "seed": null
-            }
-        },
-        "options": {
-            "durations": [
-                "2",
-                "5",
-                "8",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "2": 0.4,
-                "5": 1,
-                "8": 1.6,
-                "10": 2,
-                "15": 3,
-                "2s": 0.4,
-                "5s": 1,
-                "8s": 1.6,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FUGC%2FOutfit_Showcase_Model%2FWomen_showing_off_new_outfit_202605211448_converted.mp4?alt=media&token=0eaef0d3-8de4-425a-a38a-513c5325df88",
+        "videoPrompt": "the women circles around showing off new Outfit",
+        "imagePrompt": "Model showing off the uploaded product as part of their outfit, face visible with confident expression, standing against neutral indoor or outdoor background, shallow depth-of-field, vertical 9:16, stylish influencer UGC aesthetic.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "UGC",
+        "likesCount": 9575,
+        "savedCount": 608
     },
     {
-        "id": "wan-video/wan-2.7-r2v",
-        "name": "Wan 2.7 Reference-to-Video",
-        "owner": "wan-video",
-        "credit_used": 250,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.7-r2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-r2v/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "reference_images": [
-                    "{{image}}"
-                ],
-                "reference_videos": [
-                    "{{video}}"
-                ],
-                "negative_prompt": "{{negative_prompt}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "duration": "{{duration}}",
-                "shot_type": "{{shot_type}}",
-                "seed": null
-            }
-        },
-        "options": {
-            "durations": [
-                "2",
-                "5",
-                "8",
-                "10"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "2": 0.4,
-                "5": 1,
-                "8": 1.6,
-                "10": 2,
-                "2s": 0.4,
-                "5s": 1,
-                "8s": 1.6,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FChina%2FPerson_in_Chinese_city_202605191145_converted.mp4?alt=media&token=49cb7d71-35dc-43e2-86ba-669f5335c891",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a modern Chinese city environment with subtle blinking and breathing. Background includes lanterns, busy Shanghai streets, glowing signs, and realistic crowd movement. Gentle cinematic camera movement, realistic reflections, authentic atmosphere, photorealistic quality.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in China. Style them with authentic Chinese fashion, hairstyles, subtle makeup, and accessories inspired by modern and traditional Chinese aesthetics. Include iconic Chinese background elements such as Shanghai skyline, traditional streets, lanterns, or the Great Wall. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 5034,
+        "savedCount": 793
     },
     {
-        "id": "klingai/kling-v3-master",
-        "name": "Kling v3 Master (Gen-3 Vision API)",
-        "owner": "klingai",
-        "credit_used": 280,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-master.png",
-        "url": "https://api.replicate.com/v1/models/klingai/kling-v3-master/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "start_image": "{{image}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FJapan%2FPerson_in_Tokyo_night_street_202605191148_converted.mp4?alt=media&token=dfa49290-d390-498b-82fc-d6b09807e1e3",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a Tokyo night street scene with subtle blinking, breathing, and realistic posture movement. Neon signs flicker softly, pedestrians move naturally in the background, cherry blossoms or rain drift slowly through the scene. Smooth cinematic handheld camera movement, anime-film realism but fully photorealistic, ultra detailed.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Japan. Style them with authentic Japanese fashion, hairstyles, skincare-inspired makeup, and cultural aesthetics. Include iconic Japanese background elements such as Tokyo streets, cherry blossoms, shrines, or neon cityscapes. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 8232,
+        "savedCount": 1616
     },
     {
-        "id": "runwayml/gen4-turbo",
-        "name": "RunwayML Gen4 Turbo (Video)",
-        "owner": "runwayml",
-        "credit_used": 250,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/runwayml/gen4-turbo.png",
-        "url": "https://api.replicate.com/v1/models/runwayml/gen4-turbo/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "ratio": "{{aspect_ratio}}",
-                "duration": "{{duration}}",
-                "image_as_end_frame": false,
-                "prompt_image": "{{image}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FSouth_Korea%2FPerson_in_Seoul_nightlife_202605191158_converted.mp4?alt=media&token=f7d2ed0f-a0a4-4042-838a-be69870bd794",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands in a stylish Seoul nightlife environment with subtle eye movement, blinking, and natural body motion. Neon reflections, moving traffic, café lights, and softly blowing hair create a modern Korean drama atmosphere. Cinematic K-drama realism, shallow depth of field, DSLR quality.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in South Korea. Style them with authentic Korean fashion, K-fashion inspired hairstyle, glass skin makeup aesthetics, and trendy accessories. Include iconic Korean background elements such as Seoul nightlife, hanok villages, or cherry blossom streets. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 3265,
+        "savedCount": 280
     },
     {
-        "id": "vidu/q3-pro",
-        "name": "Vidu Q3 Pro",
-        "owner": "vidu",
-        "credit_used": 180,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/vidu/q3-pro.png",
-        "url": "https://api.replicate.com/v1/models/vidu/q3-pro/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "start_image": "{{image}}",
-                "end_image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "audio": true,
-                "seed": null
-            }
-        },
-        "options": {
-            "durations": [
-                "1",
-                "5",
-                "10",
-                "16"
-            ],
-            "resolutions": [
-                "540p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "3:4",
-                "4:3",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "1": 0.2,
-                "5": 1,
-                "10": 2,
-                "16": 3.2,
-                "1s": 0.2,
-                "5s": 1,
-                "10s": 2,
-                "16s": 3.2
-            },
-            "resolution_multipliers": {
-                "540p": 1.1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2Fthailand%2FPerson_in_Bangkok_street_202605191204_converted.mp4?alt=media&token=62588a02-dbe1-4ff4-89af-a15aafda0152",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a vibrant Bangkok street environment with subtle eye movement and relaxed breathing. Background includes temple spires, floating markets, tuk-tuks, and warm golden temple lighting. Cinematic Thai atmosphere, DSLR quality, ultra realistic motion.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Thailand. Style them with authentic Thai fashion, hairstyles, and cultural aesthetics. Include iconic Thai background elements such as Bangkok markets, temples, tropical scenery, or floating markets. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 6918,
+        "savedCount": 1643
     },
     {
-        "id": "vidu/q3-turbo",
-        "name": "Vidu Q3 Turbo",
-        "owner": "vidu",
-        "credit_used": 120,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/vidu/q3-turbo.png",
-        "url": "https://api.replicate.com/v1/models/vidu/q3-turbo/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "start_image": "{{image}}",
-                "end_image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "audio": true,
-                "seed": null
-            }
-        },
-        "options": {
-            "durations": [
-                "1",
-                "5",
-                "10",
-                "16"
-            ],
-            "resolutions": [
-                "540p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "3:4",
-                "4:3",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "1": 0.2,
-                "5": 1,
-                "10": 2,
-                "16": 3.2,
-                "1s": 0.2,
-                "5s": 1,
-                "10s": 2,
-                "16s": 3.2
-            },
-            "resolution_multipliers": {
-                "540p": 1.1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FSaudi_Arabia%2FPerson_in_Gulf_city_animation_202605191210_converted.mp4?alt=media&token=89f7ddac-e761-45ec-a67d-2f3ba1b672e0",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a luxurious Gulf city environment with subtle blinking and breathing. Flowing fabric reacts to soft desert wind while city lights and modern architecture glow in the background. Desert atmosphere, luxury aesthetics, cinematic realism, ultra detailed.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Saudi Arabia. Style them with authentic Saudi fashion, traditional attire, modern Gulf aesthetics, and culturally accurate accessories. Include iconic Saudi background elements such as Riyadh skyline, desert scenery, or traditional souks. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 7924,
+        "savedCount": 1513
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FTurkey%2FPerson_in_Istanbul_street_202605191214_converted.mp4?alt=media&token=ef9a4d00-5dd8-4ed6-b8e2-7f29c412aa1d",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in an Istanbul street setting with subtle eye movement and relaxed breathing. Background includes café activity, warm street lights, mosques, pigeons, and soft Bosphorus atmosphere. Cinematic Mediterranean mood, realistic handheld motion, ultra realistic.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Turkey. Style them with authentic Turkish fashion, hairstyles, and Mediterranean cultural aesthetics. Include iconic Turkish background elements such as Istanbul streets, mosques, bazaars, or Cappadocia scenery. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 7723,
+        "savedCount": 1354
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FFrance%2FPerson_in_Parisian_street_café_202605191219_converted.mp4?alt=media&token=ee31a708-3fcc-4a8a-940d-9a9da4402b50",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a Parisian street café environment with subtle facial movement and blinking. Warm café lights, moving pedestrians, soft wind, and elegant cinematic camera motion create a luxury French fashion-film atmosphere.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in France. Style them with authentic French fashion, elegant hairstyles, chic makeup aesthetics, and Parisian styling. Include iconic French background elements such as Paris cafés, Eiffel Tower scenery, or old European streets. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 5949,
+        "savedCount": 1241
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FItaly%2FPerson_in_Italian_city_street_202605191225_converted.mp4?alt=media&token=3c3bd250-dfa8-42d6-806b-26065fb1c998",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in an Italian city street with subtle blinking and natural body movement. Vespa traffic, warm sunset light, café environments, and Mediterranean atmosphere create realistic Italian cinematic vibes.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Italy. Style them with authentic Italian fashion, Mediterranean aesthetics, hairstyles, and accessories. Include iconic Italian background elements such as Rome streets, Venice canals, or Tuscany scenery. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 7395,
+        "savedCount": 230
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FRussia%2FPerson_in_snowy_Moscow_202605200913 (1)_converted.mp4?alt=media&token=cd708d51-5834-4899-bd2e-4bca426b682b",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a snowy Moscow environment with subtle breathing and blinking. Falling snow, winter fog, cold lighting, and people moving in heavy coats create a dramatic cinematic Russian atmosphere.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Russia. Style them with authentic Russian fashion, hairstyles, winter aesthetics, and cultural accessories. Include iconic Russian background elements such as Moscow streets, snowy scenery, or historic architecture. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 7349,
+        "savedCount": 420
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FArgentina%2FMan_in_Buenos_Aires_environment_202605200930_converted.mp4?alt=media&token=85376052-49f2-4273-addb-171cee0b484a",
+        "videoPrompt": "https://drive.google.com/file/d/1T6C-cXZltQNbGg-QWGH_KbO2uphIHucI/view?usp=drive_link",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Argentina. Style them with authentic Argentine fashion, Skin tone, hair Color, hairstyles, and urban Latin aesthetics. Include iconic Argentine background elements such as Buenos Aires streets, tango-inspired scenery, or Patagonia landscapes. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 7596,
+        "savedCount": 1011
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FNigeria%2FPerson_in_Lagos_street_202605200927_converted.mp4?alt=media&token=e0b0f6f3-d1f5-40ad-aec5-8d95c53536a8",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a vibrant Lagos street environment with subtle facial movement and blinking. Afro-urban fashion, moving crowds, colorful lighting, and realistic city energy create cinematic realism.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Nigeria. Style them with authentic Nigerian Skin tone,fashion, hairstyles, traditional fabrics, and cultural aesthetics. Include iconic Nigerian background elements such as Lagos city scenes, markets, or Afro-urban environments. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 2112,
+        "savedCount": 1603
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FEgypt%2FPerson_in_Cairo_environment_202605200921_converted.mp4?alt=media&token=b9cb0304-59e9-468e-954a-de2d5289fdc7",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a Cairo-inspired environment with subtle breathing and blinking. Warm desert wind, golden sunlight, ancient architecture, and bustling street activity create an epic cinematic atmosphere.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in Egypt. Style them with authentic Egyptian fashion, hairstyles, and Middle Eastern/North African aesthetics. Include iconic Egyptian background elements such as Cairo streets, pyramids, or desert scenery. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 9567,
+        "savedCount": 1103
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FSouth_Africa%2FPerson_in_Cape_Town_environment_202605200918_converted.mp4?alt=media&token=00a74b51-3b08-4e89-a4cc-06b09c270137",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a Cape Town-inspired environment with subtle blinking and relaxed movement. Ocean breeze, urban life, mountain scenery, and realistic sunlight create cinematic realism.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in South Africa. Style them with authentic South African tone ,fashion, hairstyles, and multicultural urban aesthetics. Include iconic South African background elements such as Cape Town scenery, colorful neighborhoods, or safari-inspired landscapes. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 4534,
+        "savedCount": 1440
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FIf I was Born in%2FNew_Zealand%2FMan_standing_in_New_Zealand_202605191244_converted.mp4?alt=media&token=b6aedb8b-c607-4082-81a2-d51312aef04f",
+        "videoPrompt": "Create a realistic cinematic video animation from the portrait image. The person stands naturally in a scenic New Zealand environment with subtle facial movement and blinking. Wind moves the hair softly while mountains, greenery, and cinematic natural lighting create realistic atmosphere.",
+        "imagePrompt": "Create a realistic portrait of the uploaded reference photo. Maintain the exact same face, identity, and bone structure. Show how this person would look if they were born and raised in New Zealand. Style them with authentic New Zealand fashion, natural hairstyles, and outdoor-inspired aesthetics. Include iconic New Zealand background elements such as mountains, green landscapes, or Auckland city views. Photorealistic, cinematic lighting, DSLR portrait quality.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "If I was Born in",
+        "likesCount": 8685,
+        "savedCount": 134
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FKoko_Snap%2F3D_vinyl_toy_animation_202605172300_converted.mp4?alt=media&token=fab03fd7-d376-4d84-9649-911bf652ac11",
+        "videoPrompt": "Animate the provided character in Veo as a cute 3D vinyl designer art toy, Pop Mart inspired, keeping 100% exact consistency with the reference image: same face, outfit, colors, proportions, hair, shoes, materials, and toy design. The character has chibi proportions, large head, chunky limbs, oversized sneakers, sculpted solid hair, small oval eyes, flushed cheeks, matte soft-touch plastic skin, clay texture, and tactile clothing materials. The character stands in a clean pastel studio background with soft studio lighting. Start with the character looking slightly down, then slowly lifting the head toward the camera with a cute curious expression. Add subtle blinking, gentle breathing, tiny head tilt, small hand movement, and a playful toy-like body bounce. The oversized sneakers shift slightly as the character takes one tiny step forward. Camera slowly pushes in from full-body to waist-up, cinematic premium toy showcase style. Motion must feel smooth, adorable, polished, and toy-like, not realistic human movement. Keep soft reflections on matte plastic, clay-like texture, and high-end 3D render quality. No redesign, no extra accessories, no text, no logo, no watermark, no background clutter, no distorted face, no extra fingers, no body deformation. Duration:5-7seconds.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 8746,
+        "savedCount": 156
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FPompom_Kid%2FAnimate_reference_image_character_202605172317_converted.mp4?alt=media&token=c2b1d3a1-bd14-49e3-b52c-747fac926910",
+        "videoPrompt": "Animate the provided reference image only. Keep the character design unchanged. The character starts standing still, then gently blinks, slowly lifts the head toward the camera, tilts the head slightly to one side, gives a tiny cute body bounce, softly raises one hand in a small wave, then shifts one foot forward with a playful toy-like movement. Add subtle breathing and natural micro-movements, but keep the motion simple, smooth, polished, and collectible-toy-like. Camera slowly pushes in from full-body to medium close-up with soft studio lighting. No redesign, no new accessories, no text, no logo, no watermark, no background change, no face distortion, no extra fingers, no body deformation. Duration:5-7seconds.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 4991,
+        "savedCount": 1676
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FDollhouse_Icon%2FAnimate_reference_image_floating…_202605172329_converted.mp4?alt=media&token=180bb276-8c45-4c7d-bdfc-aa68bd8b405e",
+        "videoPrompt": "Animate the provided reference image only, keeping the face and overall look unchanged. Show one perfectly frontal, centered floating head on a pure white studio background. Start completely still, then add a slow elegant hover, gentle blinking, a tiny eye-focus shift toward the camera, a soft micro-smile, a very subtle head tilt, and a smooth return to center. Add delicate hair sway and soft moving reflections across the face, lips, and eyes to create a premium glossy beauty-shot feel. Camera performs a slow clean push-in with minimal luxury editorial motion. Keep the movement soft, polished, graceful, and high-end. No neck, no shoulders, no torso, no clothing, no extra props, no text, no logo, no watermark, no background change, no face distortion, no body deformation.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 3569,
+        "savedCount": 968
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FThe_Plastic_Edit%2F3D_caricature_avatar_bust_animation_202605172340_converted.mp4?alt=media&token=4852da38-b632-4cfd-9189-b4e84ffa494f",
+        "videoPrompt": "Animate the uploaded reference image as a premium hyper-stylized 3D caricature avatar bust, keeping the identity recognizable and the bust composition unchanged. Show only the head, elongated neck, and upper shoulders on a smooth pastel pink platform against a matching pastel pink background with vivid pink 8-point starburst graphics. Start with a confident still pose, then add a slow elegant hover, gentle blinking, a subtle eye-focus shift toward the camera, a soft self-assured smile or slightly defiant expression change, a tiny head tilt, and a smooth return to the main pose. Add delicate micro-movements in the lips, brows, earrings, glasses, hair, or accessories if present, along with subtle shifting reflections across the sculpted surfaces to enhance the premium plasticine-like 3D feel. Camera begins in a frontal or slight 3/4 composition and performs a slow cinematic push-in with a subtle wide-angle lens feel to enhance the artistic exaggeration. Motion must feel polished, editorial, playful, luxurious, and collectible-art-like, not realistic human movement. Keep the pastel pink platform and background fixed and clean. No full body, no torso, no extra limbs, no text, no logo, no watermark, no background clutter, no face distortion, no body deformation.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 5104,
+        "savedCount": 418
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FMidnight_Dollface%2F3D_caricature_avatar_bust_animation_202605172354_converted.mp4?alt=media&token=54f26ce9-beea-4502-b45d-626406138311",
+        "videoPrompt": "Animate the uploaded reference image as a premium hyper-stylized 3D caricature avatar bust, keeping the identity recognizable and the bust composition unchanged. Show only the head, elongated neck, and upper shoulders on a smooth pastel pink platform against a matching pastel pink background with vivid pink 8-point starburst graphics. Start with a confident still pose, then add a slow elegant hover, gentle blinking, a subtle eye-focus shift toward the camera, a soft self-assured smile or slightly defiant expression change, a tiny head tilt, and a smooth return to the main pose. Add delicate micro-movements in the lips, brows, earrings, glasses, hair, or accessories if present, along with subtle shifting reflections across the sculpted surfaces to enhance the premium plasticine-like 3D feel. Camera begins in a frontal or slight 3/4 composition and performs a slow cinematic push-in with a subtle wide-angle lens feel to enhance the artistic exaggeration. Motion must feel polished, editorial, playful, luxurious, and collectible-art-like, not realistic human movement. Keep the pastel pink platform and background fixed and clean. No full body, no torso, no extra limbs, no text, no logo, no watermark, no background clutter, no face distortion, no body deformation.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 9512,
+        "savedCount": 1253
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FBubble_Pop_Muse%2F3D_caricature_avatar_bust_animation_202605180002_converted.mp4?alt=media&token=2b3462a2-64a4-4c44-b829-bfd782069189",
+        "videoPrompt": "Animate the uploaded reference image as a premium hyper-stylized 3D caricature avatar bust, keeping the identity recognizable and the bust composition unchanged. Show only the head, elongated neck, and upper shoulders on a smooth pastel pink platform against a matching pastel pink background with vivid pink 8-point starburst graphics. Start with a confident still pose, then add a slow elegant hover, gentle blinking, a subtle eye-focus shift toward the camera, a soft self-assured smile or slightly defiant expression change, a tiny head tilt, and a smooth return to the main pose. Add delicate micro-movements in the lips, brows, earrings, glasses, hair, or accessories if present, along with subtle shifting reflections across the sculpted surfaces to enhance the premium plasticine-like 3D feel. Camera begins in a frontal or slight 3/4 composition and performs a slow cinematic push-in with a subtle wide-angle lens feel to enhance the artistic exaggeration. Motion must feel polished, editorial, playful, luxurious, and collectible-art-like, not realistic human movement. Keep the pastel pink platform and background fixed and clean. No full body, no torso, no extra limbs, no text, no logo, no watermark, no background clutter, no face distortion, no body deformation.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 9798,
+        "savedCount": 719
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2F3D_Vinyl_Toy_cartoon%2FAnimate_reference_image_studio_b…_202605180010_converted.mp4?alt=media&token=1130c076-8c5d-4fd7-8288-6c9dc74d1910",
+        "videoPrompt": "Animate the provided reference image only, keeping the face, hairstyle, headphones, rings, face decals, accessories, colors, and overall look unchanged. Show a centered front-facing head-and-shoulders composition against the same vibrant orange studio background. Start with a cool still pose, then add gentle blinking, a tiny eye-focus shift toward the camera, a subtle mischievous smirk, a small brow lift, and a slow confident head tilt before returning to center. Add light shoulder movement, soft breathing, tiny rhythmic bounce, and minimal natural movement in the headphones, jewelry, and accessories. Add shifting glossy reflections across the skin, lips, headphones, rings, and decals to enhance the premium 3D vinyl-toy feel. Camera slowly pushes in from a clean head-and-shoulders shot to a tighter close-up with smooth editorial motion. Keep the animation stylish, playful, confident, polished, and toy-like. No full body, no extra limbs, no text, no logo, no watermark, no background change, no face distortion, no accessory deformation, no body deformation.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 7633,
+        "savedCount": 1117
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/categories%2FHyperFace AI%2FNeon_Avatar%2FAnimate_reference_image_face_unc…_202605180023_converted.mp4?alt=media&token=49964131-8937-493b-a8e5-8b1e459d234f",
+        "videoPrompt": "Animate the provided reference image only, keeping the face, hairstyle, visor glasses, earrings, makeup accents, neon stickers, colors, and overall look unchanged. Show a perfectly centered head-and-upper-shoulders composition against the same vibrant turquoise studio background. Start with a calm futuristic pose, then add gentle blinking, a tiny eye-focus shift toward the camera, a subtle confident smirk, a soft brow lift, and a slow stylish head tilt before smoothly returning to center. Add subtle breathing, light shoulder movement, and a tiny polished toy-like bounce. Make the transparent visor catch soft moving reflections, add delicate shimmer on the metallic earrings, and create subtle glowing pulses in the makeup accents and neon face stickers. Camera slowly pushes in from head-and-shoulders to a tighter close-up with smooth cyberpunk beauty-shot motion. Keep the animation glossy, premium, futuristic, stylish, and collectible-toy-like. No full body, no extra limbs, no text, no logo, no watermark, no background change, no face distortion, no visor deformation, no accessory deformation, no body deformation.",
+        "imagePrompt": "",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "HyperFace AI",
+        "likesCount": 5598,
+        "savedCount": 1367
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/Braodcast%2Fgrok-video-6691ce10-4f01-4fde-802d-29a8ab40e151.mp4?alt=media&token=a654534f-84a8-46b0-9aa9-67d20d0d2142",
+        "videoPrompt": "A realistic documentary-style video shot in the stands of a Korean professional baseball game...",
+        "imagePrompt": "Create a realistic sports TV broadcast screenshot captured in the spectator stands of a Korean KBO baseball game...",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "Live Broadcast",
+        "likesCount": 7731,
+        "savedCount": 228
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/Braodcast%2Fgrok-video-dfba9a3a-c2d3-40c1-b9da-df1f73fdf677.mp4?alt=media&token=99ad5bd5-7323-4e34-89e6-2ec3f0c791f5",
+        "videoPrompt": "Ultra-realistic live English Premier League broadcast shot inside a packed stadium...",
+        "imagePrompt": "Create a realistic sports TV broadcast screenshot captured in the spectator stands during a live English Premier League football match...",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "Live Broadcast",
+        "likesCount": 9152,
+        "savedCount": 524
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/Braodcast%2Fgrok-video-c30f7080-7933-4a60-b961-3e42f7052919.mp4?alt=media&token=a0cc82a7-c6f0-4bc4-8ef0-cce1f4c6799d",
+        "videoPrompt": "Ultra-realistic live NFL Super Bowl broadcast shot inside a packed stadium...",
+        "imagePrompt": "Create a realistic NFL Super Bowl live broadcast screenshot captured in the spectator stands of a packed stadium...",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "Live Broadcast",
+        "likesCount": 4771,
+        "savedCount": 597
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/Braodcast%2Fgrok-video-273de986-dcc1-4455-a7d9-943a27cfa90a.mp4?alt=media&token=df471f57-da6d-4fa3-985f-03da31e51a45",
+        "videoPrompt": "Animate this ultra-realistic live motorsport paddock broadcast image into a natural, realistic video...",
+        "imagePrompt": "Ultra-realistic F1 live TV broadcast screenshot, identity preserved exactly from reference image...",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "Live Broadcast",
+        "likesCount": 2931,
+        "savedCount": 842
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FBrazil_supporter_dancing_with_flag_202606231518.mp4?alt=media&token=857b7f4a-2693-48c6-bb5e-c07e16d4ab60",
+        "videoPrompt": "Create a short cinematic stadium animation of a Brazil supporter. The person dances with joyful samba-inspired movement while lifting a large Brazil flag above their head. The crowd pulses with festive energy, flags ripple strongly, and yellow-green colors glow under bright stadium lights. Add natural body swaying, quick celebratory gestures, and a candid crowd-shot feel like it was filmed on a phone. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Brazil supporter and come alive in a short stadium video. You dance joyfully while waving a large Brazil flag above your head. Wearing a vibrant yellow-and-green crop top with a tiny Brazil flag painted on your cheek. The crowd pulses with samba energy, drums beating in the background as supporters celebrate around you. Bright festive atmosphere, natural dancing motion, fluttering flag, candid phone-camera capture from inside the crowd. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 4955,
+        "savedCount": 1404
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FCreate_a_short_cinematic_stadium_202606231524.mp4?alt=media&token=f0c46f46-4904-479f-817c-be3406c9d5bc",
+        "videoPrompt": "Create a short cinematic stadium animation of an Argentina supporter. The person waves a giant Argentina flag while lightly bouncing to chant rhythms, with subtle shoulder sways and expressive crowd energy around them. Sky-blue and white confetti drifts through the air, scarves wave behind them, and the flag fabric flutters naturally in the wind. Handheld phone-camera feel, realistic stadium lighting, emotional football atmosphere, lively but natural motion. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an Argentina supporter and come alive in a short stadium video. You proudly wave a giant Argentina flag while singing with thousands of fans. Wearing a sky-blue-and-white striped supporter crop top, a tiny Argentina flag painted on your cheek. Confetti drifts through the air as you bounce to the rhythm of football chants. The crowd behind you moves as one in a sea of blue and white. Authentic stadium atmosphere, emotional World Cup passion, handheld phone-camera feel, soft natural movement and fluttering fabric. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 2252,
+        "savedCount": 307
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2Fgrok-video-d5dbf20a-7a4e-4583-a8a9-dba55a68fd79.mp4?alt=media&token=a5810a5e-774d-43c4-88e7-e0882f48585d",
+        "videoPrompt": "Create a short cinematic stadium animation of a France supporter. The person raises the French flag like a cape, then gently sways while chanting with the crowd. Add soft blue smoke in the background, rhythmic clapping fans, and a polished European stadium atmosphere. The flag should flutter realistically, and the camera should feel like a handheld clip captured in the stands. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a France supporter and come alive in a short stadium video. You hold the French flag over your shoulders like a cape while singing victory chants. Wearing a stylish blue supporter crop top with tricolor accents and a tiny French flag painted on your cheek. Blue smoke flares softly illuminate the crowd while fans clap rhythmically around you. Elegant European football atmosphere, realistic handheld recording, subtle movement and stadium energy. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 3826,
+        "savedCount": 1108
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FEngland_supporter_waving_flag_ce%E2%80%A6_202606231421.mp4?alt=media&token=ecff6717-f62e-46d9-acd6-c6e5465aca4b",
+        "videoPrompt": "Create a short cinematic stadium animation of an England supporter. The person waves a St. George’s Cross flag overhead while chanting and lightly pumping a fist in celebration. Surround the scene with scarf-waving fans, intense football crowd reactions, and a classic English stadium atmosphere. Add natural flag movement, small shoulder bounces, and realistic phone-camera framing. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an England supporter and come alive in a short stadium video. You raise a St. George's Cross flag high while chanting with passionate supporters. Wearing a white crop top with red accents and a tiny England flag painted on your cheek. The crowd erupts in synchronized football chants and scarf-waving traditions. Authentic British football atmosphere, lively crowd reactions, natural phone-camera footage, realistic movement. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 3957,
+        "savedCount": 789
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FGermany_supporter_waving_flag_202606231610.mp4?alt=media&token=1625f0af-e7b4-4bfe-b7e3-aa6d995e47e4",
+        "videoPrompt": "Create a short cinematic stadium animation of a Germany supporter. The person stands confidently while waving a black, red, and gold flag with strong, steady movements. Fans behind them chant in unison, scarves rise and fall together, and the stadium has a powerful organized-energy feel. Add realistic fabric flutter, subtle celebratory motions, and handheld crowd-video realism. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Germany supporter and come alive in a short stadium video. You wave a massive black-red-and-gold flag while celebrating with disciplined, energetic supporters. Wearing a sleek supporter crop top featuring Germany's national colors and a tiny German flag painted on your cheek. Fans raise coordinated scarves and chant in unison around you. Premium stadium atmosphere, strong football tradition, realistic handheld crowd footage. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 9198,
+        "savedCount": 1105
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FPortugal_supporter_waving_flag_202606231536.mp4?alt=media&token=4faa58d5-12ec-4464-bec3-636bb3906851",
+        "videoPrompt": "Create a short cinematic stadium animation of a Portugal supporter. The person holds the Portugal flag high while singing along with the crowd and making small celebratory gestures. Add emotional supporter energy, waving scarves, and a proud stadium atmosphere with red and green tones. The camera should feel handheld and close, with natural movement and realistic flag flutter. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Portugal supporter and come alive in a short stadium video. You proudly hold the Portuguese flag while joining a chorus of supporters singing together. Wearing a green-and-red crop top and a tiny Portugal flag painted on your cheek. The atmosphere feels emotional and celebratory, with fans raising scarves and phones in the air. Authentic Portuguese football passion, realistic crowd movement and handheld video feel. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 7338,
+        "savedCount": 849
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FNetherlands_supporter_waving_Dut%E2%80%A6_202606231540.mp4?alt=media&token=74532537-331c-45e8-8935-8a9dc43d30a8",
+        "videoPrompt": "Create a short cinematic stadium animation of a Netherlands supporter. The person stands in a sea of orange and waves a Dutch flag with upbeat, energetic motion. Add orange confetti, jumping supporters, and a festive stadium atmosphere that feels loud and alive. Include natural swaying, flag flutter, and a spontaneous phone-recorded crowd-shot look. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Netherlands supporter and come alive in a short stadium video. You stand among a sea of bright orange supporters, waving a Dutch flag enthusiastically. Wearing an eye-catching orange crop top and a tiny Netherlands flag painted on your cheek. Orange confetti fills the air while fans jump and celebrate around you. Iconic Dutch fan culture, festive atmosphere, natural phone-camera footage with lively crowd motion. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 4776,
+        "savedCount": 1695
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FUS_supporter_waves_American_flag_202606221605.mp4?alt=media&token=3b8c88fa-1a02-4baf-b864-e716bf938b99",
+        "videoPrompt": "Create a short cinematic stadium animation of an Italy supporter. The person raises the Italian flag and celebrates with elegant, expressive movements while the crowd sings behind them. Add a cinematic blue-and-tricolor stadium glow, fluttering scarves, and emotional football pride. Use subtle natural body motion and a realistic handheld fan-video feel. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an Italy supporter and come alive in a short stadium video. You wave the Italian tricolor while celebrating with expressive supporters. Wearing a stylish blue supporter crop top inspired by the Azzurri and a tiny Italy flag painted on your cheek. Fans sing passionately while stadium lights create a cinematic glow. Elegant football culture, emotional crowd atmosphere, realistic handheld recording. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 5796,
+        "savedCount": 1019
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FCroatia_supporter_waves_flag_202606221609.mp4?alt=media&token=4c48e679-d31f-4fda-b050-fcc3085f841b",
+        "videoPrompt": "Create a short cinematic stadium animation of a Croatia supporter. The person waves the Croatian flag while bouncing in place with the crowd, surrounded by iconic red-and-white checkerboard visuals. Add energetic fan jumping, loud chanting, and strong fabric movement in the flag and outfit. The style should feel like a real celebratory clip filmed on a phone in the stands. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Croatia supporter and come alive in a short stadium video. You proudly wave the Croatian flag while surrounded by supporters wearing iconic red-and-white checkerboard patterns. Wearing a matching checkerboard crop top and a tiny Croatia flag painted on your cheek. The crowd jumps in celebration, creating an electric atmosphere. Authentic Balkan football passion, candid phone-camera footage, natural movement. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 4485,
+        "savedCount": 931
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FMorocco_supporter_waves_flag_202606231546.mp4?alt=media&token=0cb6003a-970c-45fa-af11-f1483de8dee2",
+        "videoPrompt": "Create a short cinematic stadium animation of a Morocco supporter. The person waves a Moroccan flag proudly while the crowd chants and claps around them. Add strong red-green visual energy, subtle drum-like rhythm in the atmosphere, and flowing flag motion under bright stadium lights. Keep the movement natural, emotional, and handheld, like a real fan video. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Morocco supporter and come alive in a short stadium video. You wave a large Moroccan flag while celebrating among a passionate sea of red supporters. Wearing a red crop top with green accents and a tiny Morocco flag painted on your cheek. Traditional drums and chants echo through the stadium as fans celebrate together. Powerful crowd energy, authentic North African football atmosphere, realistic smartphone footage. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 3190,
+        "savedCount": 836
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FJapan_supporter_with_flag_202606231554.mp4?alt=media&token=54ab0ad2-a112-4b8c-8997-ab07e1a3d0b4",
+        "videoPrompt": "Create a short cinematic stadium animation of a Japan supporter. The person holds the Japan flag neatly and moves with calm, organized fan energy while the crowd chants in rhythm. Add coordinated waving in the background, clean stadium lighting, and a respectful but exciting football atmosphere. The camera should feel like a real candid clip with gentle motion and realistic flag flutter. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Japan supporter and come alive in a short stadium video. You proudly hold the Japanese flag while joining organized supporter chants. Wearing a blue Samurai Blue supporter crop top and a tiny Japan flag painted on your cheek. Fans wave coordinated flags and banners in perfect rhythm around you. Clean, respectful fan culture, energetic but organized stadium atmosphere, realistic handheld recording. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 8093,
+        "savedCount": 479
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FMexico_supporter_celebrating_wit%E2%80%A6_202606231510%20(1)%20(1).mp4?alt=media&token=09f19cac-a661-4ab3-9c6c-4e55f14cf78c",
+        "videoPrompt": "Create a short cinematic stadium animation of a South Korea supporter. The person cheers enthusiastically with strong rhythmic movement, clapping and swaying with the crowd. Add bright red supporter energy, waving banners, and lively stadium motion with a powerful fan-section feel. The video should look handheld and spontaneous, with fluttering fabric and natural crowd reactions. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a South Korea supporter and come alive in a short stadium video. You cheer enthusiastically with a large South Korea flag, joining the famous Red Devils supporter atmosphere. Wearing a bright red crop top and a tiny South Korea flag painted on your cheek. Fans clap rhythmically and chant together while waving illuminated light sticks. Dynamic crowd energy, vibrant football culture, natural phone-camera footage. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 6049,
+        "savedCount": 1315
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FUS_supporter_waves_American_flag_202606221605.mp4?alt=media&token=3b8c88fa-1a02-4baf-b864-e716bf938b99",
+        "videoPrompt": "Create a short cinematic stadium animation of a Mexico supporter. The person lifts the Mexico flag high while jumping lightly and celebrating with passionate crowd energy. Add green-white-red confetti, loud chants, and a festive stadium atmosphere full of motion and color. The camera should feel like a close phone recording from inside the crowd, with natural flag flutter and lively gestures. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Mexico supporter and come alive in a short stadium video. You celebrate with a giant Mexican flag while joining the famous football chants of El Tri supporters. Wearing a green supporter crop top and a tiny Mexico flag painted on your cheek. Green, white and red confetti fills the air while the crowd jumps and sings around you. Festive Latin football atmosphere, energetic movement, realistic smartphone video feel. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 6091,
+        "savedCount": 1270
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FUS_supporter_waves_American_flag_202606221605.mp4?alt=media&token=3b8c88fa-1a02-4baf-b864-e716bf938b99",
+        "videoPrompt": "Create a short cinematic stadium animation of a United States supporter. The person waves a large American flag while cheering with confident, high-energy movement. Add dramatic stadium lighting, crowd phones raised in the background, and a bold sports-arena atmosphere. Use natural swaying, realistic fabric motion, and a candid handheld feel like a live fan clip. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a United States supporter and come alive in a short stadium video. You wave a large American flag while celebrating in a packed modern stadium. Wearing a red-white-and-blue supporter crop top and a tiny USA flag painted on your cheek. Fans hold scarves overhead, phones recording the moment as stadium lights flash dramatically. High-energy sports atmosphere, realistic crowd reactions, candid handheld footage. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 2907,
+        "savedCount": 630
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FBelgium_supporter_waves_flag_cel%E2%80%A6_202606231602.mp4?alt=media&token=b9a62f0f-2fa6-4387-b8a5-68b164c9d5f4",
+        "videoPrompt": "Create a short cinematic stadium animation of a Belgium supporter. The person waves the Belgian flag while celebrating among fans dressed in black, red, and gold. Add strong crowd chanting, scarf movement, and small celebratory gestures with a lively European football feeling. Make the clip look like a real phone video from the stands with realistic motion and fluttering fabric. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Belgium supporter and come alive in a short stadium video. You wave the Belgian flag while surrounded by supporters dressed in black, red and gold. Wearing a matching supporter crop top and a tiny Belgium flag painted on your cheek. Fans sing loudly and celebrate with colorful smoke and scarves. Energetic European football atmosphere, realistic phone-camera recording, natural crowd movement. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 8974,
+        "savedCount": 808
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FAustralia_supporter_waving_flag_202606231428.mp4?alt=media&token=9365eebf-836f-46c3-a364-8c49e5f77999",
+        "videoPrompt": "Create a short cinematic stadium animation of an Australia supporter. The person cheers energetically while waving the Australian flag with relaxed but excited movement. Add green-and-gold crowd energy, light jumping motion, and a fun, upbeat stadium atmosphere. Keep the motion natural and the footage looking like a spontaneous handheld fan video. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become an Australia supporter and come alive in a short stadium video. You enthusiastically wave the Australian flag while surrounded by green-and-gold supporters. Wearing a green-and-gold crop top and a tiny Australia flag painted on your cheek. Fans bounce together and celebrate with infectious energy. Relaxed yet passionate football culture, realistic handheld crowd footage, lively stadium atmosphere. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 5184,
+        "savedCount": 226
+    },
+    {
+        "videoUrl": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/World%20cup%20supporters%2FCanada_supporter_waving_flag_cel%E2%80%A6_202606231607.mp4?alt=media&token=8488b578-dce5-44c4-8c70-e4679108720c",
+        "videoPrompt": "Create a short cinematic stadium animation of a Canada supporter. The person waves a Canadian flag while celebrating with calm but proud energy among red-and-white fans. Add maple-leaf banners, gentle bouncing motion, and a warm, friendly stadium atmosphere. The flag should move naturally, with a candid phone-shot feel and realistic crowd motion. Keep the face, hair, and identity exactly matching the reference photo.",
+        "imagePrompt": "Become a Canada supporter and come alive in a short stadium video. You wave a large Canadian flag while cheering alongside a sea of red-and-white supporters. Wearing a stylish red-and-white crop top and a tiny Canada flag painted on your cheek. Maple leaf banners wave throughout the crowd as fans celebrate together. Friendly but passionate football atmosphere, natural movement, candid phone-camera feel. Your face, hair and features stay exactly as in your photo.",
+        "imageEdit": true,
+        "type": "image",
+        "isEditable": true,
+        "category": "World Cup Supporters",
+        "likesCount": 1805,
+        "savedCount": 1281
     }
 ]
