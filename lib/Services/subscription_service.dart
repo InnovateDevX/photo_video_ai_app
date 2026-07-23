@@ -542,38 +542,18 @@ class SubscriptionService {
     }
   }
 
-  /// Reports a completed (or restored) purchase to Adjust for subscription
-  /// attribution. This is purely an analytics side-effect — failures here
-  /// must never block or interrupt the purchase-completion flow, which is
-  /// why every failure path is caught and only logged.
-  ///
-  /// Looks up the matching cached [ProductDetails] from [_products] (populated
-  /// by [loadProducts]) to pull the base pricing phase used for the Adjust
-  /// subscription event.
   /// Reports a completed purchase to Adjust for subscription attribution.
   /// Non-fatal — Adjust tracking failures must never block the purchase flow.
   void _trackPurchaseWithAdjust(PurchaseDetails purchaseDetails) {
     try {
       final productId = purchaseDetails.productID;
-      final productDetails = _products[productId];
-
-      if (productDetails == null) {
-        debugPrint(
-          '⚠️ [SubscriptionService] Adjust tracking skipped — no cached '
-          'ProductDetails for $productId.',
-        );
-        return;
-      }
 
       // Cast generic Flutter In-App Purchase details to Google Play native types
       final googlePurchase = purchaseDetails as GooglePlayPurchaseDetails;
-      final googleProduct = productDetails as GooglePlayProductDetails;
 
-      // Extract base pricing phase details
-      final subscriptionOfferDetails =
-          googleProduct.productDetails.subscriptionOfferDetails;
-      final basePhase =
-          subscriptionOfferDetails?.firstOrNull?.pricingPhases.firstOrNull;
+      // Look up the exact offer that was cached/selected for this specific purchase
+      final selectedOffer = _selectedOffers[productId];
+      final basePhase = selectedOffer?.pricingPhases.firstOrNull;
 
       if (basePhase == null) {
         debugPrint(
@@ -583,8 +563,11 @@ class SubscriptionService {
         return;
       }
 
+      // CRITICAL FIX: Convert micros to standard decimal price format (e.g. 1990000 -> "1.99")
+      final priceString = (basePhase.priceAmountMicros / 1000000.0).toString();
+
       final subscription = AdjustPlayStoreSubscription(
-        basePhase.priceAmountMicros.toString(),
+        priceString,
         basePhase.priceCurrencyCode,
         productId,
         googlePurchase.billingClientPurchase.orderId,
@@ -598,9 +581,10 @@ class SubscriptionService {
           .toString();
 
       Adjust.trackPlayStoreSubscription(subscription);
+
       debugPrint(
         '🛒 [SubscriptionService] Adjust tracked Play Store subscription '
-        'for product: $productId',
+        'for product: $productId (Recorded Price: $priceString)',
       );
     } catch (e) {
       debugPrint('⚠️ [SubscriptionService] Adjust IAP tracking exception: $e');

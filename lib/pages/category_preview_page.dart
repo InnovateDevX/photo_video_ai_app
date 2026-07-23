@@ -346,13 +346,13 @@ class _PreviewPageItemState extends State<_PreviewPageItem> {
                   videoUrl: videoUrl!,
                   seamlessLoop: true,
                   mute: false,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   alignment: Alignment.center,
                   placeholder: (imageUrl != null && imageUrl!.isNotEmpty)
                       ? SizedBox.expand(
                           child: FirebaseImage(
                             url: imageUrl!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             alignment: Alignment.center,
                             isDark: isDark,
                           ),

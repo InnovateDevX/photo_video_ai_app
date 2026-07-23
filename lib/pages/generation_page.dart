@@ -98,7 +98,10 @@ class GenerationPageState extends State<GenerationPage> {
   bool _isGenerating = false;
   String? _generatedImageUrl;
   String? _generatedVideoUrl;
+  String? _previousImageUrl;
+  String? _previousVideoUrl;
   bool _isResultFromGeneration = false;
+  bool _showFullScreenPreview = false;
 
   bool _isNsfw = false;
   bool? _isLiked;
@@ -212,7 +215,7 @@ class GenerationPageState extends State<GenerationPage> {
   late String _selectedCategory; // 'image' or 'video'
   String _selectedIcon = 'image'; // 'add', 'settings', 'edit', 'image', 'video'
   AIModelConfig? _selectedModel;
-  String _selectedAspectRatio = '16:9';
+  String _selectedAspectRatio = '9:16';
   String _selectedDuration = '5s';
   String _selectedResolution = '720p';
   bool _enhancePrompt = false;
@@ -403,14 +406,17 @@ class GenerationPageState extends State<GenerationPage> {
       }
     }
     if (options.hasAspectRatios) {
-      if (!options.aspectRatios.contains(_selectedAspectRatio)) {
+      if (options.aspectRatios.contains('9:16')) {
+        _selectedAspectRatio = '9:16';
+      } else if (!options.aspectRatios.contains(_selectedAspectRatio)) {
+        final fallback = options.aspectRatios.first;
         debugPrint(
           '🔄 [GenerationPage] aspect_ratio "$_selectedAspectRatio" not in '
-          '${model.name} options; switching to "${options.aspectRatios.first}".',
+          '${model.name} options; switching to "$fallback".',
         );
-        _selectedAspectRatio = options.aspectRatios.first;
+        _selectedAspectRatio = fallback;
       }
-    } else if (_selectedModel!.supportsAspectRatio == false &&
+    } else if (model.supportsAspectRatio == false &&
         _selectedAspectRatio.isNotEmpty) {
       // Model doesn't expose aspect_ratio options AND its template doesn't
       // use {{aspect_ratio}} either. Drop the local default to avoid
@@ -582,6 +588,8 @@ class GenerationPageState extends State<GenerationPage> {
       _isGenerating = true;
       _isNsfw = false;
       _isLiked = null;
+      _previousImageUrl = _generatedImageUrl;
+      _previousVideoUrl = _generatedVideoUrl;
       if (_selectedCategory == 'image') {
         _generatedImageUrl = null;
       } else {
@@ -591,185 +599,7 @@ class GenerationPageState extends State<GenerationPage> {
 
     if (!mounted) return;
 
-    // ── 3. Background Activity Prompt (Video only) ──────────────────────────
-    bool runInBackground = false;
-    if (_selectedCategory == 'video') {
-      final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-      runInBackground =
-          await showDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) {
-              final sw = MediaQuery.of(context).size.width;
-              final sh = MediaQuery.of(context).size.height;
-              return Dialog(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: Container(
-                  padding: EdgeInsets.all(sw * 0.06),
-                  decoration: BoxDecoration(
-                    color: AppColors.tileBackgroundColor(isDark),
-                    borderRadius: BorderRadius.circular(
-                      MediaQuery.of(context).size.width * 0.06,
-                    ),
-                    border: Border.all(
-                      color: AppColors.creditsCardBorder(isDark),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icon Header
-                      Container(
-                        padding: EdgeInsets.all(sw * 0.04),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF9800).withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.auto_awesome_motion_rounded,
-                          color: const Color(0xFFFF9800),
-                          size: sw * 0.08,
-                        ),
-                      ),
-                      SizedBox(height: sh * 0.025),
-
-                      // Title
-                      Text(
-                        'Generating',
-                        style: TextStyle(
-                          color: AppColors.textColor(isDark),
-                          fontSize: sw * 0.055,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: sh * 0.015),
-
-                      // Description
-                      Text(
-                        'Video generation usually takes 1-3 minutes. You can wait here or continue using the app while it runs in the background. We will notify you when it is ready.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.secondaryTextColor(isDark),
-                          fontSize: sw * 0.035,
-                          height: 1.5,
-                        ),
-                      ),
-                      SizedBox(height: sh * 0.04),
-
-                      // Actions
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Run in Background (Primary)
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context, true),
-                            child: Container(
-                              height: sh * 0.065,
-                              decoration: ProGradientDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  MediaQuery.of(context).size.width * 0.04,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Run in Background',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: sw * 0.04,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.015,
-                          ),
-
-                          // Wait Here (Secondary)
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                vertical: sh * 0.015,
-                              ),
-                            ),
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text(
-                              'Wait Here',
-                              style: TextStyle(
-                                color: AppColors.secondaryTextColor(isDark),
-                                fontWeight: FontWeight.w600,
-                                fontSize: sw * 0.038,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ) ??
-          false;
-    }
-
-    if (runInBackground) {
-      int? width;
-      int? height;
-      String? aspectRatio;
-
-      if (_selectedModel!.supportsAspectRatio ||
-          _selectedModel!.supportsDimensions) {
-        aspectRatio = _selectedAspectRatio;
-      }
-
-      final Map<String, dynamic> extraVariables = {};
-      if (_selectedCategory == 'video') {
-        final durInt = int.tryParse(_selectedDuration.replaceAll('s', ''));
-        if (durInt != null) extraVariables['duration'] = durInt;
-        extraVariables['resolution'] = _selectedResolution;
-      }
-
-      // Deduct credits immediately
-      _creditService.deductCredits(_effectiveCreditCost);
-
-      if (mounted) {
-        setState(() => _isGenerating = false);
-        showThemedDialog(
-          context,
-          title: 'Started',
-          message: 'Generation started in background. Credits deducted.',
-          icon: Icons.info_outline,
-          iconColor: Colors.blue,
-        );
-        Navigator.pop(context); // Exit page
-      }
-
-      BackgroundGenerationService().startBackgroundGeneration(
-        creditCost: _effectiveCreditCost,
-        category: _selectedCategory,
-        modelConfig: _selectedModel!,
-        prompt: prompt,
-        aspectRatio: aspectRatio,
-        width: width,
-        height: height,
-        referenceImage: _selectedImages.isNotEmpty ? _selectedImages.first : null,
-        images: _selectedImages.isNotEmpty ? _selectedImages : null,
-        extraVariables: extraVariables,
-      );
-      return;
-    }
 
     // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
@@ -789,7 +619,9 @@ class GenerationPageState extends State<GenerationPage> {
         aspectRatio: aspectRatio,
         width: width,
         height: height,
-        referenceImage: _selectedImages.isNotEmpty ? _selectedImages.first : null,
+        referenceImage: _selectedImages.isNotEmpty
+            ? _selectedImages.first
+            : null,
         images: _selectedImages.isNotEmpty ? _selectedImages : null,
         extraVariables: _selectedCategory == 'video'
             ? {
@@ -829,6 +661,10 @@ class GenerationPageState extends State<GenerationPage> {
       if (mounted) {
         if (_isCancelled) {
           _isCancelled = false;
+          setState(() {
+            _generatedImageUrl = _previousImageUrl;
+            _generatedVideoUrl = _previousVideoUrl;
+          });
           return;
         }
         if (e is NsfwContentException) {
@@ -837,12 +673,21 @@ class GenerationPageState extends State<GenerationPage> {
               _generatedImageUrl = e.url;
               _isNsfw = true;
             });
+          } else {
+            setState(() {
+              _generatedImageUrl = _previousImageUrl;
+              _generatedVideoUrl = _previousVideoUrl;
+            });
           }
           ErrorDialogHelper.showRestrictedContentDialog(
             context,
             messageKey: e.messageKey,
           );
         } else {
+          setState(() {
+            _generatedImageUrl = _previousImageUrl;
+            _generatedVideoUrl = _previousVideoUrl;
+          });
           ErrorDialogHelper.showErrorDialog(
             context,
             title: 'Something went wrong',
@@ -937,173 +782,15 @@ class GenerationPageState extends State<GenerationPage> {
       _selectedCategory = 'video';
       _isGenerating = true;
       _isNsfw = false;
+      _previousImageUrl = _generatedImageUrl;
+      _previousVideoUrl = _generatedVideoUrl;
       _generatedImageUrl = null;
       _generatedVideoUrl = null;
     });
 
     if (!mounted) return;
 
-    // ── 3. Background Activity Prompt ──────────────────────────────────────────
-    bool runInBackground = false;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    runInBackground =
-        await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) {
-            final sw = MediaQuery.of(context).size.width;
-            final sh = MediaQuery.of(context).size.height;
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Container(
-                padding: EdgeInsets.all(sw * 0.06),
-                decoration: BoxDecoration(
-                  color: AppColors.tileBackgroundColor(isDark),
-                  borderRadius: BorderRadius.circular(
-                    MediaQuery.of(context).size.width * 0.06,
-                  ),
-                  border: Border.all(
-                    color: AppColors.creditsCardBorder(isDark),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Icon Header
-                    Container(
-                      padding: EdgeInsets.all(sw * 0.04),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800).withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.auto_awesome_motion_rounded,
-                        color: const Color(0xFFFF9800),
-                        size: sw * 0.08,
-                      ),
-                    ),
-                    SizedBox(height: sh * 0.025),
-
-                    // Title
-                    Text(
-                      'Generating',
-                      style: TextStyle(
-                        color: AppColors.textColor(isDark),
-                        fontSize: sw * 0.055,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: sh * 0.015),
-
-                    // Description
-                    Text(
-                      'Template generation involves multiple AI stages and may take 2-4 minutes. You can wait here or continue using the app.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.secondaryTextColor(isDark),
-                        fontSize: sw * 0.035,
-                        height: 1.5,
-                      ),
-                    ),
-                    SizedBox(height: sh * 0.04),
-
-                    // Actions
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Run in Background (Primary)
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context, true),
-                          child: Container(
-                            height: sh * 0.065,
-                            decoration: ProGradientDecoration(
-                              borderRadius: BorderRadius.circular(
-                                MediaQuery.of(context).size.width * 0.04,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Run in Background',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: sw * 0.04,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.015,
-                        ),
-
-                        // Wait Here (Secondary)
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: sh * 0.015),
-                          ),
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(
-                            'Wait Here',
-                            style: TextStyle(
-                              color: AppColors.secondaryTextColor(isDark),
-                              fontWeight: FontWeight.w600,
-                              fontSize: sw * 0.038,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ) ??
-        false;
-
-    if (!mounted) return;
-
-    if (runInBackground) {
-      // Deduct credits immediately
-      _creditService.deductCredits(totalCost);
-
-      if (mounted) {
-        setState(() => _isGenerating = false);
-        showThemedDialog(
-          context,
-          title: 'Started',
-          message:
-              'Two-stage generation started in background. Credits deducted.',
-          icon: Icons.info_outline,
-          iconColor: Colors.blue,
-        );
-        Navigator.pop(context); // Exit page
-      }
-
-      BackgroundGenerationService().startTwoStageBackgroundGeneration(
-        creditCost: totalCost,
-        imageModel: imageModel,
-        videoModel: videoModel,
-        imagePrompt: actualImagePrompt,
-        videoPrompt: actualVideoPrompt,
-        referenceImage: _selectedImages.isNotEmpty
-            ? _selectedImages.first
-            : null,
-        aspectRatio: _selectedAspectRatio,
-      );
-      return;
-    }
 
     // ── 4. Local Execution (Wait Here) ──────────────────────────────────────
     try {
@@ -1162,6 +849,10 @@ class GenerationPageState extends State<GenerationPage> {
       if (mounted) {
         if (_isCancelled) {
           _isCancelled = false;
+          setState(() {
+            _generatedImageUrl = _previousImageUrl;
+            _generatedVideoUrl = _previousVideoUrl;
+          });
           return;
         }
         if (e is NsfwContentException) {
@@ -1170,12 +861,21 @@ class GenerationPageState extends State<GenerationPage> {
               _generatedImageUrl = e.url;
               _isNsfw = true;
             });
+          } else {
+            setState(() {
+              _generatedImageUrl = _previousImageUrl;
+              _generatedVideoUrl = _previousVideoUrl;
+            });
           }
           ErrorDialogHelper.showRestrictedContentDialog(
             context,
             messageKey: e.messageKey,
           );
         } else {
+          setState(() {
+            _generatedImageUrl = _previousImageUrl;
+            _generatedVideoUrl = _previousVideoUrl;
+          });
           ErrorDialogHelper.showErrorDialog(
             context,
             title: 'Something went wrong',
@@ -1321,7 +1021,6 @@ class GenerationPageState extends State<GenerationPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx, 'cancel_request'),
                     child: Container(
@@ -1370,7 +1069,6 @@ class GenerationPageState extends State<GenerationPage> {
       ),
     );
 
-
     if (result == 'cancel_request') {
       _replicateService.cancelActivePrediction();
       setState(() {
@@ -1378,6 +1076,8 @@ class GenerationPageState extends State<GenerationPage> {
         _currentPollUrl = null;
         _currentCancelUrl = null;
         _isCancelled = true;
+        _generatedImageUrl = _previousImageUrl;
+        _generatedVideoUrl = _previousVideoUrl;
       });
       return true;
     }
@@ -1392,9 +1092,13 @@ class GenerationPageState extends State<GenerationPage> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
-      canPop: !_isGenerating,
+      canPop: !_isGenerating && !_showFullScreenPreview,
       onPopInvokedWithResult: (didPop, dynamic dynamicResult) async {
         if (didPop) return;
+        if (_showFullScreenPreview) {
+          setState(() => _showFullScreenPreview = false);
+          return;
+        }
         final shouldPop = await _onWillPop();
         if (shouldPop && mounted) {
           Navigator.pop(context);
@@ -1414,20 +1118,32 @@ class GenerationPageState extends State<GenerationPage> {
                 children: [
                   Column(
                     children: [
-                      _buildHeader(screenWidth, screenHeight, isDark),
-
-                      // Content Display — hidden when keyboard is open
+                      // Content Display & Floating Header — hidden when keyboard is open
                       if (MediaQuery.of(context).viewInsets.bottom == 0)
                         Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04,
-                            ),
-                            child: _buildContentDisplay(
-                              screenWidth,
-                              screenHeight,
-                              isDark,
-                            ),
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.02,
+                                ),
+                                child: _buildContentDisplay(
+                                  screenWidth,
+                                  screenHeight,
+                                  isDark,
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                child: _buildHeader(
+                                  screenWidth,
+                                  screenHeight,
+                                  isDark,
+                                ),
+                              ),
+                            ],
                           ),
                         )
                       else
@@ -1487,10 +1203,14 @@ class GenerationPageState extends State<GenerationPage> {
                           imageEditMode: widget.imageEditMode,
                           selectedImageModel: _selectedImageModel,
                           selectedVideoModel: _selectedVideoModel,
-                          onImageModelSelected: (m) =>
-                              setState(() => _selectedImageModel = m),
-                          onVideoModelSelected: (m) =>
-                              setState(() => _selectedVideoModel = m),
+                          onImageModelSelected: (m) => setState(() {
+                            _selectedImageModel = m;
+                            _syncOptionsToModel();
+                          }),
+                          onVideoModelSelected: (m) => setState(() {
+                            _selectedVideoModel = m;
+                            _syncOptionsToModel();
+                          }),
                           onModelSelected: (m) => setState(() {
                             _selectedModel = m;
                             _syncOptionsToModel();
@@ -1531,11 +1251,17 @@ class GenerationPageState extends State<GenerationPage> {
                       ),
                     ],
                   ),
-                ],
-              ),
+                if (_showFullScreenPreview)
+                  _buildFullScreenPreviewOverlay(
+                    screenWidth,
+                    screenHeight,
+                    isDark,
+                  ),
+              ],
             ),
-          );
-        },
+          ),
+        );
+      },
       ),
     );
   }
@@ -1558,83 +1284,105 @@ class GenerationPageState extends State<GenerationPage> {
   }
 
   Widget _buildHeader(double screenWidth, double screenHeight, bool isDark) {
+    final hasResult = (_generatedImageUrl != null && _generatedImageUrl!.isNotEmpty) ||
+        (_generatedVideoUrl != null && _generatedVideoUrl!.isNotEmpty);
+
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: screenHeight * 0.012,
+        horizontal: screenWidth * 0.02,
+        vertical: screenHeight * 0.008,
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () async {
-                  final navState = context
-                      .findAncestorStateOfType<MainNavigationState>();
-                  final canPop = await Navigator.maybePop(context);
-                  if (!canPop && mounted && navState != null) {
-                    navState.switchTab(0);
-                  }
-                },
-                child: Container(
-                  padding: EdgeInsets.all(screenWidth * 0.02),
-                  decoration: BoxDecoration(
-                    color: AppColors.tileBackgroundColor(isDark),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: AppColors.textColor(isDark),
-                    size: screenWidth * 0.05,
-                  ),
-                ),
+          GestureDetector(
+            onTap: () async {
+              final navState = context
+                  .findAncestorStateOfType<MainNavigationState>();
+              final canPop = await Navigator.maybePop(context);
+              if (!canPop && mounted && navState != null) {
+                navState.switchTab(0);
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.all(screenWidth * 0.02),
+              decoration: BoxDecoration(
+                color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                shape: BoxShape.circle,
               ),
-              if ((_generatedImageUrl != null || _generatedVideoUrl != null) &&
-                  _isResultFromGeneration)
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _generateContent,
-                      child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.02),
-                        decoration: BoxDecoration(
-                          color: AppColors.tileBackgroundColor(isDark),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.refresh,
-                          color: AppColors.textColor(isDark),
-                          size: screenWidth * 0.05,
-                        ),
-                      ),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.textColor(isDark),
+                size: screenWidth * 0.05,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              if (hasResult) ...[
+                GestureDetector(
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                    setState(() {
+                      _showFullScreenPreview = true;
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
                     ),
-                    SizedBox(width: screenWidth * 0.03),
-                    GestureDetector(
-                      onTap: _downloadContent,
-                      child: Container(
-                        padding: EdgeInsets.all(screenWidth * 0.02),
-                        decoration: BoxDecoration(
-                          color: AppColors.tileBackgroundColor(isDark),
-                          shape: BoxShape.circle,
-                        ),
-                        child: _isDownloading
-                            ? SizedBox(
-                                width: screenWidth * 0.05,
-                                height: screenWidth * 0.05,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                Icons.download,
-                                color: AppColors.textColor(isDark),
-                                size: screenWidth * 0.05,
-                              ),
-                      ),
+                    child: Icon(
+                      Icons.fullscreen,
+                      color: AppColors.textColor(isDark),
+                      size: screenWidth * 0.05,
                     ),
-                  ],
+                  ),
                 ),
+                SizedBox(width: screenWidth * 0.03),
+              ],
+              if (hasResult && _isResultFromGeneration) ...[
+                GestureDetector(
+                  onTap: _generateContent,
+                  child: Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.refresh,
+                      color: AppColors.textColor(isDark),
+                      size: screenWidth * 0.05,
+                    ),
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                GestureDetector(
+                  onTap: _downloadContent,
+                  child: Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.tileBackgroundColor(isDark).withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: _isDownloading
+                        ? SizedBox(
+                            width: screenWidth * 0.05,
+                            height: screenWidth * 0.05,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            Icons.download,
+                            color: AppColors.textColor(isDark),
+                            size: screenWidth * 0.05,
+                          ),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
@@ -1667,8 +1415,8 @@ class GenerationPageState extends State<GenerationPage> {
     }
 
     return (_selectedCategory == 'image'
-            ? _generatedImageUrl != null
-            : _generatedVideoUrl != null)
+            ? _generatedImageUrl != null && _generatedImageUrl!.isNotEmpty
+            : _generatedVideoUrl != null && _generatedVideoUrl!.isNotEmpty)
         ? _buildResultView(screenWidth, screenHeight, isDark)
         : _buildPlaceholder(screenWidth, screenHeight, isDark);
   }
@@ -1679,8 +1427,12 @@ class GenerationPageState extends State<GenerationPage> {
     bool isDark,
   ) {
     Widget resultWidget;
-    if (_selectedCategory == 'image') {
-      Widget imageWidget = CachedNetworkImage(
+    if (_selectedCategory == 'image' &&
+        _generatedImageUrl != null &&
+        _generatedImageUrl!.isNotEmpty) {
+      Widget imageWidget;
+
+      imageWidget = CachedNetworkImage(
         imageUrl: _generatedImageUrl!,
         width: double.infinity,
         fit: BoxFit.contain,
@@ -1722,6 +1474,12 @@ class GenerationPageState extends State<GenerationPage> {
       resultWidget = VideoResultView(
         videoUrl: _generatedVideoUrl!,
         borderRadius: screenWidth * 0.06,
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          setState(() {
+            _showFullScreenPreview = true;
+          });
+        },
       );
 
       if (_isNsfw) {
@@ -1754,7 +1512,17 @@ class GenerationPageState extends State<GenerationPage> {
 
     return Column(
       children: [
-        Expanded(child: resultWidget),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+              setState(() {
+                _showFullScreenPreview = true;
+              });
+            },
+            child: resultWidget,
+          ),
+        ),
         if (_isLiked == null && !_isNsfw && _isResultFromGeneration) ...[
           SizedBox(height: screenHeight * 0.015),
           Row(
@@ -1891,6 +1659,100 @@ class GenerationPageState extends State<GenerationPage> {
       },
     );
   }
+
+  Widget _buildFullScreenPreviewOverlay(
+    double screenWidth,
+    double screenHeight,
+    bool isDark,
+  ) {
+    final mediaUrl =
+        _selectedCategory == 'image' ? _generatedImageUrl : _generatedVideoUrl;
+    if (mediaUrl == null || mediaUrl.isEmpty) return const SizedBox.shrink();
+
+    return Positioned.fill(
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.95),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Main content positioned higher towards top of screen
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: screenHeight * 0.07,
+                    left: screenWidth * 0.04,
+                    right: screenWidth * 0.04,
+                    bottom: screenHeight * 0.04,
+                  ),
+                  child: _selectedCategory == 'image'
+                      ? InteractiveViewer(
+                          maxScale: 4.0,
+                          child: CachedNetworkImage(
+                            imageUrl: mediaUrl,
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(color: Colors.white),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : VideoResultView(
+                          videoUrl: mediaUrl,
+                          borderRadius: screenWidth * 0.04,
+                        ),
+                ),
+              ),
+
+              // Premium Glassmorphism Close Button at top right
+              Positioned(
+                top: screenWidth * 0.03,
+                right: screenWidth * 0.04,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showFullScreenPreview = false;
+                    });
+                  },
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: EdgeInsets.all(screenWidth * 0.028),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: screenWidth * 0.055,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SlideshowPlaceholder extends StatefulWidget {
@@ -1977,23 +1839,22 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
     }
 
     // Filter out images with invalid URLs or missing prompts
-    final validImages = fetchedImages
-        .where((img) {
-          if (widget.category == 'video') {
-            final hasVideo = img.videoUrl != null &&
-                img.videoUrl!.isNotEmpty &&
-                img.videoUrl!.startsWith('http');
-            final hasPrompt = img.videoPrompt.trim().isNotEmpty ||
-                img.prompt.trim().isNotEmpty;
-            return hasVideo && hasPrompt;
-          } else {
-            final hasImage = img.imageUrl.isNotEmpty &&
-                img.imageUrl.startsWith('http');
-            final hasPrompt = img.prompt.trim().isNotEmpty;
-            return hasImage && hasPrompt;
-          }
-        })
-        .toList();
+    final validImages = fetchedImages.where((img) {
+      if (widget.category == 'video') {
+        final hasVideo =
+            img.videoUrl != null &&
+            img.videoUrl!.isNotEmpty &&
+            img.videoUrl!.startsWith('http');
+        final hasPrompt =
+            img.videoPrompt.trim().isNotEmpty || img.prompt.trim().isNotEmpty;
+        return hasVideo && hasPrompt;
+      } else {
+        final hasImage =
+            img.imageUrl.isNotEmpty && img.imageUrl.startsWith('http');
+        final hasPrompt = img.prompt.trim().isNotEmpty;
+        return hasImage && hasPrompt;
+      }
+    }).toList();
 
     // Copy and shuffle images to make it interesting
     _images = List.from(validImages)..shuffle();
@@ -2052,17 +1913,20 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
     final currentImage = _images[_currentIndex];
     final String promptToUse = widget.category == 'video'
         ? (currentImage.videoPrompt.isNotEmpty
-            ? currentImage.videoPrompt
-            : currentImage.prompt)
+              ? currentImage.videoPrompt
+              : currentImage.prompt)
         : currentImage.prompt;
     final String keyString = widget.category == 'video'
         ? (currentImage.videoUrl ?? currentImage.imageUrl)
         : currentImage.imageUrl;
 
+    final double videoWidth = widget.screenWidth * 0.90;
+    final double videoHeight = widget.screenHeight * 0.45;
+
     final double maxImageSize =
-        (widget.screenWidth * 0.8 < widget.screenHeight * 0.4)
-        ? widget.screenWidth * 0.8
-        : widget.screenHeight * 0.4;
+        (widget.screenWidth * 0.85 < widget.screenHeight * 0.42)
+        ? widget.screenWidth * 0.85
+        : widget.screenHeight * 0.42;
 
     return GestureDetector(
       onTap: () => widget.onPromptTap?.call(promptToUse),
@@ -2074,16 +1938,25 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
             children: [
               AnimatedSwitcher(
                 duration: const Duration(seconds: 1),
-                child: (currentImage.videoUrl != null &&
+                child:
+                    (currentImage.videoUrl != null &&
                         currentImage.videoUrl!.isNotEmpty)
                     ? Container(
                         key: ValueKey<String>(keyString),
-                        width: maxImageSize,
-                        height: maxImageSize,
+                        width: videoWidth,
+                        height: videoHeight,
                         decoration: BoxDecoration(
+                          color: Colors.black,
                           borderRadius: BorderRadius.circular(
-                            MediaQuery.of(context).size.width * 0.06,
+                            MediaQuery.of(context).size.width * 0.05,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: VideoResultView(
@@ -2103,7 +1976,9 @@ class _SlideshowPlaceholderState extends State<_SlideshowPlaceholder> {
                             MediaQuery.of(context).size.width * 0.06,
                           ),
                           image: DecorationImage(
-                            image: CachedNetworkImageProvider(currentImage.imageUrl),
+                            image: CachedNetworkImageProvider(
+                              currentImage.imageUrl,
+                            ),
                             fit: BoxFit.contain,
                           ),
                         ),

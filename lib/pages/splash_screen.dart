@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:vidzeon/Core/app_initializer.dart';
 import 'package:vidzeon/Core/gradient.dart';
@@ -154,6 +155,12 @@ class _SplashScreenState extends State<SplashScreen>
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       ).timeout(_firebaseTimeout);
+
+      // Reduce Firebase Storage retry timeouts so failed loads fail fast
+      // instead of hanging the screen for minutes on flaky networks.
+      FirebaseStorage.instance.setMaxDownloadRetryTime(const Duration(seconds: 10));
+      FirebaseStorage.instance.setMaxUploadRetryTime(const Duration(seconds: 10));
+      FirebaseStorage.instance.setMaxOperationRetryTime(const Duration(seconds: 10));
     } on TimeoutException {
       _updateStatus('Almost there…');
       errors.add('Firebase init timeout');

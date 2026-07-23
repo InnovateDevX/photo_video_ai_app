@@ -429,6 +429,7 @@ class _AIResultScreenState extends State<AIResultScreen> {
                         fit: widget.fit,
                         placeholder: (context, url) =>
                             _buildPlaceholder(isDark),
+                        errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.grey),
                       )
                     : Image.file(File(widget.resultImageUrl), fit: widget.fit),
               ),

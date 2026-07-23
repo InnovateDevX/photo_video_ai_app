@@ -12,16 +12,20 @@ import 'notification_service.dart';
 import 'content_safety_service.dart';
 
 class BackgroundGenerationService {
-  static final BackgroundGenerationService _instance = BackgroundGenerationService._internal();
+  static final BackgroundGenerationService _instance =
+      BackgroundGenerationService._internal();
   factory BackgroundGenerationService() => _instance;
   BackgroundGenerationService._internal();
 
   static const String _pendingKey = 'pending_generations';
 
-  final StreamController<GeneratedAsset> _completionController = StreamController<GeneratedAsset>.broadcast();
-  Stream<GeneratedAsset> get onGenerationComplete => _completionController.stream;
+  final StreamController<GeneratedAsset> _completionController =
+      StreamController<GeneratedAsset>.broadcast();
+  Stream<GeneratedAsset> get onGenerationComplete =>
+      _completionController.stream;
 
-  final StreamController<String> _failureController = StreamController<String>.broadcast();
+  final StreamController<String> _failureController =
+      StreamController<String>.broadcast();
   Stream<String> get onGenerationFailure => _failureController.stream;
 
   void reportFailure(String message) {
@@ -48,7 +52,9 @@ class BackgroundGenerationService {
       }),
     );
     await prefs.setStringList(_pendingKey, pending);
-    debugPrint('💾 [BackgroundGeneration] Saved pending generation: $pollUrl (cancel: $cancelUrl)');
+    debugPrint(
+      '💾 [BackgroundGeneration] Saved pending generation: $pollUrl (cancel: $cancelUrl)',
+    );
   }
 
   Future<void> _removePendingGeneration(String pollUrl) async {
@@ -63,7 +69,9 @@ class BackgroundGenerationService {
       }
     });
     await prefs.setStringList(_pendingKey, pending);
-    debugPrint('🗑️ [BackgroundGeneration] Removed pending generation: $pollUrl');
+    debugPrint(
+      '🗑️ [BackgroundGeneration] Removed pending generation: $pollUrl',
+    );
   }
 
   /// Called on app startup to resume any pending generations that were
@@ -77,7 +85,9 @@ class BackgroundGenerationService {
       return;
     }
 
-    debugPrint('🔄 [BackgroundGeneration] Found ${pending.length} pending generation(s). Resuming...');
+    debugPrint(
+      '🔄 [BackgroundGeneration] Found ${pending.length} pending generation(s). Resuming...',
+    );
 
     for (final item in List<String>.from(pending)) {
       try {
@@ -90,17 +100,25 @@ class BackgroundGenerationService {
 
         final age = DateTime.now().millisecondsSinceEpoch - timestamp;
         if (age > 10 * 60 * 1000) {
-          debugPrint('⏰ [BackgroundGeneration] Pending generation expired: $pollUrl');
+          debugPrint(
+            '⏰ [BackgroundGeneration] Pending generation expired: $pollUrl',
+          );
           await _removePendingGeneration(pollUrl);
           await NotificationService().cancelNotification(notificationId);
           continue;
         }
 
         // Actively poll the pending generation in the foreground
-        _pollActiveGeneration(pollUrl: pollUrl, category: category, prompt: prompt, notificationId: notificationId);
-
+        _pollActiveGeneration(
+          pollUrl: pollUrl,
+          category: category,
+          prompt: prompt,
+          notificationId: notificationId,
+        );
       } catch (e) {
-        debugPrint('❌ [BackgroundGeneration] Error resuming pending generation: $e');
+        debugPrint(
+          '❌ [BackgroundGeneration] Error resuming pending generation: $e',
+        );
       }
     }
   }
@@ -125,7 +143,11 @@ class BackgroundGenerationService {
         .then((String url) async {
           await _removePendingGeneration(pollUrl);
           await NotificationService().cancelNotification(notificationId);
-          await saveAndNotifyAsset(url: url, category: category, prompt: prompt);
+          await saveAndNotifyAsset(
+            url: url,
+            category: category,
+            prompt: prompt,
+          );
         })
         .catchError((error) async {
           debugPrint('❌ [BackgroundGeneration] Foreground poll failed: $error');
@@ -145,11 +167,13 @@ class BackgroundGenerationService {
     required String category,
     required String prompt,
   }) async {
-    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+      100000,
+    );
 
     await _savePendingGeneration(
       pollUrl: pollUrl,
-      cancelUrl: '', 
+      cancelUrl: '',
       category: category,
       prompt: prompt,
       notificationId: notificationId,
@@ -163,7 +187,12 @@ class BackgroundGenerationService {
       payload: 'OPEN_APP',
     );
 
-    _pollActiveGeneration(pollUrl: pollUrl, category: category, prompt: prompt, notificationId: notificationId);
+    _pollActiveGeneration(
+      pollUrl: pollUrl,
+      category: category,
+      prompt: prompt,
+      notificationId: notificationId,
+    );
   }
 
   void startBackgroundGeneration({
@@ -178,13 +207,15 @@ class BackgroundGenerationService {
     List<File>? images,
     Map<String, dynamic>? extraVariables,
   }) {
-    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+      100000,
+    );
 
     NotificationService().showProgressNotification(
       id: notificationId,
       title: 'VidZeon',
       body: 'Preparing your $category...',
-      progress: null, 
+      progress: null,
       payload: 'OPEN_APP',
     );
 
@@ -226,7 +257,11 @@ class BackgroundGenerationService {
             await _removePendingGeneration(currentPollUrl!);
           }
           await NotificationService().cancelNotification(notificationId);
-          await saveAndNotifyAsset(url: finalUrl, category: category, prompt: prompt);
+          await saveAndNotifyAsset(
+            url: finalUrl,
+            category: category,
+            prompt: prompt,
+          );
         })
         .catchError((error) async {
           debugPrint('❌ [BackgroundGeneration] Generation failed: $error');
@@ -237,9 +272,12 @@ class BackgroundGenerationService {
 
           if (error.toString().contains('Generation canceled')) return '';
 
-          String errorMessage = 'Failed to generate $category. Please try again.';
-          if (error is NsfwContentException || error.toString().contains('generated_content_restricted')) {
-            errorMessage = 'Your generated content was flagged as restricted and could not be saved.';
+          String errorMessage =
+              'Failed to generate $category. Please try again.';
+          if (error is NsfwContentException ||
+              error.toString().contains('generated_content_restricted')) {
+            errorMessage =
+                'Your generated content was flagged as restricted and could not be saved.';
           }
 
           _failureController.add(errorMessage);
@@ -260,7 +298,9 @@ class BackgroundGenerationService {
     File? referenceImage,
     String? aspectRatio,
   }) {
-    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+      100000,
+    );
 
     NotificationService().showProgressNotification(
       id: notificationId,
@@ -309,9 +349,12 @@ class BackgroundGenerationService {
 
           if (error.toString().contains('Generation canceled')) return null;
 
-          String errorMessage = 'Failed to generate video template. Please try again.';
-          if (error is NsfwContentException || error.toString().contains('generated_content_restricted')) {
-            errorMessage = 'Your generated content was flagged as restricted and could not be saved.';
+          String errorMessage =
+              'Failed to generate video template. Please try again.';
+          if (error is NsfwContentException ||
+              error.toString().contains('generated_content_restricted')) {
+            errorMessage =
+                'Your generated content was flagged as restricted and could not be saved.';
           }
 
           reportFailure(errorMessage);
@@ -329,7 +372,9 @@ class BackgroundGenerationService {
       throw Exception('Failed to download image: ${response.statusCode}');
     }
     final tempDir = await getTemporaryDirectory();
-    final file = File('\${tempDir.path}/bg_stage1_\${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final file = File(
+      '\${tempDir.path}/bg_stage1_\${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
     await file.writeAsBytes(response.bodyBytes);
     return file;
   }
@@ -342,28 +387,31 @@ class BackgroundGenerationService {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       String ext = category == 'video' ? 'mp4' : 'png';
-      final fileName = 'generation_\${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final fileName =
+          'generation_\${DateTime.now().millisecondsSinceEpoch}.$ext';
       final file = File('\${appDir.path}/$fileName');
 
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         await file.writeAsBytes(response.bodyBytes);
-        
-        final asset = GeneratedAsset(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          filePath: file.path,
-          category: category,
-          prompt: prompt,
-          createdAt: DateTime.now(),
-        );
-        await LocalStorageService().saveAsset(asset);
-        _completionController.add(asset);
-        NotificationService().showGenerationCompleteNotification(
-          title: 'VidZeon',
-          body: 'Your $category generation is complete!',
-          payload: asset.id,
-        );
+      } else {
+        throw Exception('Failed to download image: \${response.statusCode}');
       }
+
+      final asset = GeneratedAsset(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        filePath: file.path,
+        category: category,
+        prompt: prompt,
+        createdAt: DateTime.now(),
+      );
+      await LocalStorageService().saveAsset(asset);
+      _completionController.add(asset);
+      NotificationService().showGenerationCompleteNotification(
+        title: 'VidZeon',
+        body: 'Your $category generation is complete!',
+        payload: asset.id,
+      );
     } catch (e) {
       debugPrint('❌ [BackgroundGeneration] Save error: $e');
     }

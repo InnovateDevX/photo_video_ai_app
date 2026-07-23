@@ -62,7 +62,11 @@ class _PaywallPageState extends State<PaywallPage> {
     ) {
       if (!mounted) return;
       if (isSubscribed) {
-        Navigator.pop(context);
+        if (widget.onDismiss != null) {
+          widget.onDismiss!();
+        } else {
+          Navigator.pop(context);
+        }
       } else {
         setState(() => _isLoading = false);
       }
@@ -214,6 +218,7 @@ class _PaywallPageState extends State<PaywallPage> {
           children: [
             Positioned.fill(
               child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

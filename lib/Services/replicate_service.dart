@@ -199,9 +199,10 @@ class AIModelConfig {
   int get noOfUploadable {
     if (!iseditable) return 0;
     final templateStr = jsonEncode(requestBodyTemplate);
-    if (!templateStr.contains('{{image}}')) return 1; // editable but no placeholder — treat as 1
+    if (!templateStr.contains('{{image}}'))
+      return 1; // editable but no placeholder — treat as 1
 
-  // Count occurrences of {{image}} in the template string.
+    // Count occurrences of {{image}} in the template string.
     // Each occurrence = one accepted image slot.
     final count = '{{image}}'.allMatches(templateStr).length;
     if (count > 1) return count;
@@ -485,7 +486,9 @@ class ReplicateService {
       String effectiveAspectRatio = aspectRatio;
       if (modelConfig.options.hasAspectRatios &&
           !modelConfig.options.aspectRatios.contains(aspectRatio)) {
-        final fallback = modelConfig.options.aspectRatios.first;
+        final fallback = modelConfig.options.aspectRatios.contains('9:16')
+            ? '9:16'
+            : modelConfig.options.aspectRatios.first;
         debugPrint(
           '⚠️ [ReplicateService] aspect_ratio "$aspectRatio" not supported '
           'by "${modelConfig.name}". Allowed: '
@@ -636,48 +639,40 @@ class ReplicateService {
       return jsonDecode(result) as Map<String, dynamic>;
     }
 
-    /// Expands JSON arrays that contain [placeholder] with multiple images.
+    /// Structurally traverses a JSON Map/List to find a List containing EXACTLY the single string
+    /// `placeholder`, and replaces that List entirely with `imagesData`.
     ///
-    /// For example, if the body JSON has `"input_images": ["{{image}}"]` and
-    /// [imagesJsonArray] is `["img1","img2"]`, the result will be
-    /// `"input_images": ["img1","img2"]`.
-    ///
-    /// This also handles the case where the array element has a data URI prefix
-    /// like `"data:image/jpeg;base64,{{image}}"`, since the encoded images
-    /// already contain the correct data URI prefix — we replace the whole array.
-    Map<String, dynamic> expandImageArrayInBody(
-      Map<String, dynamic> body,
+    /// This handles templates like `"input_images": ["{{image}}"]` robustly without relying on Regex.
+    dynamic _expandArraysInObject(
+      dynamic obj,
       String placeholder,
-      String imagesJsonArray, // e.g. '["data:img1","data:img2"]'
+      List<String> imagesData,
     ) {
-      final jsonStr = jsonEncode(body);
-      final ph = '{{$placeholder}}';
-
-      // If the placeholder doesn't exist in the serialized body, return unchanged
-      if (!jsonStr.contains(ph)) return body;
-
-      // Pattern: match any JSON array literal [...] that contains the placeholder.
-      // This handles both simple ["{{image}}"] and ["data:...;base64,{{image}}"].
-      final escapedPh = RegExp.escape(ph);
-      // Match opening bracket, then any non-bracket chars (lazy), then the placeholder,
-      // then any non-bracket chars (lazy), then closing bracket.
-      final pattern = RegExp(
-        r'\['
-                r'[^\[\]]*?' +
-            escapedPh +
-            r'[^\[\]]*?' +
-            r'\]',
-      );
-
-      final result = jsonStr.replaceAllMapped(pattern, (match) {
-        debugPrint(
-          '🔄 [ReplicateService] Expanding array containing "$ph" '
-          'with $imagesJsonArray',
+      if (obj is Map<String, dynamic>) {
+        return obj.map(
+          (key, value) => MapEntry(
+            key,
+            _expandArraysInObject(value, placeholder, imagesData),
+          ),
         );
-        return imagesJsonArray;
-      });
-
-      return jsonDecode(result) as Map<String, dynamic>;
+      } else if (obj is List) {
+        // If this array contains EXACTLY ONE string which is the placeholder (or a data URI prefix + placeholder),
+        // we expand the entire array.
+        if (obj.length == 1 && obj[0] is String) {
+          final str = obj[0] as String;
+          if (str.contains('{{$placeholder}}')) {
+            debugPrint(
+              '🔄 [ReplicateService] Structurally expanding array for placeholder "$placeholder" to ${imagesData.length} images.',
+            );
+            return imagesData.toList();
+          }
+        }
+        // Otherwise, recurse deeper into the array's children
+        return obj
+            .map((item) => _expandArraysInObject(item, placeholder, imagesData))
+            .toList();
+      }
+      return obj;
     }
 
     // ── Base64 Encoding for single reference image ──────────────────────────
@@ -720,12 +715,7 @@ class ReplicateService {
           rawBase64s.add(encoded);
         }
 
-        final imagesJson = jsonEncode(encodedImagesWithPrefix);
-
-        // ── Step 1: Expand arrays containing image placeholders ──
-        // This handles templates like "input_images": ["{{image}}"] or
-        // "reference_images": ["{{image}}"] where we want to inject ALL
-        // images into the array, not just the first one.
+        // ── Step 1: Structurally expand arrays containing image placeholders ──
         for (final ph in [
           'image',
           'images',
@@ -735,7 +725,9 @@ class ReplicateService {
           'reference_image',
           'ref_image',
         ]) {
-          finalBody = expandImageArrayInBody(finalBody, ph, imagesJson);
+          finalBody =
+              _expandArraysInObject(finalBody, ph, encodedImagesWithPrefix)
+                  as Map<String, dynamic>;
         }
 
         // ── Step 2: Handle single-value placeholders (first image) ──
@@ -884,6 +876,9 @@ class ReplicateService {
         final data = jsonDecode(response.body);
 
         if (data['output'] != null) {
+          debugPrint(
+            '📦 [ReplicateService] API Response output: ${data['output']}',
+          );
           return extractOutput(data['output']);
         }
 

@@ -6,11 +6,13 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 class VideoResultView extends StatefulWidget {
   final String videoUrl;
   final double borderRadius;
+  final VoidCallback? onTap;
 
   const VideoResultView({
     super.key,
     required this.videoUrl,
     this.borderRadius = 20.0,
+    this.onTap,
   });
 
   @override
@@ -85,9 +87,8 @@ class _VideoResultViewState extends State<VideoResultView> {
         debugPrint(
           "🌐 [VideoResultView] Playing from network & caching in background: $url",
         );
-        DefaultCacheManager().downloadFile(url).catchError((e) {
+        DefaultCacheManager().downloadFile(url).then((_) {}).catchError((e) {
           debugPrint("❌ [VideoResultView] Background cache download failed: $e");
-          return null;
         });
         controller = VideoPlayerController.networkUrl(Uri.parse(url));
         await controller.initialize().timeout(const Duration(seconds: 25));
@@ -150,10 +151,14 @@ class _VideoResultViewState extends State<VideoResultView> {
         borderRadius: BorderRadius.circular(widget.borderRadius),
         child: GestureDetector(
           onTap: () {
-            if (_controller!.value.isPlaying) {
-              _controller!.pause();
+            if (widget.onTap != null) {
+              widget.onTap!();
             } else {
-              _controller!.play();
+              if (_controller!.value.isPlaying) {
+                _controller!.pause();
+              } else {
+                _controller!.play();
+              }
             }
           },
           child: AspectRatio(

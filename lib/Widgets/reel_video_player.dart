@@ -82,12 +82,18 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
     try {
       File? videoFile;
       try {
-        final fileInfo = await DefaultCacheManager().getFileFromCache(widget.videoUrl);
-        if (fileInfo != null && fileInfo.file.existsSync() && fileInfo.file.lengthSync() > 1024) {
+        final fileInfo = await DefaultCacheManager().getFileFromCache(
+          widget.videoUrl,
+        );
+        if (fileInfo != null &&
+            fileInfo.file.existsSync() &&
+            fileInfo.file.lengthSync() > 1024) {
           debugPrint("📦 [VideoPlayer] Playing from CACHE: ${widget.videoUrl}");
           videoFile = fileInfo.file;
         } else if (fileInfo != null) {
-          debugPrint("⚠️ [VideoPlayer] Corrupted cache file detected (<1KB), removing...");
+          debugPrint(
+            "⚠️ [VideoPlayer] Corrupted cache file detected (<1KB), removing...",
+          );
           await DefaultCacheManager().removeFile(widget.videoUrl);
         }
       } catch (e) {
@@ -99,10 +105,16 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
           "🌐 [VideoPlayer] Cache miss, playing from network & downloading to cache in background: ${widget.videoUrl}",
         );
         // Trigger background cache download without awaiting it, so we don't block playback!
-        DefaultCacheManager().downloadFile(widget.videoUrl).catchError((e) {
-          debugPrint("❌ [VideoPlayer] Background cache download failed: $e");
-          return null;
-        });
+        DefaultCacheManager()
+            .downloadFile(widget.videoUrl)
+            .then(
+              (_) {},
+              onError: (e) {
+                debugPrint(
+                  "❌ [VideoPlayer] Background cache download failed: $e",
+                );
+              },
+            );
       }
 
       if (!mounted) return;
@@ -117,11 +129,15 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
           );
           await _controller!.initialize().timeout(const Duration(seconds: 4));
           if (_controller!.value.hasError) {
-            throw Exception("Controller initialization reported error: ${_controller!.value.errorDescription}");
+            throw Exception(
+              "Controller initialization reported error: ${_controller!.value.errorDescription}",
+            );
           }
           initialized = true;
         } catch (e) {
-          debugPrint("⚠️ [VideoPlayer] Cache init failed or timed out: $e. Falling back to network...");
+          debugPrint(
+            "⚠️ [VideoPlayer] Cache init failed or timed out: $e. Falling back to network...",
+          );
           try {
             await DefaultCacheManager().removeFile(widget.videoUrl);
           } catch (_) {}
@@ -188,7 +204,8 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
 
     if (!_isInitialized) {
       return SizedBox.expand(
-        child: widget.placeholder ??
+        child:
+            widget.placeholder ??
             const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
@@ -202,9 +219,15 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
             ? null
             : constraints.maxHeight;
 
+        final isLandscape =
+            _controller!.value.size.width > _controller!.value.size.height;
+        final videoAlignment = isLandscape
+            ? const Alignment(0, -0.2)
+            : widget.alignment;
+
         Widget content = FittedBox(
           fit: widget.fit,
-          alignment: widget.alignment,
+          alignment: videoAlignment,
           clipBehavior: Clip.hardEdge,
           child: SizedBox(
             width: _controller!.value.size.width,
@@ -225,7 +248,9 @@ class _ReelVideoPlayerState extends State<ReelVideoPlayer> {
               const CircularProgressIndicator(color: Colors.white),
             if (widget.showOverlayControls && !_isPlaying && !_isBuffering)
               Container(
-                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width * 0.04,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.black45,
                   shape: BoxShape.circle,

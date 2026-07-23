@@ -484,113 +484,123 @@ class _CreditsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<int>(
-      stream: CreditService().creditStream,
-      initialData: CreditService().credits,
-      builder: (context, snapshot) {
-        final credits = snapshot.data ?? 0;
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-            horizontal: w * 0.04,
-            vertical: h * 0.015,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.creditsCardBackground(isDark),
-            borderRadius: BorderRadius.circular(w * 0.04),
-            border: Border.all(color: AppColors.creditsCardBorder(isDark)),
-          ),
-          child: Row(
-            children: [
-              // Gradient dot
-              Container(
-                width: w * 0.08,
-                height: w * 0.08,
-                decoration: const ProGradientDecoration(shape: BoxShape.circle),
-              ),
-              SizedBox(width: w * 0.03),
-              Expanded(
-                child: Text(
-                  'My Credits',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: w * 0.04,
-                    color: AppColors.textColor(isDark),
-                  ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: SubscriptionService().isSubscribedNotifier,
+      builder: (context, isSubscribed, _) {
+        return StreamBuilder<int>(
+          stream: CreditService().creditStream,
+          initialData: CreditService().credits,
+          builder: (context, snapshot) {
+            final credits = snapshot.data ?? 0;
+            return GestureDetector(
+              onTap: isSubscribed
+                  ? null
+                  : () => Navigator.pushNamed(context, AppRoutes.paywall),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: w * 0.04,
+                  vertical: h * 0.015,
                 ),
-              ),
-              // Combined Credits + Pro Pill
-              Container(
                 decoration: BoxDecoration(
-                  color: AppColors.creditsPillBackground(isDark),
-                  borderRadius: BorderRadius.circular(w * 0.08),
-                  boxShadow: [
-                    if (!isDark)
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                  ],
+                  color: AppColors.creditsCardBackground(isDark),
+                  borderRadius: BorderRadius.circular(w * 0.04),
+                  border: Border.all(color: AppColors.creditsCardBorder(isDark)),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Credits part
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: w * 0.03,
-                        right: w * 0.02,
-                        top: h * 0.005,
-                        bottom: h * 0.005,
+                    // Gradient dot
+                    Container(
+                      width: w * 0.08,
+                      height: w * 0.08,
+                      decoration: const ProGradientDecoration(shape: BoxShape.circle),
+                    ),
+                    SizedBox(width: w * 0.03),
+                    Expanded(
+                      child: Text(
+                        'My Credits',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: w * 0.04,
+                          color: AppColors.textColor(isDark),
+                        ),
+                      ),
+                    ),
+                    // Combined Credits + Pro Pill
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.creditsPillBackground(isDark),
+                        borderRadius: BorderRadius.circular(w * 0.08),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                        ],
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.bolt,
-                            color: AppColors.creditsPillText(isDark),
-                            size: w * 0.045,
-                          ),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.01,
-                          ),
-                          Text(
-                            '$credits',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: w * 0.035,
-                              color: AppColors.creditsPillText(isDark),
+                          // Credits part
+                          Padding(
+                            padding: EdgeInsets.only(
+                              left: w * 0.03,
+                              right: isSubscribed ? w * 0.03 : w * 0.02,
+                              top: h * 0.005,
+                              bottom: h * 0.005,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.bolt,
+                                  color: AppColors.creditsPillText(isDark),
+                                  size: w * 0.045,
+                                ),
+                                SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.01,
+                                ),
+                                Text(
+                                  '$credits',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: w * 0.035,
+                                    color: AppColors.creditsPillText(isDark),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          // Pro badge part
+                          if (!isSubscribed)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: w * 0.04,
+                                vertical: 6,
+                              ),
+                              decoration: ProGradientDecoration(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(w * 0.08),
+                                ),
+                              ),
+                              child: Text(
+                                'Pro',
+                                style: TextStyle(
+                                  color: Colors.white, // Pro gradient text is fine as white
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: w * 0.032,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
-                    // Pro badge part
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: w * 0.04,
-                        vertical: 6,
-                      ),
-                      decoration: ProGradientDecoration(
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(w * 0.08),
-                        ),
-                      ),
-                      child: Text(
-                        'Pro',
-                        style: TextStyle(
-                          color: Colors
-                              .white, // Pro gradient text is fine as white
-                          fontWeight: FontWeight.bold,
-                          fontSize: w * 0.032,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

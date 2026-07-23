@@ -80,6 +80,14 @@ void main() {
 }
 
 Future<void> _safeRecordFatal(Object error, StackTrace stack) async {
+  final errStr = error.toString();
+  if (errStr.contains('SocketException') ||
+      errStr.contains('ClientException') ||
+      errStr.contains('HttpException') ||
+      errStr.contains('HandshakeException')) {
+    debugPrint('⚠️ [Ignored network error]: $errStr');
+    return;
+  }
   try {
     await FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
   } catch (_) {
