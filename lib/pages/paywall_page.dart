@@ -50,6 +50,8 @@ class _PaywallPageState extends State<PaywallPage> {
   ProductDetails? _weeklyProduct;
   ProductDetails? _monthlyProduct;
   final _config = RemoteConfigService();
+  List<String> _weeklyFeatures = [];
+  List<String> _monthlyFeatures = [];
 
   StreamSubscription<bool>? _subscriptionSub;
 
@@ -60,7 +62,7 @@ class _PaywallPageState extends State<PaywallPage> {
     _loadProducts();
 
     _attachVideoController();
-    AdjustEvent paywallOpenEvent = new AdjustEvent('acazkt');
+    AdjustEvent paywallOpenEvent = AdjustEvent('acazkt');
 
     // Track the event
     Adjust.trackEvent(paywallOpenEvent);
@@ -111,11 +113,16 @@ class _PaywallPageState extends State<PaywallPage> {
     if (service.products.isEmpty) {
       await service.loadProducts();
     }
-    final config = RemoteConfigService();
+    final featureLists = await Future.wait<List<String>>([
+      _config.paywallWeeklyFeatures,
+      _config.paywallMonthlyFeatures,
+    ]);
     if (mounted) {
       setState(() {
         _weeklyProduct = service.products[_config.proWeekly];
         _monthlyProduct = service.products[_config.proMonthly];
+        _weeklyFeatures = featureLists[0];
+        _monthlyFeatures = featureLists[1];
         _isLoadingProducts = false;
       });
 
@@ -159,22 +166,12 @@ class _PaywallPageState extends State<PaywallPage> {
     return weeklyHasTrial || monthlyHasTrial;
   }
 
-  /// Returns the display price from the selected offer's pricing phases.
-  String _priceFor(String productId) {
-    return SubscriptionService().getPriceText(productId);
-  }
-
   /// Returns the full label (trial + price or just price) for a product.
   String _labelFor(String productId) {
     return SubscriptionService().getFullPriceLabel(
       productId,
       isTrialEnabled: _isFreeTrialEnabled,
     );
-  }
-
-  /// Returns the period label ("Week", "Month") for a product.
-  String _periodFor(String productId) {
-    return SubscriptionService().getPeriodLabel(productId);
   }
 
   /// Returns the intro offer label, e.g. "7-Day Intro Offer".
@@ -254,6 +251,9 @@ class _PaywallPageState extends State<PaywallPage> {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
     final bool weeklySelected = !_isMonthlySelected;
+    final selectedFeatures = _isMonthlySelected
+        ? _monthlyFeatures
+        : _weeklyFeatures;
 
     return PopScope(
       canPop: true,
@@ -322,11 +322,15 @@ class _PaywallPageState extends State<PaywallPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildCheckRow('Unlock All Features', w),
-                          SizedBox(height: h * 0.010),
-                          _buildCheckRow('No Watermark', w),
-                          SizedBox(height: h * 0.010),
-                          _buildCheckRow('Advanced Editing Tools', w),
+                          for (
+                            var index = 0;
+                            index < selectedFeatures.length;
+                            index++
+                          ) ...[
+                            _buildCheckRow(selectedFeatures[index], w),
+                            if (index < selectedFeatures.length - 1)
+                              SizedBox(height: h * 0.010),
+                          ],
                         ],
                       ),
                     ),
@@ -552,12 +556,14 @@ class _PaywallPageState extends State<PaywallPage> {
           size: w * 0.045,
         ),
         SizedBox(width: w * 0.025),
-        Text(
-          text,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: w * 0.038,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: w * 0.038,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],

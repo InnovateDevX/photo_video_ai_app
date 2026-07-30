@@ -1,1047 +1,457 @@
 [
     {
-        "id": "bytedance/seedance-1-lite",
-        "name": "Seedance 1 Lite",
-        "owner": "bytedance",
-        "credit_used": 10,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-1-lite/predictions",
+        "id": "openai/gpt-image-1.5",
+        "name": "GPT Image 1.5",
+        "official": true,
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/openai/gpt-image-1.5/predictions",
+        "credit_used": 110,
+        "icon_url": "https://github.com/openai.png",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "fps": 24,
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "camera_fixed": false,
-                "image": "{{image}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5
-            }
-        }
-    },
-    {
-        "id": "bytedance/seedance-2.0",
-        "name": "Seedance 2.0",
-        "owner": "bytedance",
-        "credit_used": 1000,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "generate_audio": true,
-                "reference_images": [
+                "input_images": [
                     "{{image}}"
-                ]
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "bytedance/seedance-2.0-fast",
-        "name": "Seedance 2.0 Fast",
-        "owner": "bytedance",
-        "credit_used": 800,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0-fast/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
+                ],
                 "aspect_ratio": "{{aspect_ratio}}",
-                "generate_audio": true,
-                "reference_images": [
-                    "{{image}}"
-                ]
+                "quality": "medium",
+                "output_format": "webp",
+                "background": "auto",
+                "moderation": "auto"
             }
         },
         "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
             "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
+                "1:1",
+                "3:2",
+                "2:3"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
         }
     },
     {
-        "id": "bytedance/seedance-2.0-mini",
-        "name": "Seedance 2.0 Mini",
-        "owner": "bytedance",
-        "credit_used": 300,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://firebasestorage.googleapis.com/v0/b/ai-video-generator-c09ff.firebasestorage.app/o/model%20Videos%2FGroup%2048095619.png?alt=media&token=f66d6633-9aa6-4ace-8aa7-f1a73e096190",
-        "url": "https://api.replicate.com/v1/models/bytedance/seedance-2.0-mini/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "generate_audio": true,
-                "reference_images": [
-                    "{{image}}"
-                ]
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "google/veo-3.1",
-        "name": "Google Veo 3.1",
+        "id": "google/nano-banana-2-lite",
+        "name": "Google Nano Banana 2 Lite",
+        "official": true,
+        "iseditable": true,
         "owner": "google",
-        "credit_used": 200,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1.png",
-        "url": "https://api.replicate.com/v1/models/google/veo-3.1/predictions",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-2-lite/predictions",
+        "credit_used": 50,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/nano-banana-pro.png?alt=media&token=c343bbeb-2c4f-472b-8219-0a0c00e7f85a",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
+                "image_input": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "1080p",
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high",
+                "allow_fallback_model": false
             }
         },
         "options": {
-            "durations": [
-                "4",
-                "6",
-                "8"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
             "aspect_ratios": [
+                "9:16",
+                "match_input_image",
+                "1:1",
+                "1:4",
+                "1:8",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:1",
+                "4:3",
+                "4:5",
+                "5:4",
+                "8:1",
                 "16:9",
-                "9:16"
+                "21:9"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "4": 0.8,
-                "6": 1.2,
-                "8": 1.6,
-                "4s": 0.8,
-                "6s": 1.2,
-                "8s": 1.6
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
         }
     },
     {
-        "id": "google/veo-3.1-fast",
-        "name": "Google Veo 3.1 Fast",
+        "id": "google/nano-banana-2",
+        "name": "Nano Banana 2",
+        "official": true,
+        "iseditable": true,
         "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-2/predictions",
         "credit_used": 100,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1-fast.png",
-        "url": "https://api.replicate.com/v1/models/google/veo-3.1-fast/predictions",
+        "icon_url": "https://github.com/google.png",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "4",
-                "6",
-                "8"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "4": 0.8,
-                "6": 1.2,
-                "8": 1.6,
-                "4s": 0.8,
-                "6s": 1.2,
-                "8s": 1.6
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "google/veo-3.1-lite",
-        "name": "Google Veo 3.1 Lite",
-        "owner": "google",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/google/veo-3.1-lite.png",
-        "url": "https://api.replicate.com/v1/models/google/veo-3.1-lite/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "4",
-                "6",
-                "8"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "4": 0.8,
-                "6": 1.2,
-                "8": 1.6,
-                "4s": 0.8,
-                "6s": 1.2,
-                "8s": 1.6
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "kwaivgi/kling-v2.5-turbo-pro",
-        "name": "Kling v2.5 Turbo Pro",
-        "owner": "kwaivgi",
-        "credit_used": 150,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/kwaivgi/kling-v2.5-turbo-pro.png",
-        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v2.5-turbo-pro/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
+                "image_input": [
+                    "{{image}}"
+                ],
                 "aspect_ratio": "{{aspect_ratio}}",
-                "start_image": "{{image}}",
-                "cfg_scale": 5
+                "match_input_image": false,
+                "number_of_images": 1,
+                "resolution": "1K",
+                "output_format": "jpg"
             }
         },
         "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
             "aspect_ratios": [
-                "16:9",
                 "9:16",
-                "1:1"
+                "match_input_image",
+                "1:1",
+                "1:4",
+                "1:8",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:1",
+                "4:3",
+                "4:5",
+                "5:4",
+                "8:1",
+                "16:9",
+                "21:9"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
         }
     },
     {
-        "id": "klingai/kling-v2-master",
-        "name": "Kling v2 Standard",
-        "owner": "klingai",
-        "credit_used": 200,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v2-master.png",
-        "url": "https://api.replicate.com/v1/models/klingai/kling-v2-master/predictions",
+        "id": "prunaai/z-image-turbo",
+        "name": "Z-Image Turbo",
+        "official": false,
+        "iseditable": false,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/z-image-turbo/predictions",
+        "credit_used": 35,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/z-image-turbo%2Fslice%201.png?alt=media&token=284ffa5f-de71-4f7f-88b5-df863bad6446",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "start_image": "{{image}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}"
+                "width": "{{width}}",
+                "height": "{{height}}",
+                "seed": 0,
+                "go_fast": false,
+                "output_format": "jpg",
+                "guidance_scale": 0,
+                "output_quality": 80,
+                "num_inference_steps": 8
             }
         },
         "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
-        }
-    },
-    {
-        "id": "kwaivgi/kling-v3-video",
-        "name": "Kling Video 3.0",
-        "owner": "kwaivgi",
-        "credit_used": 220,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-video.png",
-        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v3-video/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "mode": "{{mode}}",
-                "duration": "{{duration}}",
-                "aspect_ratio": "{{aspect_ratio}}",
-                "start_image": "{{image}}",
-                "generate_audio": false
-            }
-        },
-        "options": {
-            "durations": [
-                "3",
-                "6",
-                "10",
-                "15"
-            ],
             "resolutions": [
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1"
+                "512x512",
+                "512x768",
+                "768x512",
+                "768x768",
+                "768x1024",
+                "1024x768"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "3": 0.6,
-                "6": 1.2,
-                "10": 2,
-                "15": 3,
-                "3s": 0.6,
-                "6s": 1.2,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
         }
     },
     {
-        "id": "kwaivgi/kling-v3-omni-video",
-        "name": "Kling Video 3.0 Omni",
-        "owner": "kwaivgi",
+        "id": "openai/gpt-image-2",
+        "name": "GPT Image 2",
+        "official": false,
+        "iseditable": true,
+        "owner": "openai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/openai/gpt-image-2/predictions",
         "credit_used": 300,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-omni-video.png",
-        "url": "https://api.replicate.com/v1/models/kwaivgi/kling-v3-omni-video/predictions",
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/gpt-image-2.png?alt=media&token=98586771-f522-41a6-974f-842af913b245",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "mode": "{{mode}}",
-                "duration": "{{duration}}",
+                "input_images": [
+                    "{{image}}"
+                ],
                 "aspect_ratio": "{{aspect_ratio}}",
+                "quality": "auto",
+                "user_id": "",
+                "background": "auto",
+                "moderation": "auto",
+                "output_format": "webp",
+                "openai_api_key": "",
+                "output_compression": 90
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "9:16",
+                "1:1",
+                "3:2",
+                "2:3",
+                "4:3",
+                "3:4",
+                "16:9",
+                "auto",
+                "1024x1024",
+                "1536x1024",
+                "1024x1536",
+                "1536x1152",
+                "1152x1536",
+                "2048x2048",
+                "2048x1152",
+                "1152x2048",
+                "3840x2160",
+                "2160x3840"
+            ]
+        }
+    },
+    {
+        "id": "google/nano-banana-pro",
+        "name": "Google Nano Banana Pro",
+        "official": true,
+        "iseditable": false,
+        "owner": "google",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/google/nano-banana-pro/predictions",
+        "credit_used": 200,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/nano-banana-pro.png?alt=media&token=c343bbeb-2c4f-472b-8219-0a0c00e7f85a",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "resolution": "1K",
+                "image_input": [
+                    "{{image}}"
+                ],
+                "output_format": "jpg",
+                "safety_filter_level": "block_only_high",
+                "allow_fallback_model": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "9:16",
+                "match_input_image",
+                "1:1",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:3",
+                "4:5",
+                "5:4",
+                "16:9",
+                "21:9"
+            ]
+        }
+    },
+    {
+        "id": "prunaai/p-image-edit",
+        "name": "P-Image Edit",
+        "official": true,
+        "iseditable": true,
+        "owner": "prunaai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/prunaai/p-image-edit/predictions",
+        "credit_used": 30,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/p-image-edit.png?alt=media&token=fb53fb78-11a6-440e-9708-8aa4bbe6c1f6",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "images": [
+                    "{{image}}"
+                ],
+                "aspect_ratio": "{{aspect_ratio}}",
+                "seed": 0,
+                "no_op": false,
+                "turbo": true,
+                "disable_safety_checker": false
+            }
+        },
+        "options": {
+            "aspect_ratios": [
+                "9:16",
+                "match_input_image",
+                "1:1",
+                "16:9",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3"
+            ]
+        }
+    },
+    {
+        "id": "runwayml/gen4-image",
+        "name": "Runway Gen-4 Image",
+        "official": false,
+        "iseditable": false,
+        "owner": "runwayml",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/runwayml/gen4-image/predictions",
+        "credit_used": 200,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/gen4-image.png?alt=media&token=e03d506c-d28b-488d-86bb-b3df7fa82654",
+        "request_body": {
+            "input": {
+                "prompt": "{{prompt}}",
+                "seed": 0,
+                "resolution": "1080p",
+                "aspect_ratio": "{{aspect_ratio}}",
+                "reference_tags": [],
                 "reference_images": [
                     "{{image}}"
                 ]
             }
         },
         "options": {
-            "durations": [
-                "3",
-                "6",
-                "10",
-                "15"
-            ],
-            "modes": [
-                "pro",
-                "standard",
-                "4K"
+            "resolutions": [
+                "720p",
+                "1080p"
             ],
             "aspect_ratios": [
-                "16:9",
                 "9:16",
-                "1:1"
+                "16:9",
+                "4:3",
+                "3:4",
+                "1:1",
+                "21:9"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "3": 0.6,
-                "6": 1.2,
-                "10": 2,
-                "15": 3,
-                "3s": 0.6,
-                "6s": 1.2,
-                "10s": 2,
-                "15s": 3
-            },
-            "modes": {
-                "pro": 1,
-                "standard": 1.5,
-                "4K": 2
-            }
         }
     },
     {
-        "id": "xai/grok-imagine-video",
-        "name": "Grok Imagine Video",
-        "owner": "xai",
-        "credit_used": 120,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/xai/grok-imagine-video.png",
-        "url": "https://api.replicate.com/v1/models/xai/grok-imagine-video/predictions",
+        "id": "leonardoai/lucid-origin",
+        "name": "Lucid Origin",
+        "official": false,
+        "iseditable": false,
+        "owner": "leonardoai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/leonardoai/lucid-origin/predictions",
+        "credit_used": 50,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/lucid-origin.png?alt=media&token=4033918d-7f8c-48b8-bc85-173c266c24c6",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
+                "style": "none",
+                "contrast": "medium",
                 "aspect_ratio": "{{aspect_ratio}}",
-                "resolution": "{{resolution}}",
-                "image": "{{image}}"
+                "prompt_enhance": true,
+                "generation_mode": "standard"
             }
         },
         "options": {
-            "durations": [
-                "5",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "480p",
-                "720p"
-            ],
             "aspect_ratios": [
-                "16:9",
                 "9:16",
                 "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "15": 3,
-                "5s": 1,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5
-            }
-        }
-    },
-    {
-        "id": "minimax/video-01",
-        "name": "MiniMax Video-01",
-        "owner": "minimax",
-        "credit_used": 150,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/minimax/video-01.png",
-        "url": "https://api.replicate.com/v1/models/minimax/video-01/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "first_frame_image": "{{image}}",
-                "prompt_optimizer": true
-            }
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {},
-            "resolution_multipliers": {}
-        }
-    },
-    {
-        "id": "minimax/hailuo-2.3",
-        "name": "MiniMax Hailuo 2.3",
-        "owner": "minimax",
-        "credit_used": 150,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/minimax/hailuo-2.3.png",
-        "url": "https://api.replicate.com/v1/models/minimax/hailuo-2.3/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "first_frame_image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "prompt_optimizer": true
-            }
-        },
-        "options": {
-            "durations": [
-                "6",
-                "10"
-            ],
-            "resolutions": [
-                "768p",
-                "1080p"
-            ],
-            "aspect_ratios": []
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "6": 1.2,
-                "10": 2,
-                "6s": 1.2,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "minimax/hailuo-2.3-fast",
-        "name": "MiniMax Hailuo 2.3 Fast",
-        "owner": "minimax",
-        "credit_used": 90,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/minimax/hailuo-2.3-fast.png",
-        "url": "https://api.replicate.com/v1/models/minimax/hailuo-2.3-fast/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "first_frame_image": "{{image}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "prompt_optimizer": false
-            }
-        },
-        "options": {
-            "durations": [
-                "6",
-                "10"
-            ],
-            "resolutions": [
-                "768p",
-                "1080p"
-            ],
-            "aspect_ratios": []
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "6": 1.2,
-                "10": 2,
-                "6s": 1.2,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "768p": 1,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "wavespeedai/wan-2.1-i2v-480p",
-        "name": "Wan Image-to-Video",
-        "owner": "wavespeedai",
-        "credit_used": 120,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.1-i2v-480p.png",
-        "url": "https://api.replicate.com/v1/models/wavespeedai/wan-2.1-i2v-480p/predictions",
-        "request_body": {
-            "input": {
-                "image": "{{image}}",
-                "prompt": "{{prompt}}",
-                "fast_mode": "Balanced",
-                "sample_shift": 8,
-                "sample_steps": 30,
-                "frames_per_second": 16,
-                "sample_guide_scale": 5
-            }
-        },
-        "options": {
-            "aspect_ratios": [
                 "16:9",
-                "9:16",
-                "1:1"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {},
-            "resolution_multipliers": {}
-        }
-    },
-    {
-        "id": "wavespeedai/wan-2.5-t2v",
-        "name": "Wan 2.5 T2V",
-        "owner": "wavespeedai",
-        "credit_used": 130,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-t2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-t2v/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "audio": "{{audio}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "3:4",
                 "4:3",
-                "3:4"
+                "2:1",
+                "1:2",
+                "3:1",
+                "1:3"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
         }
     },
     {
-        "id": "wavespeedai/wan-2.5-t2v-fast",
-        "name": "Wan 2.5 T2V Fast",
-        "owner": "wavespeedai",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-t2v-fast.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-t2v-fast/predictions",
+        "id": "tencent/hunyuan-image-3",
+        "name": "Hunyuan Image 3.0",
+        "official": true,
+        "iseditable": false,
+        "owner": "tencent",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/tencent/hunyuan-image-3/predictions",
+        "credit_used": 100,
+        "icon_url": "https://firebasestorage.googleapis.com/v0/b/imagegen-trail.appspot.com/o/hunyuan-image-3.png?alt=media&token=6b036bea-9cf5-4f4d-a54f-eedea95306bd",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "wavespeedai/wan-2.5-i2v",
-        "name": "Wan 2.5 I2V",
-        "owner": "wavespeedai",
-        "credit_used": 130,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-i2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-i2v/predictions",
-        "request_body": {
-            "input": {
-                "image": "{{image}}",
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}",
-                "aspect_ratio": "{{aspect_ratio}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p",
-                "1080p"
-            ],
-            "aspect_ratios": [
-                "16:9",
-                "9:16",
-                "1:1",
-                "4:3",
-                "3:4"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 1.5,
-                "1080p": 2
-            }
-        }
-    },
-    {
-        "id": "wavespeedai/wan-2.5-i2v-fast",
-        "name": "Wan 2.5 I2V Fast",
-        "owner": "wavespeedai",
-        "credit_used": 80,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.5-i2v-fast.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.5-i2v-fast/predictions",
-        "request_body": {
-            "input": {
-                "image": "{{image}}",
-                "prompt": "{{prompt}}",
-                "duration": "{{duration}}",
-                "resolution": "{{resolution}}"
-            }
-        },
-        "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [
-                "480p",
-                "720p"
-            ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {
-                "480p": 1,
-                "720p": 2
-            }
-        }
-    },
-    {
-        "id": "wan-video/wan-2.7-t2v",
-        "name": "Wan 2.7 T2V",
-        "owner": "wan-video",
-        "credit_used": 200,
-        "first_frame_enabled": false,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/wavespeedai/wan-2.7-t2v.png",
-        "url": "https://api.replicate.com/v1/models/wan-video/wan-2.7-t2v/predictions",
-        "request_body": {
-            "input": {
-                "prompt": "{{prompt}}",
-                "resolution": "{{resolution}}",
+                "seed": 0,
+                "go_fast": true,
                 "aspect_ratio": "{{aspect_ratio}}",
-                "duration": "{{duration}}",
-                "enable_prompt_expansion": true,
-                "seed": null
+                "output_format": "webp",
+                "output_quality": 95,
+                "disable_safety_checker": false
             }
         },
         "options": {
-            "durations": [
-                "2",
-                "5",
-                "8",
-                "10",
-                "15"
-            ],
-            "resolutions": [
-                "720p",
-                "1080p"
-            ],
             "aspect_ratios": [
-                "16:9",
                 "9:16",
                 "1:1",
+                "16:9",
+                "21:9",
+                "3:2",
+                "2:3",
+                "4:5",
+                "5:4",
+                "3:4",
                 "4:3",
-                "3:4"
+                "9:21"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "2": 0.4,
-                "5": 1,
-                "8": 1.6,
-                "10": 2,
-                "15": 3,
-                "2s": 0.4,
-                "5s": 1,
-                "8s": 1.6,
-                "10s": 2,
-                "15s": 3
-            },
-            "resolution_multipliers": {
-                "720p": 1.5,
-                "1080p": 2
-            }
         }
     },
     {
-        "id": "klingai/kling-v3-master",
-        "name": "Kling v3 Master ",
-        "owner": "klingai",
-        "credit_used": 280,
-        "first_frame_enabled": true,
-        "last_frame_enabled": false,
-        "icon_url": "https://api.replicate.com/assets/icon/klingai/kling-v3-master.png",
-        "url": "https://api.replicate.com/v1/models/klingai/kling-v3-master/predictions",
+        "id": "recraft-ai/recraft-v4",
+        "name": "Recraft V4",
+        "official": true,
+        "iseditable": false,
+        "owner": "recraft-ai",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v4/predictions",
+        "credit_used": 50,
+        "icon_url": "https://github.com/recraft-ai.png",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "start_image": "{{image}}",
-                "duration": "{{duration}}",
                 "aspect_ratio": "{{aspect_ratio}}"
             }
         },
         "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
             "aspect_ratios": [
-                "16:9",
                 "9:16",
-                "1:1"
+                "Not set",
+                "1:1",
+                "4:3",
+                "3:4",
+                "3:2",
+                "2:3",
+                "16:9",
+                "1:2",
+                "2:1",
+                "14:10",
+                "10:14",
+                "4:5",
+                "5:4",
+                "6:10"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
         }
     },
     {
-        "id": "runwayml/gen4-turbo",
-        "name": "RunwayML Gen4 Turbo (Video)",
-        "owner": "runwayml",
-        "credit_used": 250,
-        "first_frame_enabled": true,
-        "last_frame_enabled": true,
-        "icon_url": "https://api.replicate.com/assets/icon/runwayml/gen4-turbo.png",
-        "url": "https://api.replicate.com/v1/models/runwayml/gen4-turbo/predictions",
+        "id": "minimax/image-01",
+        "name": "MiniMax Image-01",
+        "official": false,
+        "iseditable": true,
+        "owner": "minimax",
+        "version": "",
+        "url": "https://api.replicate.com/v1/models/minimax/image-01/predictions",
+        "credit_used": 30,
+        "icon_url": "https://github.com/minimax.png",
         "request_body": {
             "input": {
                 "prompt": "{{prompt}}",
-                "ratio": "{{aspect_ratio}}",
-                "duration": "{{duration}}",
-                "image_as_end_frame": false,
-                "image": "{{image}}"
+                "aspect_ratio": "{{aspect_ratio}}",
+                "number_of_images": 1,
+                "prompt_optimizer": true,
+                "subject_reference": "{{image}}"
             }
         },
         "options": {
-            "durations": [
-                "5",
-                "10"
-            ],
-            "resolutions": [],
             "aspect_ratios": [
-                "16:9",
                 "9:16",
                 "1:1",
+                "16:9",
                 "4:3",
-                "3:4"
+                "3:2",
+                "2:3",
+                "3:4",
+                "21:9"
             ]
-        },
-        "credit_cost_rules": {
-            "duration_multipliers": {
-                "5": 1,
-                "10": 2,
-                "5s": 1,
-                "10s": 2
-            },
-            "resolution_multipliers": {}
         }
     }
 ]

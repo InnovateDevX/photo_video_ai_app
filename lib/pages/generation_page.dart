@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:vidzeon/Core/colors.dart';
-import 'package:vidzeon/Core/gradient.dart';
 import '../Helpers/feedback_helper.dart';
 import '../Services/replicate_service.dart';
 import '../Services/credit_service.dart';

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:gallery_saver_plus/gallery_saver.dart';
@@ -8,12 +7,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'background_generation_service.dart';
 import 'notification_service.dart';
 import 'local_storage_service.dart';
-import 'remote_config_service.dart';
 import '../Models/generated_asset.dart';
 import '../Widgets/themed_dialog.dart';
 

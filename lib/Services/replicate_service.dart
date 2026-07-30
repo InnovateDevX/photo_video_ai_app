@@ -199,8 +199,9 @@ class AIModelConfig {
   int get noOfUploadable {
     if (!iseditable) return 0;
     final templateStr = jsonEncode(requestBodyTemplate);
-    if (!templateStr.contains('{{image}}'))
+    if (!templateStr.contains('{{image}}')) {
       return 1; // editable but no placeholder — treat as 1
+    }
 
     // Count occurrences of {{image}} in the template string.
     // Each occurrence = one accepted image slot.
@@ -643,7 +644,7 @@ class ReplicateService {
     /// `placeholder`, and replaces that List entirely with `imagesData`.
     ///
     /// This handles templates like `"input_images": ["{{image}}"]` robustly without relying on Regex.
-    dynamic _expandArraysInObject(
+    dynamic expandArraysInObject(
       dynamic obj,
       String placeholder,
       List<String> imagesData,
@@ -652,7 +653,7 @@ class ReplicateService {
         return obj.map(
           (key, value) => MapEntry(
             key,
-            _expandArraysInObject(value, placeholder, imagesData),
+            expandArraysInObject(value, placeholder, imagesData),
           ),
         );
       } else if (obj is List) {
@@ -669,7 +670,7 @@ class ReplicateService {
         }
         // Otherwise, recurse deeper into the array's children
         return obj
-            .map((item) => _expandArraysInObject(item, placeholder, imagesData))
+            .map((item) => expandArraysInObject(item, placeholder, imagesData))
             .toList();
       }
       return obj;
@@ -726,7 +727,7 @@ class ReplicateService {
           'ref_image',
         ]) {
           finalBody =
-              _expandArraysInObject(finalBody, ph, encodedImagesWithPrefix)
+              expandArraysInObject(finalBody, ph, encodedImagesWithPrefix)
                   as Map<String, dynamic>;
         }
 

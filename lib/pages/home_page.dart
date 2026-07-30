@@ -98,7 +98,7 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
-    AdjustEvent homePageOpenEvent = new AdjustEvent('fw8gsr');
+    AdjustEvent homePageOpenEvent = AdjustEvent('fw8gsr');
 
     // Track the event
     Adjust.trackEvent(homePageOpenEvent);
@@ -917,8 +917,8 @@ Widget _buildQuickAiTools(BuildContext context, bool isDark) {
               onTap: () {
                 final navState = context
                     .findAncestorStateOfType<MainNavigationState>();
-                AdjustEvent all_aitools = new AdjustEvent('youurr');
-                Adjust.trackEvent(all_aitools);
+                AdjustEvent allAitools = AdjustEvent('youurr');
+                Adjust.trackEvent(allAitools);
 
                 if (navState != null) {
                   navState.switchTab(4);

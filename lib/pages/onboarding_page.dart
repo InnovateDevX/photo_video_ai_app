@@ -293,7 +293,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finishOnboarding() async {
     await OnboardingPage.markCompleted();
     if (mounted) {
-      AdjustEvent onboardingCompletedEvent = new AdjustEvent('vak5vz');
+      AdjustEvent onboardingCompletedEvent = AdjustEvent('vak5vz');
 
       // Track the event
       Adjust.trackEvent(onboardingCompletedEvent);
@@ -423,7 +423,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   Text(
                     buttonText,
                     style: TextStyle(
-                      fontSize: w * 0.08,
+                      fontSize: w * 0.05,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -444,11 +444,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            SizedBox(height: h * 0.045),
+            SizedBox(height: h * 0.010),
 
             // Top Video Area
             Container(
-              height: h * 0.40,
+              height: h * 0.53,
               margin: EdgeInsets.symmetric(horizontal: w * 0.04),
               width: double.infinity,
               decoration: BoxDecoration(
@@ -470,7 +470,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     )
                   : const SizedBox.shrink(),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: h * 0.02),
 
             // Thumbnail Row
             SizedBox(

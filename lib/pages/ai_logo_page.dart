@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:vidzeon/Services/media_service.dart';
-import 'package:vidzeon/Services/asset_service.dart';
 import 'package:vidzeon/Widgets/themed_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vidzeon/Core/colors.dart';

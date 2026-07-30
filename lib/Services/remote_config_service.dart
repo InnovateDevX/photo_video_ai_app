@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +12,7 @@ class RemoteConfigService {
 
   FirebaseRemoteConfig get _remoteConfig => FirebaseRemoteConfig.instance;
   bool _isInitialized = false;
+  StreamSubscription<RemoteConfigUpdate>? _configUpdateSubscription;
 
   /// Keys for every Remote Config string we cache locally as a safety net.
   static const List<String> _cacheableStringKeys = [
@@ -45,10 +49,11 @@ class RemoteConfigService {
     'rc_credits_map',
     'tool_badges',
     'popular_ai_tools',
+    'paywall_weekly_features',
+    'paywall_monthly_features',
   ];
 
-  /// Prefix used to namespace our SharedPreferences cache entries so we don't
-  /// collide with anything else.
+  /// Prefix used to namespace our SharedPreferences cache entries.
   static const String _prefsPrefix = 'rc_cache:';
 
   Future<void> initialize() async {
@@ -92,63 +97,73 @@ class RemoteConfigService {
         'customer_support_url': '',
         'faq_url': '',
         'terms_of_use_url': '',
-        'rc_android_key': '', // Add in Firebase Remote Config
+        'rc_android_key': '',
         'rc_ios_key': '',
         'rc_credits_map': '{}',
-        'google_cloud_api_key': '', // Add in Firebase Remote Config
+        'google_cloud_api_key': '',
         'tool_badges': '{}',
         'nsfw_text_threshold': 0.65,
         'nsfw_image_unsafe_values': '["VERY_LIKELY"]',
         'share_app_url': '',
-        'show_ads': true,
+        'show_ads': false,
         'dark_theme': true,
         'watermark_url': '',
         'paywall_video_url': '',
+        'paywall_weekly_features': '[]',
+        'paywall_monthly_features': '[]',
         'generation_page_image': '',
         'generation_page_video': '',
-        // Possible values for popular_ai_tools (comma-separated list):
-        // video, image, upscale, background, cloth, restore, filter, headshot, sticker, collage, logo
         'popular_ai_tools': '',
       });
 
-      // 2. Configure Settings
+      // 2. Configure Settings - Force Duration.zero to fetch on every app open
       await _remoteConfig.setConfigSettings(
         RemoteConfigSettings(
           fetchTimeout: const Duration(seconds: 10),
-          minimumFetchInterval: kDebugMode
-              ? Duration.zero
-              : const Duration(hours: 1),
+          minimumFetchInterval: Duration.zero,
         ),
       );
 
-      // 3. Single Fetch & Activate
+      // 3. Force Fetch & Activate from network
       final activated = await _remoteConfig.fetchAndActivate();
       debugPrint(
-        '🔧 [RemoteConfigService] fetchAndActivate() success: $activated',
+        '🔧 [RemoteConfigService] Fresh launch fetch successful: $activated',
       );
       debugPrint('   Last fetch status: ${_remoteConfig.lastFetchStatus}');
 
-      // 4. Write-through cache: persist every string key we care about to
-      // SharedPreferences so we have a safety net for offline / throttled
-      // sessions.
+      // 4. Overwrite local SharedPreferences cache with the new network values
       await _persistStringKeysToCache(_cacheableStringKeys);
+
+      // 5. Setup Real-time updates while active
+      _listenForRealtimeUpdates();
 
       _isInitialized = true;
     } catch (e) {
-      // If initialization fails (e.g. throttling or network), we still allow
-      // the app to proceed with the SharedPreferences cache or defaults.
-      debugPrint('⚠️ [RemoteConfigService] Initialization failed: $e');
-      debugPrint(
-        '   Proceeding with SharedPreferences cache / defaults if available.',
-      );
-      _isInitialized =
-          true; // Still mark as initialized to prevent redundant fetch attempts
+      // If fetching fails or gets throttled by Firebase, fallback gracefully to cached keys
+      debugPrint('⚠️ [RemoteConfigService] Launch fetch failed/throttled: $e');
+      debugPrint('   Proceeding with SharedPreferences cache / defaults.');
+      _isInitialized = true;
     }
   }
 
+  /// Real-time stream listener for live edits pushed from Firebase Console
+  void _listenForRealtimeUpdates() {
+    _configUpdateSubscription?.cancel();
+    _configUpdateSubscription = _remoteConfig.onConfigUpdated.listen(
+      (event) async {
+        debugPrint('⚡ [RemoteConfigService] Real-time config update detected!');
+        await _remoteConfig.activate();
+        await _persistStringKeysToCache(_cacheableStringKeys);
+      },
+      onError: (error) {
+        debugPrint(
+          '⚠️ [RemoteConfigService] Real-time update stream error: $error',
+        );
+      },
+    );
+  }
+
   /// Force-fetches the latest Remote Config values from the network.
-  /// Safe to call even after [initialize] — used for background refreshes.
-  /// Returns true if new values were activated.
   Future<bool> refresh() async {
     try {
       final activated = await _remoteConfig.fetchAndActivate();
@@ -165,28 +180,24 @@ class RemoteConfigService {
     }
   }
 
-  /// Writes each Remote Config string to SharedPreferences so the app can
-  /// fall back to the last-known-good values when offline / throttled.
+  /// Writes each Remote Config string to SharedPreferences
   Future<void> _persistStringKeysToCache(List<String> keys) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       for (final key in keys) {
         final value = _remoteConfig.getString(key);
-        // Only persist meaningful values (skip defaults / empty / "[]" / "{}")
         if (value.isNotEmpty && value != '[]' && value != '{}') {
           await prefs.setString('$_prefsPrefix$key', value);
         }
       }
       debugPrint(
-        '💾 [RemoteConfigService] Persisted ${keys.length} keys to SharedPreferences cache.',
+        '💾 [RemoteConfigService] Updated ${keys.length} keys in SharedPreferences cache.',
       );
     } catch (e) {
       debugPrint('⚠️ [RemoteConfigService] Failed to persist cache: $e');
     }
   }
 
-  /// Returns the cached value for a given Remote Config string key, or null
-  /// if no cached value exists.
   Future<String?> _readCachedString(String key) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -199,35 +210,25 @@ class RemoteConfigService {
     }
   }
 
-  /// Returns the Remote Config string value, falling back to the
-  /// SharedPreferences cache when the live value is missing / empty /
-  /// matches the default sentinel ('[]' or '{}').
   Future<String> _getStringWithCacheFallback(String key) async {
     final live = _remoteConfig.getString(key);
     final isMissing =
         live.isEmpty || live == '[]' || live == '{}' || live == '""';
     if (!isMissing) return live;
+
     final cached = await _readCachedString(key);
     if (cached != null && cached.isNotEmpty) {
-      debugPrint(
-        '📦 [RemoteConfigService] Using cached value for "$key" (live was empty).',
-      );
+      debugPrint('📦 [RemoteConfigService] Using cached value for "$key".');
       return cached;
     }
     return live;
   }
 
   // --- Getters ---
-
   String getString(String key) => _remoteConfig.getString(key);
   int getInt(String key) => _remoteConfig.getInt(key);
   bool getBool(String key) => _remoteConfig.getBool(key);
   double getDouble(String key) => _remoteConfig.getDouble(key);
-
-  // Type-safe Convenience Getters
-  // These are now async because they may need to read the SharedPreferences
-  // cache. Callers (`ReplicateService`) already `await initialize()` before
-  // reading, so this is safe.
 
   Future<String> _async(String key) => _getStringWithCacheFallback(key);
 
@@ -236,13 +237,9 @@ class RemoteConfigService {
   String get replicateAuthToken => getString('replicate_auth_token');
   String get watermarkUrl => getString('watermark_url');
 
-  /// Returns the `replicate_image_models` JSON, falling back to the
-  /// SharedPreferences cache when Firebase hasn't published a value yet.
   Future<String> get imageModelsJsonAsync => _async('replicate_image_models');
   String get imageModelsJson => getString('replicate_image_models');
 
-  /// Returns the `replicate_video_models` JSON, falling back to the
-  /// SharedPreferences cache when Firebase hasn't published a value yet.
   Future<String> get videoModelsJsonAsync => _async('replicate_video_models');
   String get videoModelsJson => getString('replicate_video_models');
 
@@ -262,7 +259,7 @@ class RemoteConfigService {
   Future<String> get stickerImageModelJsonAsync =>
       _async('replicate_sticker_image_model');
   String get stickerImageModelJson =>
-      getString('replicate_sticker_image_model');
+      getString('replicate_sticker_sticker_image_model');
 
   Future<String> get stickerTextModelJsonAsync =>
       _async('replicate_sticker_text_model');
@@ -302,9 +299,7 @@ class RemoteConfigService {
   String get trendingDataJson => getString('trending_data');
   String get reelsJson => getString('reels_data');
 
-  // Pricing
   String get proWeekly => getString('pro_weekly');
-
   String get proMonthly => getString('pro_monthly');
 
   String get privacyPolicyUrl => getString('privacy_policy_url');
@@ -320,14 +315,37 @@ class RemoteConfigService {
   String get googleCloudApiKey => getString('google_cloud_api_key');
 
   bool get showAds => getBool('show_ads');
-
-  /// Returns the default theme configured remotely (true = dark, false = light).
-  /// Only used as the initial default for new installs / fresh state.
-  /// Once the user explicitly toggles the theme, their preference wins and
-  /// this value is ignored on subsequent launches.
   bool get isDarkThemeDefault => getBool('dark_theme');
 
   String get paywallVideoUrl => getString('paywall_video_url');
+
+  Future<List<String>> get paywallWeeklyFeatures async =>
+      _decodeFeatureList(await _async('paywall_weekly_features'), const []);
+
+  Future<List<String>> get paywallMonthlyFeatures async =>
+      _decodeFeatureList(await _async('paywall_monthly_features'), const []);
+
+  List<String> _decodeFeatureList(String raw, List<String> fallback) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        final features = decoded
+            .whereType<String>()
+            .map((feature) => feature.trim())
+            .where((feature) => feature.isNotEmpty)
+            .toList(growable: false);
+        if (features.isNotEmpty) return features;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [RemoteConfigService] Invalid paywall features JSON: $e');
+    }
+    return List<String>.unmodifiable(fallback);
+  }
+
   String get generationPageImage => getString('generation_page_image');
   String get generationPageVideo => getString('generation_page_video');
+
+  void dispose() {
+    _configUpdateSubscription?.cancel();
+  }
 }

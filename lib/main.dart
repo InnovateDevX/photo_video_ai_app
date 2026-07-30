@@ -30,9 +30,9 @@ void main() {
   // navigate to the home/onboarding screen when done. The splash screen
   // itself has a hard ceiling that guarantees the user is never stuck.
   WidgetsFlutterBinding.ensureInitialized();
-  AdjustConfig config = new AdjustConfig(
+  AdjustConfig config = AdjustConfig(
     'yq9vjjzvklq8',
-    AdjustEnvironment.sandbox,
+    AdjustEnvironment.production,
   );
   Adjust.initSdk(config);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
